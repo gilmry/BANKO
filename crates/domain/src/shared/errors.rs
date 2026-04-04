@@ -40,4 +40,46 @@ pub enum DomainError {
 
     #[error("Invalid user: {0}")]
     InvalidUser(String),
+
+    #[error("INPDP consent is required")]
+    ConsentRequired,
+
+    #[error("Legal entity must have at least one beneficial owner")]
+    MissingBeneficiaries,
+
+    #[error("Invalid CIN: {0}")]
+    InvalidCin(String),
+
+    #[error("Invalid risk score: {0}")]
+    InvalidRiskScore(String),
+
+    #[error("KYC not validated")]
+    KycNotValidated,
+
+    #[error("Invalid customer status: {0}")]
+    InvalidCustomerStatus(String),
+
+    #[error("Invalid address: {0}")]
+    InvalidAddress(String),
+
+    #[error("Customer not found")]
+    CustomerNotFound,
+
+    #[error("Insufficient funds")]
+    InsufficientFunds,
+
+    #[error("Account not found")]
+    AccountNotFound,
+
+    #[error("Account is closed")]
+    AccountClosed,
+
+    #[error("Account is suspended")]
+    AccountSuspended,
+
+    #[error("Invalid account type: {0}")]
+    InvalidAccountType(String),
+
+    #[error("Invalid movement: {0}")]
+    InvalidMovement(String),
 }
