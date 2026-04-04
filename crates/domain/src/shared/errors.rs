@@ -82,4 +82,21 @@ pub enum DomainError {
 
     #[error("Invalid movement: {0}")]
     InvalidMovement(String),
+
+    // --- Credit errors ---
+
+    #[error("Loan not found")]
+    LoanNotFound,
+
+    #[error("Invalid loan status: {0}")]
+    InvalidLoanStatus(String),
+
+    #[error("Invalid asset class: {0}")]
+    InvalidAssetClass(String),
+
+    #[error("Invalid loan state transition: {0}")]
+    InvalidLoanTransition(String),
+
+    #[error("Insufficient provision: {0}")]
+    InsufficientProvision(String),
 }
