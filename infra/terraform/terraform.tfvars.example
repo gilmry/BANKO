@@ -1,0 +1,15 @@
+# BANKO Terraform Variables
+# Copy to terraform.tfvars and fill in values
+
+ovh_endpoint           = "ovh-eu"
+ovh_application_key    = "your-app-key"
+ovh_application_secret = "your-app-secret"
+ovh_consumer_key       = "your-consumer-key"
+
+region      = "GRA7"
+environment = "prod"
+
+db_password = "change-me-strong-password"
+
+api_instance_flavor      = "b2-15"
+frontend_instance_flavor = "b2-7"
