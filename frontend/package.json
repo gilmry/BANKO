@@ -1,0 +1,28 @@
+{
+  "name": "banko-frontend",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev --host 0.0.0.0 --port 3000",
+    "build": "astro build",
+    "preview": "astro preview",
+    "lint": "prettier --check .",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "astro": "^5.7.10",
+    "@astrojs/svelte": "^7.0.8",
+    "@astrojs/node": "^9.2.2",
+    "@astrojs/tailwind": "^6.0.2",
+    "svelte": "^5.28.2",
+    "tailwindcss": "^3.4.17",
+    "@tailwindcss/typography": "^0.5.16"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3",
+    "prettier-plugin-astro": "^0.14.1",
+    "prettier-plugin-svelte": "^3.3.3",
+    "typescript": "^5.8.3"
+  }
+}

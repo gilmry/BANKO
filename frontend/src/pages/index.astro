@@ -1,0 +1,18 @@
+---
+import Base from "../layouts/Base.astro";
+import Header from "../components/Header.svelte";
+---
+
+<Base title="Accueil">
+  <Header client:load />
+  <main class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+    <div class="text-center">
+      <h1 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
+        BANKO
+      </h1>
+      <p class="mt-6 text-lg leading-8 text-gray-600">
+        Plateforme bancaire open source — transparente, auditable, conforme.
+      </p>
+    </div>
+  </main>
+</Base>
