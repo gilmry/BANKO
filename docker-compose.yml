@@ -1,109 +1,82 @@
-# BANKO - Environment de développement
-# Usage: docker compose up
-# - Backend: http://localhost:8080/api/v1
-# - Frontend: http://localhost:3000
-# - Hot reload activé pour backend et frontend
+# BANKO - Docker Compose (production-ready)
+# Usage: docker compose up -d
 
 services:
-  # Traefik Reverse Proxy (HTTP uniquement pour dev)
   traefik:
-    image: traefik:latest
+    image: traefik:v2.11
     container_name: banko-traefik
     command:
       - "--api.dashboard=true"
-      - "--api.insecure=true"  # Dashboard sur :8081
+      - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--log.level=INFO"
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.entrypoint=web"
     ports:
-      - "80:80"      # HTTP
-      - "8081:8080"  # Traefik Dashboard
+      - "80:80"
+      - "8081:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
-      - banko-network
+      - banko-net
+    restart: unless-stopped
 
-  # PostgreSQL 16 Database
   postgres:
     image: postgres:16-alpine
     container_name: banko-postgres
     environment:
-      POSTGRES_DB: banko_db
-      POSTGRES_USER: banko
-      POSTGRES_PASSWORD: banko123
+      POSTGRES_DB: ${POSTGRES_DB:-banko_db}
+      POSTGRES_USER: ${POSTGRES_USER:-banko}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-banko123}
     ports:
-      - "127.0.0.1:5432:5432"  # Localhost uniquement
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/migrations:/docker-entrypoint-initdb.d/migrations:ro
+      - ./migrations:/docker-entrypoint-initdb.d/migrations:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U banko -d banko_db"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - banko-network
+      - banko-net
+    restart: unless-stopped
 
-  # Backend (Rust + Actix) avec HOT RELOAD via cargo-watch
-  backend:
+  api:
     build:
-      context: ./backend
-      dockerfile: Dockerfile.dev
-    container_name: banko-backend
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: banko-api
     environment:
-      DATABASE_URL: postgresql://banko:banko123@postgres:5432/banko_db
+      DATABASE_URL: postgresql://${POSTGRES_USER:-banko}:${POSTGRES_PASSWORD:-banko123}@postgres:5432/${POSTGRES_DB:-banko_db}
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: 8080
-      RUST_LOG: debug
-      RUST_BACKTRACE: 1
-      SQLX_OFFLINE: "true"
-      ENABLE_RATE_LIMITING: "false"
-      LOGIN_RATE_LIMIT_MAX: "1000"
-      LOGIN_RATE_LIMIT_WINDOW_SECS: "60"
-      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-s3}
-      UPLOAD_DIR: /app/uploads
-      S3_BUCKET: ${S3_BUCKET:-banko-dev}
-      S3_REGION: ${S3_REGION:-us-east-1}
-      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
-      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
-      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin}
-      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-true}
-      S3_KEY_PREFIX: ${S3_KEY_PREFIX:-dev}
-    volumes:
-      # Hot reload: monter code source
-      - ./backend:/app
-      - cargo_cache:/usr/local/cargo/registry
-      - cargo_git:/usr/local/cargo/git
-      - target_cache:/app/target
+      RUST_LOG: ${RUST_LOG:-info}
     depends_on:
       postgres:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`localhost`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.backend.entrypoints=web"
-      - "traefik.http.routers.backend-metrics.rule=Host(`localhost`) && Path(`/metrics`)"
-      - "traefik.http.routers.backend-metrics.entrypoints=web"
-      - "traefik.http.services.backend.loadbalancer.server.port=8080"
+      - "traefik.http.routers.api.rule=Host(`localhost`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.api.entrypoints=web"
+      - "traefik.http.routers.api-metrics.rule=Host(`localhost`) && Path(`/metrics`)"
+      - "traefik.http.routers.api-metrics.entrypoints=web"
+      - "traefik.http.services.api.loadbalancer.server.port=8080"
     networks:
-      - banko-network
+      - banko-net
+    restart: unless-stopped
 
-  # Frontend (Astro + Svelte) avec HOT RELOAD
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile.dev
+      context: .
+      dockerfile: Dockerfile.frontend
     container_name: banko-frontend
     environment:
       PUBLIC_API_URL: http://localhost/api/v1
-    volumes:
-      # Hot reload: monter code source
-      - ./frontend:/app
-      - /app/node_modules  # Prevent overwriting node_modules
     depends_on:
-      - backend
-      - minio
+      - api
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`localhost`)"
@@ -111,9 +84,9 @@ services:
       - "traefik.http.routers.frontend.priority=1"
       - "traefik.http.services.frontend.loadbalancer.server.port=3000"
     networks:
-      - banko-network
+      - banko-net
+    restart: unless-stopped
 
-  # MinIO for local S3-compatible storage
   minio:
     image: minio/minio:latest
     container_name: banko-minio
@@ -122,8 +95,8 @@ services:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
       MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
     ports:
-      - "127.0.0.1:9000:9000"  # S3 API
-      - "127.0.0.1:9001:9001"  # Console
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
     volumes:
       - minio_data:/data
     healthcheck:
@@ -132,44 +105,13 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - banko-network
-
-  minio-bootstrap:
-    image: minio/mc:latest
-    container_name: banko-minio-bootstrap
-    depends_on:
-      minio:
-        condition: service_healthy
-    environment:
-      S3_BUCKET: ${S3_BUCKET:-banko-dev}
-      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
-      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
-      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin}
-      ENABLE_MINIO_BOOTSTRAP: ${ENABLE_MINIO_BOOTSTRAP:-true}
-    entrypoint: ["/bin/sh", "-c"]
-    command: >
-      set -e;
-      if [ "${ENABLE_MINIO_BOOTSTRAP:-true}" != "true" ]; then
-        echo "Skipping MinIO bootstrap";
-        exit 0;
-      fi;
-      until mc alias set local "$${S3_ENDPOINT}" "$${S3_ACCESS_KEY}" "$${S3_SECRET_KEY}"; do
-        echo "Waiting for MinIO...";
-        sleep 2;
-      done;
-      mc mb --ignore-existing "local/$${S3_BUCKET}";
-      mc anonymous set private "local/$${S3_BUCKET}" >/dev/null 2>&1 || true;
-      echo "MinIO bucket $${S3_BUCKET} ready.";
-    networks:
-      - banko-network
+      - banko-net
+    restart: unless-stopped
 
 volumes:
   postgres_data:
-  cargo_cache:
-  cargo_git:
-  target_cache:
   minio_data:
 
 networks:
-  banko-network:
+  banko-net:
     driver: bridge
