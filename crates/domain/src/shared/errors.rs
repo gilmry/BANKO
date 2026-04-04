@@ -31,4 +31,13 @@ pub enum DomainError {
 
     #[error("Validation error: {0}")]
     ValidationError(String),
+
+    #[error("Invalid password hash: {0}")]
+    InvalidPasswordHash(String),
+
+    #[error("Invalid role: {0}")]
+    InvalidRole(String),
+
+    #[error("Invalid user: {0}")]
+    InvalidUser(String),
 }
