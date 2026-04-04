@@ -3,6 +3,8 @@
 > Système bancaire open source, conforme, auditable et transparent pour les banques tunisiennes.
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
+[![CI](https://github.com/gilmry/BANKO/actions/workflows/ci.yml/badge.svg)](https://github.com/gilmry/BANKO/actions/workflows/ci.yml)
+[![Security](https://github.com/gilmry/BANKO/actions/workflows/security.yml/badge.svg)](https://github.com/gilmry/BANKO/actions/workflows/security.yml)
 
 ---
 
