@@ -1,6 +1,9 @@
 use actix_web::web;
 
-use super::handlers::{auth_handlers, profile_handlers, two_factor_handlers, user_handlers};
+use super::handlers::{
+    account_handlers, auth_handlers, customer_handlers, profile_handlers, two_factor_handlers,
+    user_handlers,
+};
 
 pub fn configure_auth_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -28,6 +31,70 @@ pub fn configure_api_routes(cfg: &mut web::ServiceConfig) {
             .route(
                 "/users/{id}/roles",
                 web::put().to(user_handlers::update_user_roles_handler),
+            ),
+    );
+}
+
+pub fn configure_customer_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/customers")
+            .route(
+                "",
+                web::post().to(customer_handlers::create_customer_handler),
+            )
+            .route(
+                "",
+                web::get().to(customer_handlers::list_customers_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(customer_handlers::get_customer_handler),
+            )
+            .route(
+                "/{id}/kyc",
+                web::get().to(customer_handlers::get_customer_kyc_handler),
+            )
+            .route(
+                "/{id}/kyc",
+                web::put().to(customer_handlers::update_kyc_handler),
+            )
+            .route(
+                "/{id}/approve",
+                web::post().to(customer_handlers::approve_kyc_handler),
+            )
+            .route(
+                "/{id}/reject",
+                web::post().to(customer_handlers::reject_kyc_handler),
+            ),
+    );
+}
+
+pub fn configure_account_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/accounts")
+            .route(
+                "",
+                web::post().to(account_handlers::create_account_handler),
+            )
+            .route(
+                "",
+                web::get().to(account_handlers::list_accounts_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(account_handlers::get_account_handler),
+            )
+            .route(
+                "/{id}/movements",
+                web::post().to(account_handlers::create_movement_handler),
+            )
+            .route(
+                "/{id}/movements",
+                web::get().to(account_handlers::list_movements_handler),
+            )
+            .route(
+                "/{id}/statement",
+                web::get().to(account_handlers::get_statement_handler),
             ),
     );
 }
