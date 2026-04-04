@@ -73,6 +73,13 @@ impl Money {
         })
     }
 
+    pub fn from_cents(amount_cents: i64, currency: Currency) -> Self {
+        Money {
+            amount: amount_cents,
+            currency,
+        }
+    }
+
     pub fn zero(currency: Currency) -> Self {
         Money {
             amount: 0,
