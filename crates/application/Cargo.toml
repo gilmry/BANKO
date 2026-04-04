@@ -1,0 +1,10 @@
+[package]
+name = "banko-application"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+banko-domain = { path = "../domain" }
+async-trait = "0.1"
