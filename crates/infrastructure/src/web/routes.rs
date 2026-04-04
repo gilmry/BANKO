@@ -1,8 +1,8 @@
 use actix_web::web;
 
 use super::handlers::{
-    account_handlers, auth_handlers, customer_handlers, profile_handlers, two_factor_handlers,
-    user_handlers,
+    account_handlers, auth_handlers, credit_handlers, customer_handlers, profile_handlers,
+    two_factor_handlers, user_handlers,
 };
 
 pub fn configure_auth_routes(cfg: &mut web::ServiceConfig) {
@@ -95,6 +95,40 @@ pub fn configure_account_routes(cfg: &mut web::ServiceConfig) {
             .route(
                 "/{id}/statement",
                 web::get().to(account_handlers::get_statement_handler),
+            ),
+    );
+}
+
+pub fn configure_credit_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/loans")
+            .route(
+                "",
+                web::post().to(credit_handlers::create_loan_handler),
+            )
+            .route(
+                "",
+                web::get().to(credit_handlers::list_loans_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(credit_handlers::get_loan_handler),
+            )
+            .route(
+                "/{id}/approve",
+                web::post().to(credit_handlers::approve_loan_handler),
+            )
+            .route(
+                "/{id}/disburse",
+                web::post().to(credit_handlers::disburse_loan_handler),
+            )
+            .route(
+                "/{id}/classify",
+                web::post().to(credit_handlers::classify_loan_handler),
+            )
+            .route(
+                "/{id}/payment",
+                web::post().to(credit_handlers::record_payment_handler),
             ),
     );
 }
