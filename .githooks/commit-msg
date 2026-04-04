@@ -1,0 +1,18 @@
+#!/bin/bash
+# BANKO commit-msg hook
+# Validates conventional commit format: type(scope): description
+
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(head -1 "$COMMIT_MSG_FILE")
+
+PATTERN="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?: .{1,72}"
+
+if ! echo "$COMMIT_MSG" | grep -qE "$PATTERN"; then
+    echo "ERROR: Commit message does not follow conventional format."
+    echo "Expected: type(scope): description"
+    echo "Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
+    echo "Example: feat(customer): add KYC validation"
+    echo ""
+    echo "Your message: $COMMIT_MSG"
+    exit 1
+fi

@@ -1,0 +1,15 @@
+#!/bin/bash
+# BANKO pre-push hook
+# Runs full test suite before push
+
+set -e
+
+echo "=== BANKO Pre-push Hook ==="
+
+echo "[1/2] Running full test suite..."
+cargo test --workspace --quiet
+
+echo "[2/2] Running BDD tests..."
+cargo test -p banko-infrastructure --test bdd --quiet
+
+echo "=== Pre-push checks passed ==="

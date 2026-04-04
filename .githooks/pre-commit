@@ -1,0 +1,30 @@
+#!/bin/bash
+# BANKO pre-commit hook
+# Runs formatting check, clippy, and fast tests before each commit
+
+set -e
+
+echo "=== BANKO Pre-commit Hook ==="
+
+echo "[1/3] Checking formatting..."
+cargo fmt --all --check
+if [ $? -ne 0 ]; then
+    echo "ERROR: Code is not formatted. Run 'cargo fmt --all' to fix."
+    exit 1
+fi
+
+echo "[2/3] Running Clippy..."
+SQLX_OFFLINE=true cargo clippy --workspace --all-targets -- -D warnings
+if [ $? -ne 0 ]; then
+    echo "ERROR: Clippy warnings found. Fix them before committing."
+    exit 1
+fi
+
+echo "[3/3] Running fast tests..."
+cargo test --workspace --lib --quiet
+if [ $? -ne 0 ]; then
+    echo "ERROR: Tests failed. Fix them before committing."
+    exit 1
+fi
+
+echo "=== Pre-commit checks passed ==="
