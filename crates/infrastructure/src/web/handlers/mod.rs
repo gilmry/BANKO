@@ -6,6 +6,7 @@ pub mod consent_handlers;
 pub mod credit_handlers;
 pub mod customer_handlers;
 pub mod data_rights_handlers;
+pub mod fx_handlers;
 pub mod governance_handlers;
 pub mod payment_handlers;
 pub mod profile_handlers;

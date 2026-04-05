@@ -2,7 +2,7 @@ use actix_web::web;
 
 use super::handlers::{
     account_handlers, accounting_handlers, aml_handlers, auth_handlers, consent_handlers,
-    credit_handlers, customer_handlers, data_rights_handlers, governance_handlers,
+    credit_handlers, customer_handlers, data_rights_handlers, fx_handlers, governance_handlers,
     payment_handlers, profile_handlers, prudential_handlers, reporting_handlers,
     retention_handlers, sanctions_handlers, two_factor_handlers, user_handlers,
 };
@@ -31,7 +31,10 @@ pub fn configure_api_routes(cfg: &mut web::ServiceConfig) {
         web::scope("/api/v1")
             .route("/profile", web::get().to(profile_handlers::get_profile))
             .route("/users", web::post().to(user_handlers::create_user_handler))
-            .route("/users/{id}", web::get().to(user_handlers::get_user_handler))
+            .route(
+                "/users/{id}",
+                web::get().to(user_handlers::get_user_handler),
+            )
             .route(
                 "/users/{id}/roles",
                 web::put().to(user_handlers::update_user_roles_handler),
@@ -46,10 +49,7 @@ pub fn configure_customer_routes(cfg: &mut web::ServiceConfig) {
                 "",
                 web::post().to(customer_handlers::create_customer_handler),
             )
-            .route(
-                "",
-                web::get().to(customer_handlers::list_customers_handler),
-            )
+            .route("", web::get().to(customer_handlers::list_customers_handler))
             .route(
                 "/{id}",
                 web::get().to(customer_handlers::get_customer_handler),
@@ -106,14 +106,8 @@ pub fn configure_customer_routes(cfg: &mut web::ServiceConfig) {
 pub fn configure_account_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api/v1/accounts")
-            .route(
-                "",
-                web::post().to(account_handlers::create_account_handler),
-            )
-            .route(
-                "",
-                web::get().to(account_handlers::list_accounts_handler),
-            )
+            .route("", web::post().to(account_handlers::create_account_handler))
+            .route("", web::get().to(account_handlers::list_accounts_handler))
             .route(
                 "/{id}",
                 web::get().to(account_handlers::get_account_handler),
@@ -136,18 +130,9 @@ pub fn configure_account_routes(cfg: &mut web::ServiceConfig) {
 pub fn configure_credit_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api/v1/loans")
-            .route(
-                "",
-                web::post().to(credit_handlers::create_loan_handler),
-            )
-            .route(
-                "",
-                web::get().to(credit_handlers::list_loans_handler),
-            )
-            .route(
-                "/{id}",
-                web::get().to(credit_handlers::get_loan_handler),
-            )
+            .route("", web::post().to(credit_handlers::create_loan_handler))
+            .route("", web::get().to(credit_handlers::list_loans_handler))
+            .route("/{id}", web::get().to(credit_handlers::get_loan_handler))
             .route(
                 "/{id}/approve",
                 web::post().to(credit_handlers::approve_loan_handler),
@@ -170,14 +155,8 @@ pub fn configure_credit_routes(cfg: &mut web::ServiceConfig) {
 pub fn configure_aml_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api/v1/transactions")
-            .route(
-                "",
-                web::post().to(aml_handlers::create_transaction_handler),
-            )
-            .route(
-                "",
-                web::get().to(aml_handlers::list_transactions_handler),
-            )
+            .route("", web::post().to(aml_handlers::create_transaction_handler))
+            .route("", web::get().to(aml_handlers::list_transactions_handler))
             .route(
                 "/{id}",
                 web::get().to(aml_handlers::get_transaction_handler),
@@ -185,10 +164,7 @@ pub fn configure_aml_routes(cfg: &mut web::ServiceConfig) {
     );
     cfg.service(
         web::scope("/api/v1/aml")
-            .route(
-                "/alerts",
-                web::get().to(aml_handlers::list_alerts_handler),
-            )
+            .route("/alerts", web::get().to(aml_handlers::list_alerts_handler))
             .route(
                 "/alerts/{id}",
                 web::get().to(aml_handlers::get_alert_handler),
@@ -373,10 +349,7 @@ pub fn configure_reporting_routes(cfg: &mut web::ServiceConfig) {
                 "/templates",
                 web::get().to(reporting_handlers::list_templates_handler),
             )
-            .route(
-                "/ifrs9",
-                web::get().to(reporting_handlers::ifrs9_handler),
-            ),
+            .route("/ifrs9", web::get().to(reporting_handlers::ifrs9_handler)),
     );
 }
 
@@ -387,10 +360,7 @@ pub fn configure_payment_routes(cfg: &mut web::ServiceConfig) {
                 "/transfers",
                 web::post().to(payment_handlers::create_payment_handler),
             )
-            .route(
-                "",
-                web::get().to(payment_handlers::list_payments_handler),
-            )
+            .route("", web::get().to(payment_handlers::list_payments_handler))
             .route(
                 "/{id}",
                 web::get().to(payment_handlers::get_payment_handler),
@@ -414,6 +384,48 @@ pub fn configure_payment_routes(cfg: &mut web::ServiceConfig) {
             .route(
                 "/clearing",
                 web::post().to(payment_handlers::run_clearing_handler),
+            ),
+    );
+}
+
+pub fn configure_fx_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/fx")
+            .route(
+                "/operations",
+                web::post().to(fx_handlers::create_fx_operation_handler),
+            )
+            .route(
+                "/operations",
+                web::get().to(fx_handlers::list_fx_operations_handler),
+            )
+            .route(
+                "/operations/{id}",
+                web::get().to(fx_handlers::get_fx_operation_handler),
+            )
+            .route(
+                "/operations/{id}/confirm",
+                web::post().to(fx_handlers::confirm_fx_operation_handler),
+            )
+            .route(
+                "/operations/{id}/settle",
+                web::post().to(fx_handlers::settle_fx_operation_handler),
+            )
+            .route(
+                "/rates",
+                web::get().to(fx_handlers::list_rates_handler),
+            )
+            .route(
+                "/rates",
+                web::put().to(fx_handlers::update_rate_handler),
+            )
+            .route(
+                "/positions",
+                web::get().to(fx_handlers::get_positions_handler),
+            )
+            .route(
+                "/limits/{account_id}",
+                web::get().to(fx_handlers::get_daily_limits_handler),
             ),
     );
 }

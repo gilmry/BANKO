@@ -4,6 +4,7 @@ pub mod aml;
 pub mod credit;
 pub mod customer;
 pub mod dto;
+pub mod fx;
 pub mod governance;
 pub mod identity;
 pub mod payment;

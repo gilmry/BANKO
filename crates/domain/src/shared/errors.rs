@@ -84,7 +84,6 @@ pub enum DomainError {
     InvalidMovement(String),
 
     // --- Credit errors ---
-
     #[error("Loan not found")]
     LoanNotFound,
 
@@ -101,7 +100,6 @@ pub enum DomainError {
     InsufficientProvision(String),
 
     // --- AML errors ---
-
     #[error("Invalid transaction: {0}")]
     InvalidTransaction(String),
 
@@ -127,7 +125,6 @@ pub enum DomainError {
     InvalidSuspicionReport(String),
 
     // --- Sanctions errors ---
-
     #[error("Invalid sanction entry: {0}")]
     InvalidSanctionEntry(String),
 
@@ -150,7 +147,6 @@ pub enum DomainError {
     SanctionListNotFound,
 
     // --- Prudential errors ---
-
     #[error("Solvency ratio breach: {ratio:.2}% < minimum {minimum:.2}%")]
     SolvencyRatioBreach { ratio: f64, minimum: f64 },
 
@@ -171,7 +167,6 @@ pub enum DomainError {
     InvalidPrudentialData(String),
 
     // --- Accounting errors ---
-
     #[error("Unbalanced entry: total_debit={total_debit} != total_credit={total_credit}")]
     UnbalancedEntry { total_debit: i64, total_credit: i64 },
 
@@ -191,7 +186,6 @@ pub enum DomainError {
     InvalidJournalEntry(String),
 
     // --- Governance errors ---
-
     #[error("Invalid audit entry: {0}")]
     InvalidAuditEntry(String),
 
@@ -208,7 +202,6 @@ pub enum DomainError {
     InvalidControlCheck(String),
 
     // --- Reporting errors ---
-
     #[error("Invalid report: {0}")]
     InvalidReport(String),
 
@@ -222,7 +215,6 @@ pub enum DomainError {
     InvalidReportTemplate(String),
 
     // --- Payment errors ---
-
     #[error("Invalid payment order: {0}")]
     InvalidPaymentOrder(String),
 
@@ -242,8 +234,9 @@ pub enum DomainError {
     InsufficientFundsForPayment,
 
     // --- Retention errors ---
-
-    #[error("Retention period not met: closed at {closed_at}, minimum {minimum_years} years required")]
+    #[error(
+        "Retention period not met: closed at {closed_at}, minimum {minimum_years} years required"
+    )]
     RetentionPeriodNotMet {
         closed_at: String,
         minimum_years: u32,
@@ -256,7 +249,6 @@ pub enum DomainError {
     CustomerNotClosed,
 
     // --- Consent errors ---
-
     #[error("Consent already active for this purpose")]
     ConsentAlreadyActive,
 
@@ -268,4 +260,23 @@ pub enum DomainError {
 
     #[error("Data request already completed")]
     DataRequestAlreadyCompleted,
+
+    // --- ForeignExchange errors ---
+    #[error("Invalid FX operation: {0}")]
+    InvalidFxOperation(String),
+
+    #[error("Same currency exchange not allowed")]
+    SameCurrencyExchange,
+
+    #[error("Invalid exchange rate: {0}")]
+    InvalidExchangeRate(String),
+
+    #[error("FX daily limit exceeded: {0}")]
+    FxDailyLimitExceeded(String),
+
+    #[error("FX operation not found")]
+    FxOperationNotFound,
+
+    #[error("Invalid FX status transition: {0}")]
+    InvalidFxTransition(String),
 }
