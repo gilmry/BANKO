@@ -1,8 +1,8 @@
 use actix_web::web;
 
 use super::handlers::{
-    account_handlers, auth_handlers, credit_handlers, customer_handlers, profile_handlers,
-    two_factor_handlers, user_handlers,
+    account_handlers, aml_handlers, auth_handlers, credit_handlers, customer_handlers,
+    profile_handlers, sanctions_handlers, two_factor_handlers, user_handlers,
 };
 
 pub fn configure_auth_routes(cfg: &mut web::ServiceConfig) {
@@ -129,6 +129,105 @@ pub fn configure_credit_routes(cfg: &mut web::ServiceConfig) {
             .route(
                 "/{id}/payment",
                 web::post().to(credit_handlers::record_payment_handler),
+            ),
+    );
+}
+
+pub fn configure_aml_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/transactions")
+            .route(
+                "",
+                web::post().to(aml_handlers::create_transaction_handler),
+            )
+            .route(
+                "",
+                web::get().to(aml_handlers::list_transactions_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(aml_handlers::get_transaction_handler),
+            ),
+    );
+    cfg.service(
+        web::scope("/api/v1/aml")
+            .route(
+                "/alerts",
+                web::get().to(aml_handlers::list_alerts_handler),
+            )
+            .route(
+                "/alerts/{id}",
+                web::get().to(aml_handlers::get_alert_handler),
+            )
+            .route(
+                "/investigations",
+                web::post().to(aml_handlers::open_investigation_handler),
+            )
+            .route(
+                "/investigations/{id}",
+                web::get().to(aml_handlers::get_investigation_handler),
+            )
+            .route(
+                "/investigations/{id}/notes",
+                web::post().to(aml_handlers::add_note_handler),
+            )
+            .route(
+                "/investigations/{id}/escalate",
+                web::post().to(aml_handlers::escalate_investigation_handler),
+            )
+            .route(
+                "/investigations/{id}/close",
+                web::post().to(aml_handlers::close_investigation_handler),
+            )
+            .route(
+                "/reports",
+                web::post().to(aml_handlers::generate_report_handler),
+            )
+            .route(
+                "/reports/{id}/submit",
+                web::post().to(aml_handlers::submit_report_handler),
+            )
+            .route(
+                "/freezes",
+                web::post().to(aml_handlers::freeze_account_handler),
+            )
+            .route(
+                "/freezes",
+                web::get().to(aml_handlers::list_freezes_handler),
+            )
+            .route(
+                "/freezes/{id}/lift",
+                web::post().to(aml_handlers::lift_freeze_handler),
+            ),
+    );
+}
+
+pub fn configure_sanctions_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/sanctions")
+            .route(
+                "/check",
+                web::get().to(sanctions_handlers::screen_name_handler),
+            )
+            .route(
+                "/results",
+                web::get().to(sanctions_handlers::list_results_handler),
+            )
+            .route(
+                "/results/{id}",
+                web::get().to(sanctions_handlers::get_result_handler),
+            )
+            .route(
+                "/lists",
+                web::get().to(sanctions_handlers::list_sanctions_lists_handler),
+            )
+            .route(
+                "/lists/{source}",
+                web::get().to(sanctions_handlers::get_list_handler),
+            )
+            .route(
+                "/dashboard",
+                web::get().to(sanctions_handlers::dashboard_handler),
             ),
     );
 }
