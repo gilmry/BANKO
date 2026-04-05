@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-#[derive(Debug, Error, Clone, PartialEq, Eq)]
+#[derive(Debug, Error, Clone, PartialEq)]
 pub enum DomainError {
     #[error("Invalid money: {0}")]
     InvalidMoney(String),
@@ -148,4 +148,45 @@ pub enum DomainError {
 
     #[error("Sanction list not found")]
     SanctionListNotFound,
+
+    // --- Prudential errors ---
+
+    #[error("Solvency ratio breach: {ratio:.2}% < minimum {minimum:.2}%")]
+    SolvencyRatioBreach { ratio: f64, minimum: f64 },
+
+    #[error("Tier 1 ratio breach: {ratio:.2}% < minimum {minimum:.2}%")]
+    Tier1RatioBreach { ratio: f64, minimum: f64 },
+
+    #[error("Credit-to-deposit ratio breach: {ratio:.2}% > maximum {maximum:.2}%")]
+    CreditToDepositBreach { ratio: f64, maximum: f64 },
+
+    #[error("Concentration breach for beneficiary {beneficiary_id}: {ratio:.2}% > maximum {maximum:.2}%")]
+    ConcentrationBreach {
+        beneficiary_id: uuid::Uuid,
+        ratio: f64,
+        maximum: f64,
+    },
+
+    #[error("Invalid prudential data: {0}")]
+    InvalidPrudentialData(String),
+
+    // --- Accounting errors ---
+
+    #[error("Unbalanced entry: total_debit={total_debit} != total_credit={total_credit}")]
+    UnbalancedEntry { total_debit: i64, total_credit: i64 },
+
+    #[error("Invalid account code: {0}")]
+    InvalidAccountCode(String),
+
+    #[error("Entry already posted")]
+    EntryAlreadyPosted,
+
+    #[error("Entry not posted")]
+    EntryNotPosted,
+
+    #[error("Period closed: {period}")]
+    PeriodClosed { period: String },
+
+    #[error("Invalid journal entry: {0}")]
+    InvalidJournalEntry(String),
 }

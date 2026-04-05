@@ -1,8 +1,9 @@
 use actix_web::web;
 
 use super::handlers::{
-    account_handlers, aml_handlers, auth_handlers, credit_handlers, customer_handlers,
-    profile_handlers, sanctions_handlers, two_factor_handlers, user_handlers,
+    account_handlers, accounting_handlers, aml_handlers, auth_handlers, credit_handlers,
+    customer_handlers, profile_handlers, prudential_handlers, sanctions_handlers,
+    two_factor_handlers, user_handlers,
 };
 
 pub fn configure_auth_routes(cfg: &mut web::ServiceConfig) {
@@ -228,6 +229,78 @@ pub fn configure_sanctions_routes(cfg: &mut web::ServiceConfig) {
             .route(
                 "/dashboard",
                 web::get().to(sanctions_handlers::dashboard_handler),
+            ),
+    );
+}
+
+pub fn configure_prudential_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/prudential")
+            .route(
+                "/ratios",
+                web::get().to(prudential_handlers::get_ratios_handler),
+            )
+            .route(
+                "/ratios",
+                web::post().to(prudential_handlers::calculate_ratios_handler),
+            )
+            .route(
+                "/solvency",
+                web::get().to(prudential_handlers::check_solvency_handler),
+            )
+            .route(
+                "/tier1",
+                web::get().to(prudential_handlers::check_tier1_handler),
+            )
+            .route(
+                "/credit-deposit",
+                web::get().to(prudential_handlers::check_credit_deposit_handler),
+            )
+            .route(
+                "/concentration",
+                web::get().to(prudential_handlers::check_concentration_handler),
+            )
+            .route(
+                "/alerts",
+                web::get().to(prudential_handlers::get_alerts_handler),
+            ),
+    );
+}
+
+pub fn configure_accounting_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/accounting")
+            .route(
+                "/entries",
+                web::post().to(accounting_handlers::create_entry_handler),
+            )
+            .route(
+                "/entries",
+                web::get().to(accounting_handlers::list_entries_handler),
+            )
+            .route(
+                "/entries/{id}",
+                web::get().to(accounting_handlers::get_entry_handler),
+            )
+            .route(
+                "/entries/{id}/reverse",
+                web::post().to(accounting_handlers::reverse_entry_handler),
+            )
+            .route(
+                "/ledger",
+                web::get().to(accounting_handlers::get_ledger_handler),
+            )
+            .route(
+                "/trial-balance",
+                web::get().to(accounting_handlers::get_trial_balance_handler),
+            )
+            .route(
+                "/periods/close",
+                web::post().to(accounting_handlers::close_period_handler),
+            )
+            .route(
+                "/ecl-staging",
+                web::get().to(accounting_handlers::get_ecl_staging_handler),
             ),
     );
 }

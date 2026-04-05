@@ -1,1 +1,2 @@
-// prudential bounded context
+pub mod entities;
+pub use entities::*;
