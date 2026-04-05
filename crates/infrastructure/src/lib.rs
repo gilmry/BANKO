@@ -6,6 +6,7 @@ pub mod credit;
 pub mod customer;
 pub mod database;
 pub mod identity;
+pub mod payment;
 pub mod prudential;
 pub mod sanctions;
 pub mod web;
