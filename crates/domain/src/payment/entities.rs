@@ -278,8 +278,10 @@ impl PaymentOrder {
             ));
         }
         // For International/Swift payments, BIC is required
-        if matches!(payment_type, PaymentType::International | PaymentType::Swift)
-            && beneficiary_bic.as_ref().is_none_or(|b| b.trim().is_empty())
+        if matches!(
+            payment_type,
+            PaymentType::International | PaymentType::Swift
+        ) && beneficiary_bic.as_ref().is_none_or(|b| b.trim().is_empty())
         {
             return Err(DomainError::InvalidPaymentOrder(
                 "BIC is required for international/SWIFT payments".to_string(),
@@ -607,10 +609,7 @@ pub struct SwiftMessage {
 }
 
 impl SwiftMessage {
-    pub fn generate_mt103(
-        order: &PaymentOrder,
-        sender_bic: &str,
-    ) -> Result<Self, DomainError> {
+    pub fn generate_mt103(order: &PaymentOrder, sender_bic: &str) -> Result<Self, DomainError> {
         let receiver_bic = order.beneficiary_bic().ok_or_else(|| {
             DomainError::InvalidPaymentOrder(
                 "Beneficiary BIC is required for SWIFT message generation".to_string(),
@@ -902,7 +901,10 @@ mod tests {
         // screening_status is NotScreened
         let result = order.submit();
         assert!(result.is_err());
-        assert!(matches!(result, Err(DomainError::SanctionsScreeningRequired)));
+        assert!(matches!(
+            result,
+            Err(DomainError::SanctionsScreeningRequired)
+        ));
     }
 
     #[test]
@@ -910,7 +912,10 @@ mod tests {
         let mut order = make_swift_order();
         let result = order.submit();
         assert!(result.is_err());
-        assert!(matches!(result, Err(DomainError::SanctionsScreeningRequired)));
+        assert!(matches!(
+            result,
+            Err(DomainError::SanctionsScreeningRequired)
+        ));
     }
 
     #[test]

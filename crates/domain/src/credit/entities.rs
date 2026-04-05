@@ -20,12 +20,17 @@ pub struct Provision {
 impl Provision {
     /// Create a new provision. Enforces INV-07 & INV-15:
     /// provision amount ≥ min_provision_pct * exposure
-    pub fn new(amount: Money, asset_class: AssetClass, exposure: &Money) -> Result<Self, DomainError> {
+    pub fn new(
+        amount: Money,
+        asset_class: AssetClass,
+        exposure: &Money,
+    ) -> Result<Self, DomainError> {
         let min_pct = asset_class.min_provision_pct();
         let min_amount_cents = (exposure.amount_cents() as f64 * min_pct).ceil() as i64;
 
         if amount.amount_cents() < min_amount_cents {
-            let required_amount = min_amount_cents as f64 / 10_f64.powi(amount.currency().decimal_places() as i32);
+            let required_amount =
+                min_amount_cents as f64 / 10_f64.powi(amount.currency().decimal_places() as i32);
             return Err(DomainError::InsufficientProvision(format!(
                 "asset class {} requires {:.0}% (min {:.3}), got {:.3}",
                 asset_class.as_i32(),
@@ -150,16 +155,36 @@ impl Installment {
         self.paid_date = Some(Utc::now());
     }
 
-    pub fn id(&self) -> &InstallmentId { &self.id }
-    pub fn loan_id(&self) -> &LoanId { &self.loan_id }
-    pub fn installment_number(&self) -> u32 { self.installment_number }
-    pub fn due_date(&self) -> NaiveDate { self.due_date }
-    pub fn principal_amount(&self) -> &Money { &self.principal_amount }
-    pub fn interest_amount(&self) -> &Money { &self.interest_amount }
-    pub fn total_amount(&self) -> &Money { &self.total_amount }
-    pub fn remaining_balance(&self) -> &Money { &self.remaining_balance }
-    pub fn paid(&self) -> bool { self.paid }
-    pub fn paid_date(&self) -> Option<DateTime<Utc>> { self.paid_date }
+    pub fn id(&self) -> &InstallmentId {
+        &self.id
+    }
+    pub fn loan_id(&self) -> &LoanId {
+        &self.loan_id
+    }
+    pub fn installment_number(&self) -> u32 {
+        self.installment_number
+    }
+    pub fn due_date(&self) -> NaiveDate {
+        self.due_date
+    }
+    pub fn principal_amount(&self) -> &Money {
+        &self.principal_amount
+    }
+    pub fn interest_amount(&self) -> &Money {
+        &self.interest_amount
+    }
+    pub fn total_amount(&self) -> &Money {
+        &self.total_amount
+    }
+    pub fn remaining_balance(&self) -> &Money {
+        &self.remaining_balance
+    }
+    pub fn paid(&self) -> bool {
+        self.paid
+    }
+    pub fn paid_date(&self) -> Option<DateTime<Utc>> {
+        self.paid_date
+    }
 }
 
 // --- LoanSchedule entity ---
@@ -265,11 +290,8 @@ impl Loan {
             ));
         }
 
-        let zero_provision = Provision::new(
-            Money::zero(amount.currency()),
-            AssetClass::Class0,
-            &amount,
-        )?;
+        let zero_provision =
+            Provision::new(Money::zero(amount.currency()), AssetClass::Class0, &amount)?;
 
         let now = Utc::now();
 
@@ -329,20 +351,48 @@ impl Loan {
 
     // --- Getters ---
 
-    pub fn id(&self) -> &LoanId { &self.id }
-    pub fn customer_id(&self) -> &CustomerId { &self.customer_id }
-    pub fn account_id(&self) -> &crate::account::AccountId { &self.account_id }
-    pub fn amount(&self) -> &Money { &self.amount }
-    pub fn interest_rate(&self) -> f64 { self.interest_rate }
-    pub fn term_months(&self) -> u32 { self.term_months }
-    pub fn asset_class(&self) -> AssetClass { self.asset_class }
-    pub fn provision(&self) -> &Provision { &self.provision }
-    pub fn schedule(&self) -> Option<&LoanSchedule> { self.schedule.as_ref() }
-    pub fn status(&self) -> LoanStatus { self.status }
-    pub fn days_past_due(&self) -> u32 { self.days_past_due }
-    pub fn disbursement_date(&self) -> Option<NaiveDate> { self.disbursement_date }
-    pub fn created_at(&self) -> DateTime<Utc> { self.created_at }
-    pub fn updated_at(&self) -> DateTime<Utc> { self.updated_at }
+    pub fn id(&self) -> &LoanId {
+        &self.id
+    }
+    pub fn customer_id(&self) -> &CustomerId {
+        &self.customer_id
+    }
+    pub fn account_id(&self) -> &crate::account::AccountId {
+        &self.account_id
+    }
+    pub fn amount(&self) -> &Money {
+        &self.amount
+    }
+    pub fn interest_rate(&self) -> f64 {
+        self.interest_rate
+    }
+    pub fn term_months(&self) -> u32 {
+        self.term_months
+    }
+    pub fn asset_class(&self) -> AssetClass {
+        self.asset_class
+    }
+    pub fn provision(&self) -> &Provision {
+        &self.provision
+    }
+    pub fn schedule(&self) -> Option<&LoanSchedule> {
+        self.schedule.as_ref()
+    }
+    pub fn status(&self) -> LoanStatus {
+        self.status
+    }
+    pub fn days_past_due(&self) -> u32 {
+        self.days_past_due
+    }
+    pub fn disbursement_date(&self) -> Option<NaiveDate> {
+        self.disbursement_date
+    }
+    pub fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
+    pub fn updated_at(&self) -> DateTime<Utc> {
+        self.updated_at
+    }
 
     // --- Domain behavior ---
 
@@ -521,9 +571,10 @@ impl Loan {
             ));
         }
 
-        let schedule = self.schedule.as_mut().ok_or_else(|| {
-            DomainError::ValidationError("Loan has no schedule".to_string())
-        })?;
+        let schedule = self
+            .schedule
+            .as_mut()
+            .ok_or_else(|| DomainError::ValidationError("Loan has no schedule".to_string()))?;
 
         let installment = schedule
             .installments_mut()
@@ -546,7 +597,12 @@ impl Loan {
         self.days_past_due = 0;
         self.asset_class = AssetClass::Class0;
 
-        Ok(schedule.installments().iter().rev().find(|i| i.paid).unwrap())
+        Ok(schedule
+            .installments()
+            .iter()
+            .rev()
+            .find(|i| i.paid)
+            .unwrap())
     }
 
     /// Mark loan as defaulted.
@@ -600,14 +656,7 @@ mod tests {
     }
 
     fn make_loan(amount: f64) -> Loan {
-        Loan::new(
-            CustomerId::new(),
-            AccountId::new(),
-            tnd(amount),
-            8.0,
-            12,
-        )
-        .unwrap()
+        Loan::new(CustomerId::new(), AccountId::new(), tnd(amount), 8.0, 12).unwrap()
     }
 
     // --- Loan creation tests ---
@@ -625,13 +674,7 @@ mod tests {
 
     #[test]
     fn test_new_loan_zero_amount_fails() {
-        let result = Loan::new(
-            CustomerId::new(),
-            AccountId::new(),
-            tnd(0.0),
-            8.0,
-            12,
-        );
+        let result = Loan::new(CustomerId::new(), AccountId::new(), tnd(0.0), 8.0, 12);
         assert!(result.is_err());
     }
 
@@ -649,25 +692,13 @@ mod tests {
 
     #[test]
     fn test_new_loan_zero_interest_fails() {
-        let result = Loan::new(
-            CustomerId::new(),
-            AccountId::new(),
-            tnd(50000.0),
-            0.0,
-            12,
-        );
+        let result = Loan::new(CustomerId::new(), AccountId::new(), tnd(50000.0), 0.0, 12);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_new_loan_zero_term_fails() {
-        let result = Loan::new(
-            CustomerId::new(),
-            AccountId::new(),
-            tnd(50000.0),
-            8.0,
-            0,
-        );
+        let result = Loan::new(CustomerId::new(), AccountId::new(), tnd(50000.0), 8.0, 0);
         assert!(result.is_err());
     }
 
@@ -692,7 +723,9 @@ mod tests {
         let mut loan = make_loan(50000.0);
         loan.approve().unwrap();
         let start = NaiveDate::from_ymd_opt(2026, 1, 15).unwrap();
-        assert!(loan.disburse(start, PaymentFrequency::Monthly, AmortizationType::Constant).is_ok());
+        assert!(loan
+            .disburse(start, PaymentFrequency::Monthly, AmortizationType::Constant)
+            .is_ok());
         assert_eq!(loan.status(), LoanStatus::Active);
         assert!(loan.schedule().is_some());
         assert_eq!(loan.schedule().unwrap().total_installments(), 12);
@@ -703,7 +736,9 @@ mod tests {
     fn test_disburse_non_approved_fails() {
         let mut loan = make_loan(50000.0);
         let start = NaiveDate::from_ymd_opt(2026, 1, 15).unwrap();
-        assert!(loan.disburse(start, PaymentFrequency::Monthly, AmortizationType::Constant).is_err());
+        assert!(loan
+            .disburse(start, PaymentFrequency::Monthly, AmortizationType::Constant)
+            .is_err());
     }
 
     // --- Asset classification (INV-06) ---
@@ -832,17 +867,12 @@ mod tests {
 
     #[test]
     fn test_constant_amortization_schedule() {
-        let mut loan = Loan::new(
-            CustomerId::new(),
-            AccountId::new(),
-            tnd(100000.0),
-            8.0,
-            60,
-        )
-        .unwrap();
+        let mut loan =
+            Loan::new(CustomerId::new(), AccountId::new(), tnd(100000.0), 8.0, 60).unwrap();
         loan.approve().unwrap();
         let start = NaiveDate::from_ymd_opt(2026, 1, 15).unwrap();
-        loan.disburse(start, PaymentFrequency::Monthly, AmortizationType::Constant).unwrap();
+        loan.disburse(start, PaymentFrequency::Monthly, AmortizationType::Constant)
+            .unwrap();
 
         let schedule = loan.schedule().unwrap();
         assert_eq!(schedule.total_installments(), 60);
@@ -852,7 +882,10 @@ mod tests {
         assert_eq!(last.remaining_balance().amount_cents(), 0);
 
         // Check maturity date
-        assert_eq!(schedule.maturity_date(), NaiveDate::from_ymd_opt(2031, 1, 15).unwrap());
+        assert_eq!(
+            schedule.maturity_date(),
+            NaiveDate::from_ymd_opt(2031, 1, 15).unwrap()
+        );
 
         // All installments should have positive amounts
         for inst in schedule.installments() {
@@ -864,17 +897,12 @@ mod tests {
 
     #[test]
     fn test_linear_amortization_schedule() {
-        let mut loan = Loan::new(
-            CustomerId::new(),
-            AccountId::new(),
-            tnd(120000.0),
-            6.0,
-            12,
-        )
-        .unwrap();
+        let mut loan =
+            Loan::new(CustomerId::new(), AccountId::new(), tnd(120000.0), 6.0, 12).unwrap();
         loan.approve().unwrap();
         let start = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
-        loan.disburse(start, PaymentFrequency::Monthly, AmortizationType::Linear).unwrap();
+        loan.disburse(start, PaymentFrequency::Monthly, AmortizationType::Linear)
+            .unwrap();
 
         let schedule = loan.schedule().unwrap();
         assert_eq!(schedule.total_installments(), 12);
@@ -895,17 +923,12 @@ mod tests {
 
     #[test]
     fn test_quarterly_schedule() {
-        let mut loan = Loan::new(
-            CustomerId::new(),
-            AccountId::new(),
-            tnd(100000.0),
-            8.0,
-            12,
-        )
-        .unwrap();
+        let mut loan =
+            Loan::new(CustomerId::new(), AccountId::new(), tnd(100000.0), 8.0, 12).unwrap();
         loan.approve().unwrap();
         let start = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
-        loan.disburse(start, PaymentFrequency::Quarterly, AmortizationType::Linear).unwrap();
+        loan.disburse(start, PaymentFrequency::Quarterly, AmortizationType::Linear)
+            .unwrap();
 
         let schedule = loan.schedule().unwrap();
         // 12 months / 3 months per quarter = 4 installments
@@ -916,17 +939,12 @@ mod tests {
 
     #[test]
     fn test_record_payment() {
-        let mut loan = Loan::new(
-            CustomerId::new(),
-            AccountId::new(),
-            tnd(12000.0),
-            6.0,
-            3,
-        )
-        .unwrap();
+        let mut loan =
+            Loan::new(CustomerId::new(), AccountId::new(), tnd(12000.0), 6.0, 3).unwrap();
         loan.approve().unwrap();
         let start = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
-        loan.disburse(start, PaymentFrequency::Monthly, AmortizationType::Linear).unwrap();
+        loan.disburse(start, PaymentFrequency::Monthly, AmortizationType::Linear)
+            .unwrap();
 
         // Record first payment
         let inst = loan.record_payment().unwrap();
@@ -937,17 +955,12 @@ mod tests {
 
     #[test]
     fn test_record_all_payments_closes_loan() {
-        let mut loan = Loan::new(
-            CustomerId::new(),
-            AccountId::new(),
-            tnd(12000.0),
-            6.0,
-            3,
-        )
-        .unwrap();
+        let mut loan =
+            Loan::new(CustomerId::new(), AccountId::new(), tnd(12000.0), 6.0, 3).unwrap();
         loan.approve().unwrap();
         let start = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
-        loan.disburse(start, PaymentFrequency::Monthly, AmortizationType::Linear).unwrap();
+        loan.disburse(start, PaymentFrequency::Monthly, AmortizationType::Linear)
+            .unwrap();
 
         loan.record_payment().unwrap();
         loan.record_payment().unwrap();
@@ -969,7 +982,8 @@ mod tests {
         let mut loan = make_loan(50000.0);
         loan.approve().unwrap();
         let start = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
-        loan.disburse(start, PaymentFrequency::Monthly, AmortizationType::Constant).unwrap();
+        loan.disburse(start, PaymentFrequency::Monthly, AmortizationType::Constant)
+            .unwrap();
         assert!(loan.default_loan().is_ok());
         assert_eq!(loan.status(), LoanStatus::Defaulted);
     }

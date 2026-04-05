@@ -223,9 +223,7 @@ impl ReportingService {
     }
 
     /// List all templates.
-    pub async fn list_templates(
-        &self,
-    ) -> Result<TemplateListResponse, ReportingServiceError> {
+    pub async fn list_templates(&self) -> Result<TemplateListResponse, ReportingServiceError> {
         let templates = self
             .template_repo
             .find_all()

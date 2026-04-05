@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use banko_domain::customer::{ConsentRecord, DataRequestId, DataRightsRequest, Customer};
+use banko_domain::customer::{ConsentRecord, Customer, DataRequestId, DataRightsRequest};
 use banko_domain::shared::value_objects::{CustomerId, EmailAddress};
 
 /// Port for customer persistence — implemented by infrastructure layer.
@@ -45,8 +45,5 @@ pub trait IConsentRepository: Send + Sync {
 pub trait IDataRightsRepository: Send + Sync {
     async fn save(&self, request: &DataRightsRequest) -> Result<(), String>;
     async fn find_by_id(&self, id: &DataRequestId) -> Result<Option<DataRightsRequest>, String>;
-    async fn find_by_customer(
-        &self,
-        customer_id: Uuid,
-    ) -> Result<Vec<DataRightsRequest>, String>;
+    async fn find_by_customer(&self, customer_id: Uuid) -> Result<Vec<DataRightsRequest>, String>;
 }

@@ -206,9 +206,7 @@ impl RegulatoryReport {
             ));
         }
         if data.is_empty() {
-            return Err(DomainError::InvalidReport(
-                "data is required".to_string(),
-            ));
+            return Err(DomainError::InvalidReport("data is required".to_string()));
         }
 
         Ok(RegulatoryReport {

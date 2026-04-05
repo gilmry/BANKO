@@ -8,7 +8,10 @@ use banko_domain::prudential::{BreachAlert, Exposure, PrudentialRatio, RatioId, 
 pub trait IPrudentialRepository: Send + Sync {
     async fn save(&self, ratio: &PrudentialRatio) -> Result<(), String>;
     async fn find_by_id(&self, id: &RatioId) -> Result<Option<PrudentialRatio>, String>;
-    async fn find_by_institution(&self, institution_id: Uuid) -> Result<Option<PrudentialRatio>, String>;
+    async fn find_by_institution(
+        &self,
+        institution_id: Uuid,
+    ) -> Result<Option<PrudentialRatio>, String>;
     async fn find_latest(&self, institution_id: Uuid) -> Result<Option<PrudentialRatio>, String>;
     async fn save_snapshot(&self, snapshot: &RatioSnapshot) -> Result<(), String>;
     async fn find_snapshots(

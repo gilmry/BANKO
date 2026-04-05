@@ -55,16 +55,12 @@ mod tests {
     #[tokio::test]
     async fn test_pep_checker_detects_pep() {
         let checker = InMemoryPepChecker::new();
-        assert!(checker
-            .is_pep("Politically Exposed Person")
-            .await
-            .unwrap());
+        assert!(checker.is_pep("Politically Exposed Person").await.unwrap());
     }
 
     #[tokio::test]
     async fn test_pep_checker_custom_list() {
-        let checker =
-            InMemoryPepChecker::with_names(vec!["suspicious name".to_string()]);
+        let checker = InMemoryPepChecker::with_names(vec!["suspicious name".to_string()]);
         assert!(checker.is_pep("A Suspicious Name Here").await.unwrap());
         assert!(!checker.is_pep("Normal Person").await.unwrap());
     }

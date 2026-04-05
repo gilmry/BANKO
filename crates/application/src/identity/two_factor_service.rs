@@ -83,11 +83,7 @@ impl TwoFactorService {
         Ok(backup_codes)
     }
 
-    pub async fn verify_code(
-        &self,
-        user_id: &UserId,
-        code: &str,
-    ) -> Result<bool, TwoFactorError> {
+    pub async fn verify_code(&self, user_id: &UserId, code: &str) -> Result<bool, TwoFactorError> {
         let tfa = self
             .repo
             .find_by_user_id(user_id)
@@ -214,7 +210,10 @@ mod tests {
         let user_id = UserId::new();
         service.enable(&user_id, "test@banko.tn").await.unwrap();
 
-        let backup_codes = service.verify_and_activate(&user_id, "123456").await.unwrap();
+        let backup_codes = service
+            .verify_and_activate(&user_id, "123456")
+            .await
+            .unwrap();
         assert_eq!(backup_codes.len(), 8);
 
         assert!(service.is_enabled(&user_id).await.unwrap());
@@ -235,7 +234,10 @@ mod tests {
         let service = make_service("123456");
         let user_id = UserId::new();
         service.enable(&user_id, "test@banko.tn").await.unwrap();
-        service.verify_and_activate(&user_id, "123456").await.unwrap();
+        service
+            .verify_and_activate(&user_id, "123456")
+            .await
+            .unwrap();
 
         let result = service.enable(&user_id, "test@banko.tn").await;
         assert!(matches!(result, Err(TwoFactorError::AlreadyEnabled)));
@@ -246,7 +248,10 @@ mod tests {
         let service = make_service("654321");
         let user_id = UserId::new();
         service.enable(&user_id, "test@banko.tn").await.unwrap();
-        service.verify_and_activate(&user_id, "654321").await.unwrap();
+        service
+            .verify_and_activate(&user_id, "654321")
+            .await
+            .unwrap();
 
         assert!(service.verify_code(&user_id, "654321").await.unwrap());
         assert!(!service.verify_code(&user_id, "000000").await.unwrap());
@@ -257,7 +262,10 @@ mod tests {
         let service = make_service("123456");
         let user_id = UserId::new();
         service.enable(&user_id, "test@banko.tn").await.unwrap();
-        service.verify_and_activate(&user_id, "123456").await.unwrap();
+        service
+            .verify_and_activate(&user_id, "123456")
+            .await
+            .unwrap();
         assert!(service.is_enabled(&user_id).await.unwrap());
 
         service.disable(&user_id).await.unwrap();

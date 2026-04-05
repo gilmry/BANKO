@@ -142,7 +142,11 @@ mod tests {
     #[test]
     fn test_backup_codes() {
         let mut tfa = TwoFactorAuth::new(test_user_id(), "secret".to_string());
-        tfa.set_backup_codes(vec!["code1".to_string(), "code2".to_string(), "code3".to_string()]);
+        tfa.set_backup_codes(vec![
+            "code1".to_string(),
+            "code2".to_string(),
+            "code3".to_string(),
+        ]);
         assert_eq!(tfa.backup_codes().len(), 3);
 
         assert!(tfa.use_backup_code("code2"));

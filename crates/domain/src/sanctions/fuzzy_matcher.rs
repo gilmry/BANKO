@@ -28,9 +28,7 @@ pub fn levenshtein_distance(a: &str, b: &str) -> usize {
             } else {
                 1
             };
-            curr[j] = (prev[j] + 1)
-                .min(curr[j - 1] + 1)
-                .min(prev[j - 1] + cost);
+            curr[j] = (prev[j] + 1).min(curr[j - 1] + 1).min(prev[j - 1] + cost);
         }
         std::mem::swap(&mut prev, &mut curr);
     }
@@ -265,7 +263,10 @@ mod tests {
     #[test]
     fn test_screen_finds_match() {
         let entries = vec![
-            ("Mohammed Ben Ali".to_string(), vec!["M. Ben Ali".to_string()]),
+            (
+                "Mohammed Ben Ali".to_string(),
+                vec!["M. Ben Ali".to_string()],
+            ),
             ("Jean Alaoui".to_string(), vec!["J. Alaoui".to_string()]),
         ];
         let matches = screen_name_against_entries("Jean Alaouie", &entries, 80);
@@ -276,18 +277,17 @@ mod tests {
 
     #[test]
     fn test_screen_finds_alias_match() {
-        let entries = vec![
-            ("Full Name Person".to_string(), vec!["Jean Alaoui".to_string()]),
-        ];
+        let entries = vec![(
+            "Full Name Person".to_string(),
+            vec!["Jean Alaoui".to_string()],
+        )];
         let matches = screen_name_against_entries("Jean Alaouie", &entries, 80);
         assert_eq!(matches.len(), 1);
     }
 
     #[test]
     fn test_screen_no_match() {
-        let entries = vec![
-            ("Mohammed Ben Ali".to_string(), vec![]),
-        ];
+        let entries = vec![("Mohammed Ben Ali".to_string(), vec![])];
         let matches = screen_name_against_entries("Jean Alaoui", &entries, 80);
         assert!(matches.is_empty());
     }

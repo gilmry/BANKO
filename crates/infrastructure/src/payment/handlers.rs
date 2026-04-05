@@ -93,11 +93,9 @@ pub async fn get_payment_handler(
 
     match service.get_payment(&id).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(PaymentServiceError::OrderNotFound) => {
-            HttpResponse::NotFound().json(ErrorResponse {
-                error: "Payment order not found".to_string(),
-            })
-        }
+        Err(PaymentServiceError::OrderNotFound) => HttpResponse::NotFound().json(ErrorResponse {
+            error: "Payment order not found".to_string(),
+        }),
         Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
             error: e.to_string(),
         }),
@@ -114,11 +112,9 @@ pub async fn get_payment_status_handler(
 
     match service.get_payment_status(&id).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(PaymentServiceError::OrderNotFound) => {
-            HttpResponse::NotFound().json(ErrorResponse {
-                error: "Payment order not found".to_string(),
-            })
-        }
+        Err(PaymentServiceError::OrderNotFound) => HttpResponse::NotFound().json(ErrorResponse {
+            error: "Payment order not found".to_string(),
+        }),
         Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
             error: e.to_string(),
         }),
@@ -135,11 +131,9 @@ pub async fn screen_payment_handler(
 
     match service.screen_payment(&id).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(PaymentServiceError::OrderNotFound) => {
-            HttpResponse::NotFound().json(ErrorResponse {
-                error: "Payment order not found".to_string(),
-            })
-        }
+        Err(PaymentServiceError::OrderNotFound) => HttpResponse::NotFound().json(ErrorResponse {
+            error: "Payment order not found".to_string(),
+        }),
         Err(PaymentServiceError::PaymentBlocked(msg)) => {
             HttpResponse::Forbidden().json(ErrorResponse { error: msg })
         }
@@ -159,11 +153,9 @@ pub async fn submit_payment_handler(
 
     match service.submit_payment(&id).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(PaymentServiceError::OrderNotFound) => {
-            HttpResponse::NotFound().json(ErrorResponse {
-                error: "Payment order not found".to_string(),
-            })
-        }
+        Err(PaymentServiceError::OrderNotFound) => HttpResponse::NotFound().json(ErrorResponse {
+            error: "Payment order not found".to_string(),
+        }),
         Err(PaymentServiceError::DomainError(msg)) => {
             HttpResponse::BadRequest().json(ErrorResponse { error: msg })
         }
@@ -183,11 +175,9 @@ pub async fn execute_payment_handler(
 
     match service.execute_payment(&id).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(PaymentServiceError::OrderNotFound) => {
-            HttpResponse::NotFound().json(ErrorResponse {
-                error: "Payment order not found".to_string(),
-            })
-        }
+        Err(PaymentServiceError::OrderNotFound) => HttpResponse::NotFound().json(ErrorResponse {
+            error: "Payment order not found".to_string(),
+        }),
         Err(PaymentServiceError::DomainError(msg)) => {
             HttpResponse::BadRequest().json(ErrorResponse { error: msg })
         }

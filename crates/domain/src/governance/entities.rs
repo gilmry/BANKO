@@ -645,10 +645,7 @@ pub struct ControlCheck {
 }
 
 impl ControlCheck {
-    pub fn new(
-        operation_type: String,
-        operation_id: Uuid,
-    ) -> Result<Self, DomainError> {
+    pub fn new(operation_type: String, operation_id: Uuid) -> Result<Self, DomainError> {
         if operation_type.trim().is_empty() {
             return Err(DomainError::InvalidControlCheck(
                 "Operation type cannot be empty".to_string(),
@@ -873,7 +870,11 @@ mod tests {
     #[test]
     fn test_committee_creation() {
         let members = vec![Uuid::new_v4(), Uuid::new_v4()];
-        let committee = Committee::new("Audit Committee".to_string(), CommitteeType::Audit, members.clone());
+        let committee = Committee::new(
+            "Audit Committee".to_string(),
+            CommitteeType::Audit,
+            members.clone(),
+        );
         assert!(committee.is_ok());
         let c = committee.unwrap();
         assert_eq!(c.name(), "Audit Committee");
@@ -900,8 +901,14 @@ mod tests {
         let member2 = Uuid::new_v4();
 
         let votes = vec![
-            Vote { member_id: member1, vote: VoteChoice::For },
-            Vote { member_id: member2, vote: VoteChoice::Against },
+            Vote {
+                member_id: member1,
+                vote: VoteChoice::For,
+            },
+            Vote {
+                member_id: member2,
+                vote: VoteChoice::Against,
+            },
         ];
 
         let decision = CommitteeDecision::new(
@@ -934,7 +941,9 @@ mod tests {
     fn test_control_check_reject() {
         let mut check = ControlCheck::new("PaymentRelease".to_string(), Uuid::new_v4()).unwrap();
         let checker = Uuid::new_v4();
-        assert!(check.reject(checker, "Insufficient documentation".to_string()).is_ok());
+        assert!(check
+            .reject(checker, "Insufficient documentation".to_string())
+            .is_ok());
         assert_eq!(*check.status(), ControlStatus::Rejected);
         assert_eq!(check.comments().unwrap(), "Insufficient documentation");
     }
@@ -958,9 +967,15 @@ mod tests {
     #[test]
     fn test_enum_roundtrip_audit_action() {
         for action in [
-            AuditAction::Create, AuditAction::Read, AuditAction::Update,
-            AuditAction::Delete, AuditAction::Login, AuditAction::Logout,
-            AuditAction::Approve, AuditAction::Reject, AuditAction::Submit,
+            AuditAction::Create,
+            AuditAction::Read,
+            AuditAction::Update,
+            AuditAction::Delete,
+            AuditAction::Login,
+            AuditAction::Logout,
+            AuditAction::Approve,
+            AuditAction::Reject,
+            AuditAction::Submit,
             AuditAction::Export,
         ] {
             let s = action.as_str();
@@ -972,9 +987,15 @@ mod tests {
     #[test]
     fn test_enum_roundtrip_resource_type() {
         for rt in [
-            ResourceType::Customer, ResourceType::Account, ResourceType::Loan,
-            ResourceType::Transaction, ResourceType::Alert, ResourceType::Investigation,
-            ResourceType::Payment, ResourceType::Report, ResourceType::User,
+            ResourceType::Customer,
+            ResourceType::Account,
+            ResourceType::Loan,
+            ResourceType::Transaction,
+            ResourceType::Alert,
+            ResourceType::Investigation,
+            ResourceType::Payment,
+            ResourceType::Report,
+            ResourceType::User,
             ResourceType::System,
         ] {
             let s = rt.as_str();

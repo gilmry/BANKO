@@ -17,9 +17,9 @@ fn map_retention_error(err: RetentionServiceError) -> HttpResponse {
         RetentionServiceError::CustomerNotFound => HttpResponse::NotFound().json(ErrorResponse {
             error: "Customer not found".to_string(),
         }),
-        RetentionServiceError::Domain(msg) => HttpResponse::BadRequest().json(ErrorResponse {
-            error: msg,
-        }),
+        RetentionServiceError::Domain(msg) => {
+            HttpResponse::BadRequest().json(ErrorResponse { error: msg })
+        }
         RetentionServiceError::Internal(msg) => {
             tracing::error!("Retention internal error: {msg}");
             HttpResponse::InternalServerError().json(ErrorResponse {

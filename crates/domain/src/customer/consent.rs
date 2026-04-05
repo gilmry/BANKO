@@ -47,9 +47,7 @@ impl ConsentPurpose {
         match s.to_lowercase().as_str() {
             "dataprocessing" | "data_processing" => Ok(ConsentPurpose::DataProcessing),
             "marketing" => Ok(ConsentPurpose::Marketing),
-            "thirdpartysharing" | "third_party_sharing" => {
-                Ok(ConsentPurpose::ThirdPartySharing)
-            }
+            "thirdpartysharing" | "third_party_sharing" => Ok(ConsentPurpose::ThirdPartySharing),
             "profiling" => Ok(ConsentPurpose::Profiling),
             "analytics" => Ok(ConsentPurpose::Analytics),
             _ => Err(DomainError::ValidationError(format!(

@@ -35,10 +35,7 @@ pub trait ITransactionRepository: Send + Sync {
 pub trait IAlertRepository: Send + Sync {
     async fn save(&self, alert: &Alert) -> Result<(), String>;
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Alert>, String>;
-    async fn find_by_transaction_id(
-        &self,
-        tx_id: &TransactionId,
-    ) -> Result<Vec<Alert>, String>;
+    async fn find_by_transaction_id(&self, tx_id: &TransactionId) -> Result<Vec<Alert>, String>;
     async fn find_by_status(&self, status: AlertStatus) -> Result<Vec<Alert>, String>;
     async fn find_all(
         &self,
@@ -76,11 +73,7 @@ pub trait IInvestigationRepository: Send + Sync {
 /// Each scenario evaluates a transaction (optionally with history) and may produce an Alert.
 pub trait IAmlScenario: Send + Sync {
     fn name(&self) -> &str;
-    fn evaluate(
-        &self,
-        transaction: &Transaction,
-        history: &[Transaction],
-    ) -> Option<Alert>;
+    fn evaluate(&self, transaction: &Transaction, history: &[Transaction]) -> Option<Alert>;
 }
 
 // --- Suspicion Report Repository ---

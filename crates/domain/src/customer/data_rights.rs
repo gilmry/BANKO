@@ -123,11 +123,7 @@ pub struct DataRightsRequest {
 
 impl DataRightsRequest {
     /// Create a new data rights request. Deadline is set to 30 days from now.
-    pub fn new(
-        customer_id: Uuid,
-        request_type: DataRequestType,
-        details: Option<String>,
-    ) -> Self {
+    pub fn new(customer_id: Uuid, request_type: DataRequestType, details: Option<String>) -> Self {
         let now = Utc::now();
         DataRightsRequest {
             request_id: DataRequestId::new(),

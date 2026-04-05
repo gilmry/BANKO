@@ -157,20 +157,16 @@ impl IPaymentRepository for PgPaymentRepository {
     async fn count_all(&self, status: Option<PaymentStatus>) -> Result<i64, String> {
         let count: (i64,) = match status {
             Some(s) => {
-                sqlx::query_as(
-                    "SELECT COUNT(*) FROM payment.payment_orders WHERE status = $1",
-                )
-                .bind(s.as_str())
-                .fetch_one(&self.pool)
-                .await
-                .map_err(|e| e.to_string())?
-            }
-            None => {
-                sqlx::query_as("SELECT COUNT(*) FROM payment.payment_orders")
+                sqlx::query_as("SELECT COUNT(*) FROM payment.payment_orders WHERE status = $1")
+                    .bind(s.as_str())
                     .fetch_one(&self.pool)
                     .await
                     .map_err(|e| e.to_string())?
             }
+            None => sqlx::query_as("SELECT COUNT(*) FROM payment.payment_orders")
+                .fetch_one(&self.pool)
+                .await
+                .map_err(|e| e.to_string())?,
         };
         Ok(count.0)
     }
@@ -434,8 +430,7 @@ struct SwiftMessageRow {
 
 impl SwiftMessageRow {
     fn into_domain(self) -> Result<SwiftMessage, String> {
-        let status =
-            SwiftMessageStatus::from_str_type(&self.status).map_err(|e| e.to_string())?;
+        let status = SwiftMessageStatus::from_str_type(&self.status).map_err(|e| e.to_string())?;
         Ok(SwiftMessage::from_raw(
             self.id,
             OrderId::from_uuid(self.order_id),

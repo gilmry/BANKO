@@ -206,8 +206,9 @@ impl PaymentService {
         };
 
         let (orders, total) = if let Some(acc_id) = account_id {
-            let uuid = Uuid::parse_str(acc_id)
-                .map_err(|e| PaymentServiceError::InvalidInput(format!("Invalid account ID: {e}")))?;
+            let uuid = Uuid::parse_str(acc_id).map_err(|e| {
+                PaymentServiceError::InvalidInput(format!("Invalid account ID: {e}"))
+            })?;
             let all = self
                 .payment_repo
                 .find_by_account(uuid)
@@ -480,7 +481,10 @@ mod tests {
             msgs.push(message.clone());
             Ok(())
         }
-        async fn find_by_order_id(&self, order_id: &OrderId) -> Result<Option<SwiftMessage>, String> {
+        async fn find_by_order_id(
+            &self,
+            order_id: &OrderId,
+        ) -> Result<Option<SwiftMessage>, String> {
             let msgs = self.messages.lock().unwrap();
             Ok(msgs.iter().find(|m| m.order_id() == order_id).cloned())
         }
@@ -568,7 +572,10 @@ mod tests {
     #[tokio::test]
     async fn test_create_international_payment_triggers_screening() {
         let service = make_service(Arc::new(MockClearScreener));
-        let result = service.create_payment(international_request()).await.unwrap();
+        let result = service
+            .create_payment(international_request())
+            .await
+            .unwrap();
         // Auto-triggers screening for international
         assert_eq!(result.status, "PendingScreening");
         assert_eq!(result.screening_status, "Pending");
@@ -577,7 +584,10 @@ mod tests {
     #[tokio::test]
     async fn test_screen_payment_clear() {
         let service = make_service(Arc::new(MockClearScreener));
-        let created = service.create_payment(international_request()).await.unwrap();
+        let created = service
+            .create_payment(international_request())
+            .await
+            .unwrap();
 
         let screened = service.screen_payment(&created.id).await.unwrap();
         assert_eq!(screened.screening_status, "Cleared");
@@ -587,7 +597,10 @@ mod tests {
     #[tokio::test]
     async fn test_screen_payment_hit_rejects() {
         let service = make_service(Arc::new(MockHitScreener));
-        let created = service.create_payment(international_request()).await.unwrap();
+        let created = service
+            .create_payment(international_request())
+            .await
+            .unwrap();
 
         let screened = service.screen_payment(&created.id).await.unwrap();
         assert_eq!(screened.screening_status, "Hit");
@@ -607,7 +620,10 @@ mod tests {
     #[tokio::test]
     async fn test_submit_international_after_screening() {
         let service = make_service(Arc::new(MockClearScreener));
-        let created = service.create_payment(international_request()).await.unwrap();
+        let created = service
+            .create_payment(international_request())
+            .await
+            .unwrap();
 
         let screened = service.screen_payment(&created.id).await.unwrap();
         assert_eq!(screened.screening_status, "Cleared");
@@ -619,7 +635,10 @@ mod tests {
     #[tokio::test]
     async fn test_submit_international_without_screening_fails_inv14() {
         let service = make_service(Arc::new(MockClearScreener));
-        let created = service.create_payment(international_request()).await.unwrap();
+        let created = service
+            .create_payment(international_request())
+            .await
+            .unwrap();
 
         // Do NOT screen first — INV-14 violation
         let result = service.submit_payment(&created.id).await;

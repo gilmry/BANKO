@@ -113,7 +113,13 @@ pub async fn create_loan_handler(
     let interest_rate = body.interest_rate.unwrap_or(8.0);
 
     match service
-        .apply_for_loan(account_id, customer_id, amount, interest_rate, body.term_months)
+        .apply_for_loan(
+            account_id,
+            customer_id,
+            amount,
+            interest_rate,
+            body.term_months,
+        )
         .await
     {
         Ok(loan) => HttpResponse::Created().json(CreateLoanResponse {
@@ -210,11 +216,9 @@ pub async fn get_loan_handler(
 
     match service.find_by_id(&loan_id).await {
         Ok(detail) => HttpResponse::Ok().json(detail),
-        Err(LoanServiceError::LoanNotFound) => {
-            HttpResponse::NotFound().json(ErrorResponse {
-                error: "Loan not found".to_string(),
-            })
-        }
+        Err(LoanServiceError::LoanNotFound) => HttpResponse::NotFound().json(ErrorResponse {
+            error: "Loan not found".to_string(),
+        }),
         Err(e) => {
             tracing::error!("Get loan error: {e}");
             HttpResponse::InternalServerError().json(ErrorResponse {
@@ -241,11 +245,9 @@ pub async fn approve_loan_handler(
 
     match service.approve_loan(&loan_id).await {
         Ok(loan) => HttpResponse::Ok().json(LoanService::loan_to_response(&loan)),
-        Err(LoanServiceError::LoanNotFound) => {
-            HttpResponse::NotFound().json(ErrorResponse {
-                error: "Loan not found".to_string(),
-            })
-        }
+        Err(LoanServiceError::LoanNotFound) => HttpResponse::NotFound().json(ErrorResponse {
+            error: "Loan not found".to_string(),
+        }),
         Err(LoanServiceError::DomainError(msg)) => {
             HttpResponse::BadRequest().json(ErrorResponse { error: msg })
         }
@@ -318,11 +320,9 @@ pub async fn disburse_loan_handler(
         .await
     {
         Ok(loan) => HttpResponse::Ok().json(LoanService::loan_to_response(&loan)),
-        Err(LoanServiceError::LoanNotFound) => {
-            HttpResponse::NotFound().json(ErrorResponse {
-                error: "Loan not found".to_string(),
-            })
-        }
+        Err(LoanServiceError::LoanNotFound) => HttpResponse::NotFound().json(ErrorResponse {
+            error: "Loan not found".to_string(),
+        }),
         Err(LoanServiceError::DomainError(msg)) => {
             HttpResponse::BadRequest().json(ErrorResponse { error: msg })
         }
@@ -351,17 +351,18 @@ pub async fn classify_loan_handler(
         }
     };
 
-    match service.classify_and_provision(&loan_id, body.days_past_due).await {
+    match service
+        .classify_and_provision(&loan_id, body.days_past_due)
+        .await
+    {
         Ok((class, provision)) => HttpResponse::Ok().json(serde_json::json!({
             "asset_class": class.as_str(),
             "provision_amount": provision.amount().amount(),
             "provision_rate": provision.rate(),
         })),
-        Err(LoanServiceError::LoanNotFound) => {
-            HttpResponse::NotFound().json(ErrorResponse {
-                error: "Loan not found".to_string(),
-            })
-        }
+        Err(LoanServiceError::LoanNotFound) => HttpResponse::NotFound().json(ErrorResponse {
+            error: "Loan not found".to_string(),
+        }),
         Err(LoanServiceError::DomainError(msg)) => {
             HttpResponse::BadRequest().json(ErrorResponse { error: msg })
         }
@@ -391,11 +392,9 @@ pub async fn record_payment_handler(
 
     match service.record_payment(&loan_id).await {
         Ok(loan) => HttpResponse::Ok().json(LoanService::loan_to_response(&loan)),
-        Err(LoanServiceError::LoanNotFound) => {
-            HttpResponse::NotFound().json(ErrorResponse {
-                error: "Loan not found".to_string(),
-            })
-        }
+        Err(LoanServiceError::LoanNotFound) => HttpResponse::NotFound().json(ErrorResponse {
+            error: "Loan not found".to_string(),
+        }),
         Err(LoanServiceError::DomainError(msg)) => {
             HttpResponse::BadRequest().json(ErrorResponse { error: msg })
         }

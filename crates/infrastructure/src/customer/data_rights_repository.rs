@@ -35,8 +35,7 @@ fn row_to_domain(row: DataRightsRequestRow) -> Result<DataRightsRequest, String>
     let request_id = DataRequestId::from_uuid(row.id);
     let request_type =
         DataRequestType::from_str_type(&row.request_type).map_err(|e| e.to_string())?;
-    let status =
-        DataRequestStatus::from_str_status(&row.status).map_err(|e| e.to_string())?;
+    let status = DataRequestStatus::from_str_status(&row.status).map_err(|e| e.to_string())?;
 
     Ok(DataRightsRequest::reconstitute(
         request_id,
@@ -81,10 +80,7 @@ impl IDataRightsRepository for PgDataRightsRepository {
         Ok(())
     }
 
-    async fn find_by_id(
-        &self,
-        id: &DataRequestId,
-    ) -> Result<Option<DataRightsRequest>, String> {
+    async fn find_by_id(&self, id: &DataRequestId) -> Result<Option<DataRightsRequest>, String> {
         let row: Option<DataRightsRequestRow> = sqlx::query_as(
             "SELECT id, customer_id, request_type, status, details, response, requested_at, completed_at, deadline FROM customer.data_rights_requests WHERE id = $1",
         )
@@ -96,10 +92,7 @@ impl IDataRightsRepository for PgDataRightsRepository {
         row.map(row_to_domain).transpose()
     }
 
-    async fn find_by_customer(
-        &self,
-        customer_id: Uuid,
-    ) -> Result<Vec<DataRightsRequest>, String> {
+    async fn find_by_customer(&self, customer_id: Uuid) -> Result<Vec<DataRightsRequest>, String> {
         let rows: Vec<DataRightsRequestRow> = sqlx::query_as(
             "SELECT id, customer_id, request_type, status, details, response, requested_at, completed_at, deadline FROM customer.data_rights_requests WHERE customer_id = $1 ORDER BY requested_at DESC",
         )

@@ -29,10 +29,11 @@ impl ITotpService for TotpServiceImpl {
     }
 
     fn verify_code(&self, secret: &str, code: &str) -> bool {
-        let secret_bytes = match base32::decode(base32::Alphabet::Rfc4648 { padding: false }, secret) {
-            Some(b) => b,
-            None => return false,
-        };
+        let secret_bytes =
+            match base32::decode(base32::Alphabet::Rfc4648 { padding: false }, secret) {
+                Some(b) => b,
+                None => return false,
+            };
 
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -80,7 +81,8 @@ mod tests {
         let secret = service.generate_secret();
 
         // Generate a valid code for current time
-        let secret_bytes = base32::decode(base32::Alphabet::Rfc4648 { padding: false }, &secret).unwrap();
+        let secret_bytes =
+            base32::decode(base32::Alphabet::Rfc4648 { padding: false }, &secret).unwrap();
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()

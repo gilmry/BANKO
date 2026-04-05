@@ -279,12 +279,7 @@ mod tests {
     struct TestMatchingStrategy;
 
     impl IMatchingStrategy for TestMatchingStrategy {
-        fn screen(
-            &self,
-            name: &str,
-            entries: &[SanctionEntry],
-            threshold: u8,
-        ) -> Vec<MatchDetail> {
+        fn screen(&self, name: &str, entries: &[SanctionEntry], threshold: u8) -> Vec<MatchDetail> {
             screen_name(name, entries, threshold)
                 .matched_entries()
                 .to_vec()
@@ -380,10 +375,7 @@ mod tests {
                 .cloned()
                 .collect())
         }
-        async fn count_by_status(
-            &self,
-            status: Option<ScreeningStatus>,
-        ) -> Result<i64, String> {
+        async fn count_by_status(&self, status: Option<ScreeningStatus>) -> Result<i64, String> {
             let results = self.results.lock().unwrap();
             Ok(results
                 .iter()
@@ -435,9 +427,9 @@ mod tests {
     #[tokio::test]
     async fn test_screen_name_clear() {
         let service = SanctionsScreeningService::new(
-            Arc::new(MockEntryRepo::with_entries(vec![
-                make_entry("Mohammed Ben Ali"),
-            ])),
+            Arc::new(MockEntryRepo::with_entries(vec![make_entry(
+                "Mohammed Ben Ali",
+            )])),
             Arc::new(MockResultRepo::new()),
             Arc::new(TestMatchingStrategy),
         );
@@ -450,9 +442,7 @@ mod tests {
     #[tokio::test]
     async fn test_screen_name_hit() {
         let service = SanctionsScreeningService::new(
-            Arc::new(MockEntryRepo::with_entries(vec![
-                make_entry("Jean Alaoui"),
-            ])),
+            Arc::new(MockEntryRepo::with_entries(vec![make_entry("Jean Alaoui")])),
             Arc::new(MockResultRepo::new()),
             Arc::new(TestMatchingStrategy),
         );
@@ -465,9 +455,7 @@ mod tests {
     #[tokio::test]
     async fn test_screen_name_fuzzy_hit() {
         let service = SanctionsScreeningService::new(
-            Arc::new(MockEntryRepo::with_entries(vec![
-                make_entry("Jean Alaoui"),
-            ])),
+            Arc::new(MockEntryRepo::with_entries(vec![make_entry("Jean Alaoui")])),
             Arc::new(MockResultRepo::new()),
             Arc::new(TestMatchingStrategy),
         );
@@ -480,9 +468,9 @@ mod tests {
     #[tokio::test]
     async fn test_screen_payment_clear() {
         let service = SanctionsScreeningService::new(
-            Arc::new(MockEntryRepo::with_entries(vec![
-                make_entry("Mohammed Ben Ali"),
-            ])),
+            Arc::new(MockEntryRepo::with_entries(vec![make_entry(
+                "Mohammed Ben Ali",
+            )])),
             Arc::new(MockResultRepo::new()),
             Arc::new(TestMatchingStrategy),
         );
@@ -494,9 +482,7 @@ mod tests {
     #[tokio::test]
     async fn test_screen_payment_blocked_on_hit() {
         let service = SanctionsScreeningService::new(
-            Arc::new(MockEntryRepo::with_entries(vec![
-                make_entry("Jean Alaoui"),
-            ])),
+            Arc::new(MockEntryRepo::with_entries(vec![make_entry("Jean Alaoui")])),
             Arc::new(MockResultRepo::new()),
             Arc::new(TestMatchingStrategy),
         );

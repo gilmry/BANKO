@@ -50,9 +50,7 @@ pub async fn create_user_handler(
             });
         }
         Err(RegisterError::WeakPassword(msg)) => {
-            return HttpResponse::BadRequest().json(ErrorResponse {
-                error: msg,
-            });
+            return HttpResponse::BadRequest().json(ErrorResponse { error: msg });
         }
         Err(RegisterError::Internal(msg)) => {
             tracing::error!("Create user internal error: {msg}");
@@ -88,7 +86,11 @@ pub async fn create_user_handler(
         Ok(user) => HttpResponse::Created().json(UserProfileResponse {
             user_id: user.id().to_string(),
             email: user.email().as_str().to_string(),
-            roles: user.roles().iter().map(|r| r.as_str().to_string()).collect(),
+            roles: user
+                .roles()
+                .iter()
+                .map(|r| r.as_str().to_string())
+                .collect(),
             is_active: user.is_active(),
             created_at: user.created_at().to_rfc3339(),
         }),
@@ -126,7 +128,11 @@ pub async fn get_user_handler(
         Ok(user) => HttpResponse::Ok().json(UserProfileResponse {
             user_id: user.id().to_string(),
             email: user.email().as_str().to_string(),
-            roles: user.roles().iter().map(|r| r.as_str().to_string()).collect(),
+            roles: user
+                .roles()
+                .iter()
+                .map(|r| r.as_str().to_string())
+                .collect(),
             is_active: user.is_active(),
             created_at: user.created_at().to_rfc3339(),
         }),
@@ -204,7 +210,11 @@ pub async fn update_user_roles_handler(
             HttpResponse::Ok().json(UserProfileResponse {
                 user_id: user.id().to_string(),
                 email: user.email().as_str().to_string(),
-                roles: user.roles().iter().map(|r| r.as_str().to_string()).collect(),
+                roles: user
+                    .roles()
+                    .iter()
+                    .map(|r| r.as_str().to_string())
+                    .collect(),
                 is_active: user.is_active(),
                 created_at: user.created_at().to_rfc3339(),
             })
@@ -224,11 +234,15 @@ mod tests {
 
     use super::*;
     use crate::config::JwtConfig;
-    use crate::web::handlers::auth_handlers::{login_handler, register_handler, LoginResponse};
     use crate::test_helpers::make_test_user_service;
+    use crate::web::handlers::auth_handlers::{login_handler, register_handler, LoginResponse};
 
     fn test_jwt_config() -> JwtConfig {
-        JwtConfig::new("test-secret-must-be-long-enough-for-jwt".to_string(), 3600, 604800)
+        JwtConfig::new(
+            "test-secret-must-be-long-enough-for-jwt".to_string(),
+            3600,
+            604800,
+        )
     }
 
     fn configure(cfg: &mut web::ServiceConfig) {
@@ -236,7 +250,10 @@ mod tests {
             .route("/auth/login", web::post().to(login_handler))
             .route("/users", web::post().to(create_user_handler))
             .route("/users/{id}", web::get().to(get_user_handler))
-            .route("/users/{id}/roles", web::put().to(update_user_roles_handler));
+            .route(
+                "/users/{id}/roles",
+                web::put().to(update_user_roles_handler),
+            );
     }
 
     async fn get_admin_token(jwt: &JwtConfig) -> String {
@@ -252,7 +269,11 @@ mod tests {
         jwt.generate_access_token(
             "superadmin-123",
             "superadmin@banko.tn",
-            &["superadmin".to_string(), "admin".to_string(), "user".to_string()],
+            &[
+                "superadmin".to_string(),
+                "admin".to_string(),
+                "user".to_string(),
+            ],
         )
         .unwrap()
     }
@@ -413,7 +434,10 @@ mod tests {
         // Get own profile
         let req = test::TestRequest::get()
             .uri(&format!("/users/{}", claims.sub))
-            .insert_header(("Authorization", format!("Bearer {}", login_body.access_token)))
+            .insert_header((
+                "Authorization",
+                format!("Bearer {}", login_body.access_token),
+            ))
             .to_request();
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), 200);

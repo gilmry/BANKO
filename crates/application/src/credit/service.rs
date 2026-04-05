@@ -49,10 +49,7 @@ impl LoanService {
     }
 
     /// Approve a loan application.
-    pub async fn approve_loan(
-        &self,
-        loan_id: &LoanId,
-    ) -> Result<Loan, LoanServiceError> {
+    pub async fn approve_loan(&self, loan_id: &LoanId) -> Result<Loan, LoanServiceError> {
         let mut loan = self.get_loan(loan_id).await?;
 
         loan.approve()
@@ -155,10 +152,7 @@ impl LoanService {
     }
 
     /// Record a payment on the next unpaid installment.
-    pub async fn record_payment(
-        &self,
-        loan_id: &LoanId,
-    ) -> Result<Loan, LoanServiceError> {
+    pub async fn record_payment(&self, loan_id: &LoanId) -> Result<Loan, LoanServiceError> {
         let mut loan = self.get_loan(loan_id).await?;
 
         let installment = loan
@@ -302,7 +296,9 @@ impl LoanService {
         }
     }
 
-    pub fn installment_to_response(inst: &banko_domain::credit::Installment) -> InstallmentResponse {
+    pub fn installment_to_response(
+        inst: &banko_domain::credit::Installment,
+    ) -> InstallmentResponse {
         InstallmentResponse {
             id: inst.id().to_string(),
             installment_number: inst.installment_number(),
@@ -359,7 +355,11 @@ mod tests {
 
         async fn find_by_account_id(&self, account_id: &AccountId) -> Result<Vec<Loan>, String> {
             let loans = self.loans.lock().unwrap();
-            Ok(loans.iter().filter(|l| l.account_id() == account_id).cloned().collect())
+            Ok(loans
+                .iter()
+                .filter(|l| l.account_id() == account_id)
+                .cloned()
+                .collect())
         }
 
         async fn find_all(
@@ -399,7 +399,11 @@ mod tests {
 
         async fn find_active_loans(&self) -> Result<Vec<Loan>, String> {
             let loans = self.loans.lock().unwrap();
-            Ok(loans.iter().filter(|l| l.status() == LoanStatus::Active).cloned().collect())
+            Ok(loans
+                .iter()
+                .filter(|l| l.status() == LoanStatus::Active)
+                .cloned()
+                .collect())
         }
 
         async fn delete(&self, id: &LoanId) -> Result<(), String> {
@@ -433,7 +437,11 @@ mod tests {
 
         async fn find_by_loan_id(&self, loan_id: &LoanId) -> Result<Vec<Installment>, String> {
             let all = self.installments.lock().unwrap();
-            Ok(all.iter().filter(|i| i.loan_id() == loan_id).cloned().collect())
+            Ok(all
+                .iter()
+                .filter(|i| i.loan_id() == loan_id)
+                .cloned()
+                .collect())
         }
 
         async fn update_installment(&self, installment: &Installment) -> Result<(), String> {
@@ -509,7 +517,12 @@ mod tests {
 
         let start = NaiveDate::from_ymd_opt(2026, 1, 15).unwrap();
         let disbursed = service
-            .disburse(loan.id(), start, PaymentFrequency::Monthly, AmortizationType::Constant)
+            .disburse(
+                loan.id(),
+                start,
+                PaymentFrequency::Monthly,
+                AmortizationType::Constant,
+            )
             .await
             .unwrap();
 
@@ -567,7 +580,10 @@ mod tests {
             .await
             .unwrap();
 
-        let (class, provision) = service.classify_and_provision(loan.id(), 181).await.unwrap();
+        let (class, provision) = service
+            .classify_and_provision(loan.id(), 181)
+            .await
+            .unwrap();
         assert_eq!(class, AssetClass::Class3);
         assert_eq!(provision.amount().amount(), 50000.0);
     }
@@ -582,7 +598,12 @@ mod tests {
         service.approve_loan(loan.id()).await.unwrap();
         let start = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
         service
-            .disburse(loan.id(), start, PaymentFrequency::Monthly, AmortizationType::Linear)
+            .disburse(
+                loan.id(),
+                start,
+                PaymentFrequency::Monthly,
+                AmortizationType::Linear,
+            )
             .await
             .unwrap();
 
@@ -618,7 +639,12 @@ mod tests {
         service.approve_loan(loan.id()).await.unwrap();
         let start = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
         service
-            .disburse(loan.id(), start, PaymentFrequency::Monthly, AmortizationType::Constant)
+            .disburse(
+                loan.id(),
+                start,
+                PaymentFrequency::Monthly,
+                AmortizationType::Constant,
+            )
             .await
             .unwrap();
 

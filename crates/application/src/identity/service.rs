@@ -18,14 +18,10 @@ impl UserService {
         UserService { repo, hasher }
     }
 
-    pub async fn register(
-        &self,
-        email: &str,
-        password: &str,
-    ) -> Result<UserId, RegisterError> {
+    pub async fn register(&self, email: &str, password: &str) -> Result<UserId, RegisterError> {
         // Validate email
-        let email = EmailAddress::new(email)
-            .map_err(|e| RegisterError::InvalidEmail(e.to_string()))?;
+        let email =
+            EmailAddress::new(email).map_err(|e| RegisterError::InvalidEmail(e.to_string()))?;
 
         // Validate password strength
         Self::validate_password_strength(password)?;
@@ -46,12 +42,12 @@ impl UserService {
             .hash(password)
             .await
             .map_err(RegisterError::Internal)?;
-        let password_hash = PasswordHash::new(hash_str)
-            .map_err(|e| RegisterError::Internal(e.to_string()))?;
+        let password_hash =
+            PasswordHash::new(hash_str).map_err(|e| RegisterError::Internal(e.to_string()))?;
 
         // Create user
-        let user = User::new(email, password_hash)
-            .map_err(|e| RegisterError::Internal(e.to_string()))?;
+        let user =
+            User::new(email, password_hash).map_err(|e| RegisterError::Internal(e.to_string()))?;
         let user_id = user.id().clone();
 
         // Persist
@@ -63,13 +59,8 @@ impl UserService {
         Ok(user_id)
     }
 
-    pub async fn login(
-        &self,
-        email: &str,
-        password: &str,
-    ) -> Result<User, LoginError> {
-        let email = EmailAddress::new(email)
-            .map_err(|_| LoginError::InvalidCredentials)?;
+    pub async fn login(&self, email: &str, password: &str) -> Result<User, LoginError> {
+        let email = EmailAddress::new(email).map_err(|_| LoginError::InvalidCredentials)?;
 
         let user = self
             .repo
@@ -226,10 +217,9 @@ mod tests {
 
     fn create_test_user(email: &str) -> User {
         let email = EmailAddress::new(email).unwrap();
-        let hash = PasswordHash::new(
-            "$2b$12$hashed_SecurePass123!_padded_to_be_long_enough".to_string(),
-        )
-        .unwrap();
+        let hash =
+            PasswordHash::new("$2b$12$hashed_SecurePass123!_padded_to_be_long_enough".to_string())
+                .unwrap();
         User::new(email, hash).unwrap()
     }
 
@@ -266,9 +256,7 @@ mod tests {
     #[tokio::test]
     async fn test_register_weak_password_no_digit() {
         let service = make_service();
-        let result = service
-            .register("test@banko.tn", "NoDigitsHere!!!")
-            .await;
+        let result = service.register("test@banko.tn", "NoDigitsHere!!!").await;
         assert!(matches!(result, Err(RegisterError::WeakPassword(_))));
     }
 

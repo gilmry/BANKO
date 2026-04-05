@@ -474,13 +474,8 @@ mod tests {
         )
         .unwrap();
 
-        let customer = Customer::new(
-            CustomerType::Individual,
-            kyc,
-            vec![],
-            ConsentStatus::Given,
-        )
-        .unwrap();
+        let customer =
+            Customer::new(CustomerType::Individual, kyc, vec![], ConsentStatus::Given).unwrap();
 
         assert!(customer.is_pep());
     }

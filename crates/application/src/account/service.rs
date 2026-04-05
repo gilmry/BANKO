@@ -42,8 +42,8 @@ impl AccountService {
         let rib = Self::generate_rib()?;
 
         // Create account (domain enforces KYC invariant)
-        let account = Account::new(customer_id, rib, account_type, kyc_validated)
-            .map_err(|e| match e {
+        let account =
+            Account::new(customer_id, rib, account_type, kyc_validated).map_err(|e| match e {
                 banko_domain::shared::DomainError::KycNotValidated => {
                     AccountServiceError::KycNotValidated
                 }
@@ -141,15 +141,12 @@ impl AccountService {
     }
 
     /// Close an account.
-    pub async fn close_account(
-        &self,
-        account_id: &AccountId,
-    ) -> Result<(), AccountServiceError> {
+    pub async fn close_account(&self, account_id: &AccountId) -> Result<(), AccountServiceError> {
         let mut account = self.find_by_id(account_id).await?;
 
-        account.close().map_err(|e| {
-            AccountServiceError::DomainError(e.to_string())
-        })?;
+        account
+            .close()
+            .map_err(|e| AccountServiceError::DomainError(e.to_string()))?;
 
         self.account_repo
             .save(&account)
@@ -160,10 +157,7 @@ impl AccountService {
     }
 
     /// Freeze (suspend) an account.
-    pub async fn freeze_account(
-        &self,
-        account_id: &AccountId,
-    ) -> Result<(), AccountServiceError> {
+    pub async fn freeze_account(&self, account_id: &AccountId) -> Result<(), AccountServiceError> {
         let mut account = self.find_by_id(account_id).await?;
         account.freeze();
         self.account_repo

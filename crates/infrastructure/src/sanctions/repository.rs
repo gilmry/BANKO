@@ -68,31 +68,30 @@ impl ISanctionListRepository for PgSanctionListRepository {
     }
 
     async fn find_by_id(&self, id: &SanctionListId) -> Result<Option<SanctionList>, String> {
-        let row: Option<ListRow> =
-            sqlx::query_as("SELECT * FROM sanctions.lists WHERE id = $1")
-                .bind(id.as_uuid())
-                .fetch_optional(&self.pool)
-                .await
-                .map_err(|e| e.to_string())?;
+        let row: Option<ListRow> = sqlx::query_as("SELECT * FROM sanctions.lists WHERE id = $1")
+            .bind(id.as_uuid())
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(|e| e.to_string())?;
         row.map(|r| r.into_domain()).transpose()
     }
 
     async fn find_by_source(&self, source: ListSource) -> Result<Option<SanctionList>, String> {
-        let row: Option<ListRow> =
-            sqlx::query_as("SELECT * FROM sanctions.lists WHERE source = $1 ORDER BY last_updated DESC LIMIT 1")
-                .bind(source.as_str())
-                .fetch_optional(&self.pool)
-                .await
-                .map_err(|e| e.to_string())?;
+        let row: Option<ListRow> = sqlx::query_as(
+            "SELECT * FROM sanctions.lists WHERE source = $1 ORDER BY last_updated DESC LIMIT 1",
+        )
+        .bind(source.as_str())
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
         row.map(|r| r.into_domain()).transpose()
     }
 
     async fn find_all(&self) -> Result<Vec<SanctionList>, String> {
-        let rows: Vec<ListRow> =
-            sqlx::query_as("SELECT * FROM sanctions.lists ORDER BY source")
-                .fetch_all(&self.pool)
-                .await
-                .map_err(|e| e.to_string())?;
+        let rows: Vec<ListRow> = sqlx::query_as("SELECT * FROM sanctions.lists ORDER BY source")
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| e.to_string())?;
         rows.into_iter().map(|r| r.into_domain()).collect()
     }
 }
@@ -249,10 +248,7 @@ impl IScreeningResultRepository for PgScreeningResultRepository {
         Ok(())
     }
 
-    async fn find_by_id(
-        &self,
-        id: &ScreeningResultId,
-    ) -> Result<Option<ScreeningResult>, String> {
+    async fn find_by_id(&self, id: &ScreeningResultId) -> Result<Option<ScreeningResult>, String> {
         let row: Option<ScreeningResultRow> =
             sqlx::query_as("SELECT * FROM sanctions.screening_results WHERE id = $1")
                 .bind(id.as_uuid())
@@ -262,11 +258,7 @@ impl IScreeningResultRepository for PgScreeningResultRepository {
         row.map(|r| r.into_domain()).transpose()
     }
 
-    async fn find_recent(
-        &self,
-        limit: i64,
-        offset: i64,
-    ) -> Result<Vec<ScreeningResult>, String> {
+    async fn find_recent(&self, limit: i64, offset: i64) -> Result<Vec<ScreeningResult>, String> {
         let rows: Vec<ScreeningResultRow> = sqlx::query_as(
             "SELECT * FROM sanctions.screening_results ORDER BY screened_at DESC LIMIT $1 OFFSET $2",
         )
@@ -278,10 +270,7 @@ impl IScreeningResultRepository for PgScreeningResultRepository {
         rows.into_iter().map(|r| r.into_domain()).collect()
     }
 
-    async fn count_by_status(
-        &self,
-        status: Option<ScreeningStatus>,
-    ) -> Result<i64, String> {
+    async fn count_by_status(&self, status: Option<ScreeningStatus>) -> Result<i64, String> {
         let count: (i64,) = if let Some(s) = status {
             sqlx::query_as("SELECT COUNT(*) FROM sanctions.screening_results WHERE status = $1")
                 .bind(s.as_str())
@@ -315,8 +304,7 @@ struct ScreeningResultRow {
 
 impl ScreeningResultRow {
     fn into_domain(self) -> Result<ScreeningResult, String> {
-        let status =
-            ScreeningStatus::from_str_status(&self.status).map_err(|e| e.to_string())?;
+        let status = ScreeningStatus::from_str_status(&self.status).map_err(|e| e.to_string())?;
         let matched_entries: Vec<MatchDetail> =
             serde_json::from_value(self.match_details).map_err(|e| e.to_string())?;
 

@@ -54,9 +54,9 @@ pub async fn register_handler(
         Err(RegisterError::InvalidEmail(msg)) => HttpResponse::BadRequest().json(ErrorResponse {
             error: format!("Invalid email format: {msg}"),
         }),
-        Err(RegisterError::WeakPassword(msg)) => HttpResponse::BadRequest().json(ErrorResponse {
-            error: msg,
-        }),
+        Err(RegisterError::WeakPassword(msg)) => {
+            HttpResponse::BadRequest().json(ErrorResponse { error: msg })
+        }
         Err(RegisterError::Internal(msg)) => {
             tracing::error!("Registration internal error: {msg}");
             HttpResponse::InternalServerError().json(ErrorResponse {
@@ -73,8 +73,11 @@ pub async fn login_handler(
 ) -> HttpResponse {
     match service.login(&body.email, &body.password).await {
         Ok(user) => {
-            let roles: Vec<String> =
-                user.roles().iter().map(|r| r.as_str().to_string()).collect();
+            let roles: Vec<String> = user
+                .roles()
+                .iter()
+                .map(|r| r.as_str().to_string())
+                .collect();
 
             let access_token = match jwt_config.generate_access_token(
                 &user.id().to_string(),
@@ -111,11 +114,9 @@ pub async fn login_handler(
                 expires_in: 3600,
             })
         }
-        Err(LoginError::InvalidCredentials) => {
-            HttpResponse::Unauthorized().json(ErrorResponse {
-                error: "Invalid credentials".to_string(),
-            })
-        }
+        Err(LoginError::InvalidCredentials) => HttpResponse::Unauthorized().json(ErrorResponse {
+            error: "Invalid credentials".to_string(),
+        }),
         Err(LoginError::AccountInactive) => HttpResponse::Forbidden().json(ErrorResponse {
             error: "Account is inactive".to_string(),
         }),
@@ -137,7 +138,11 @@ pub async fn logout_handler(
     req: actix_web::HttpRequest,
 ) -> HttpResponse {
     // Extract token from Authorization header for session lookup
-    if let Some(auth_header) = req.headers().get("Authorization").and_then(|v| v.to_str().ok()) {
+    if let Some(auth_header) = req
+        .headers()
+        .get("Authorization")
+        .and_then(|v| v.to_str().ok())
+    {
         if let Some(token) = auth_header.strip_prefix("Bearer ") {
             // Use a simple hash of the token for session lookup
             let token_hash = format!("{:x}", md5_hash(token.as_bytes()));
@@ -164,10 +169,16 @@ mod tests {
     use actix_web::{test, web, App};
 
     use super::*;
-    use crate::test_helpers::{create_test_user, make_test_user_service, make_test_user_service_with_user};
+    use crate::test_helpers::{
+        create_test_user, make_test_user_service, make_test_user_service_with_user,
+    };
 
     fn test_jwt_config() -> JwtConfig {
-        JwtConfig::new("test-secret-must-be-long-enough-for-jwt".to_string(), 3600, 604800)
+        JwtConfig::new(
+            "test-secret-must-be-long-enough-for-jwt".to_string(),
+            3600,
+            604800,
+        )
     }
 
     #[actix_rt::test]
@@ -431,9 +442,7 @@ mod tests {
         )
         .await;
 
-        let req = test::TestRequest::post()
-            .uri("/auth/logout")
-            .to_request();
+        let req = test::TestRequest::post().uri("/auth/logout").to_request();
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), 401);
     }

@@ -41,8 +41,7 @@ impl AuditService {
             .map_err(GovernanceServiceError::Internal)?
         {
             Some(entry) => entry.hash().to_string(),
-            None => "0000000000000000000000000000000000000000000000000000000000000000"
-                .to_string(),
+            None => "0000000000000000000000000000000000000000000000000000000000000000".to_string(),
         };
 
         let entry = AuditTrailEntry::new(
@@ -264,9 +263,7 @@ impl CommitteeService {
         Ok(to_committee_response(&committee))
     }
 
-    pub async fn list_committees(
-        &self,
-    ) -> Result<Vec<CommitteeResponse>, GovernanceServiceError> {
+    pub async fn list_committees(&self) -> Result<Vec<CommitteeResponse>, GovernanceServiceError> {
         let committees = self
             .committee_repo
             .find_all_committees()
@@ -305,14 +302,9 @@ impl CommitteeService {
             });
         }
 
-        let decision_entity = CommitteeDecision::new(
-            committee_id,
-            subject,
-            outcome,
-            parsed_votes,
-            justification,
-        )
-        .map_err(|e| GovernanceServiceError::DomainError(e.to_string()))?;
+        let decision_entity =
+            CommitteeDecision::new(committee_id, subject, outcome, parsed_votes, justification)
+                .map_err(|e| GovernanceServiceError::DomainError(e.to_string()))?;
 
         self.committee_repo
             .save_decision(&decision_entity)
@@ -488,7 +480,11 @@ impl BctAuditService {
             .await
             .map_err(GovernanceServiceError::Internal)?;
 
-        let total_pages = if total == 0 { 0 } else { (total + limit - 1) / limit };
+        let total_pages = if total == 0 {
+            0
+        } else {
+            (total + limit - 1) / limit
+        };
 
         let data = entries.iter().map(to_audit_response).collect();
 
@@ -597,10 +593,7 @@ impl BctAuditService {
         let mut errors = Vec::new();
         for (i, entry) in entries.iter().enumerate() {
             if !entry.verify_hash() {
-                errors.push(format!(
-                    "Entry {} has invalid hash",
-                    entry.entry_id()
-                ));
+                errors.push(format!("Entry {} has invalid hash", entry.entry_id()));
             }
             if i > 0 {
                 let prev = &entries[i - 1];

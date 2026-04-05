@@ -767,7 +767,11 @@ pub struct AssetFreeze {
 
 impl AssetFreeze {
     /// Freeze is IMMEDIATE (INV-09). No pending state.
-    pub fn freeze(account_id: Uuid, reason: String, ordered_by: String) -> Result<Self, DomainError> {
+    pub fn freeze(
+        account_id: Uuid,
+        reason: String,
+        ordered_by: String,
+    ) -> Result<Self, DomainError> {
         if reason.trim().is_empty() {
             return Err(DomainError::InvalidTransaction(
                 "Freeze reason cannot be empty".to_string(),
@@ -1003,7 +1007,8 @@ mod tests {
     #[test]
     fn test_investigation_add_note_moves_to_in_progress() {
         let mut inv = Investigation::new(Uuid::new_v4(), None);
-        let note = InvestigationNote::new("Initial review".to_string(), "analyst".to_string()).unwrap();
+        let note =
+            InvestigationNote::new("Initial review".to_string(), "analyst".to_string()).unwrap();
         inv.add_note(note).unwrap();
         assert_eq!(inv.status(), InvestigationStatus::InProgress);
         assert_eq!(inv.notes().len(), 1);
@@ -1144,11 +1149,7 @@ mod tests {
 
     #[test]
     fn test_freeze_empty_reason_rejected() {
-        let result = AssetFreeze::freeze(
-            Uuid::new_v4(),
-            "".to_string(),
-            "supervisor".to_string(),
-        );
+        let result = AssetFreeze::freeze(Uuid::new_v4(), "".to_string(), "supervisor".to_string());
         assert!(result.is_err());
     }
 

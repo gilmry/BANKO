@@ -307,12 +307,30 @@ mod tests {
 
     #[test]
     fn test_loan_status_from_str() {
-        assert_eq!(LoanStatus::from_str_status("Applied").unwrap(), LoanStatus::Applied);
-        assert_eq!(LoanStatus::from_str_status("approved").unwrap(), LoanStatus::Approved);
-        assert_eq!(LoanStatus::from_str_status("disbursed").unwrap(), LoanStatus::Disbursed);
-        assert_eq!(LoanStatus::from_str_status("active").unwrap(), LoanStatus::Active);
-        assert_eq!(LoanStatus::from_str_status("closed").unwrap(), LoanStatus::Closed);
-        assert_eq!(LoanStatus::from_str_status("defaulted").unwrap(), LoanStatus::Defaulted);
+        assert_eq!(
+            LoanStatus::from_str_status("Applied").unwrap(),
+            LoanStatus::Applied
+        );
+        assert_eq!(
+            LoanStatus::from_str_status("approved").unwrap(),
+            LoanStatus::Approved
+        );
+        assert_eq!(
+            LoanStatus::from_str_status("disbursed").unwrap(),
+            LoanStatus::Disbursed
+        );
+        assert_eq!(
+            LoanStatus::from_str_status("active").unwrap(),
+            LoanStatus::Active
+        );
+        assert_eq!(
+            LoanStatus::from_str_status("closed").unwrap(),
+            LoanStatus::Closed
+        );
+        assert_eq!(
+            LoanStatus::from_str_status("defaulted").unwrap(),
+            LoanStatus::Defaulted
+        );
     }
 
     #[test]
@@ -385,7 +403,10 @@ mod tests {
     #[test]
     fn test_asset_class_from_str() {
         assert_eq!(AssetClass::from_str_class("0").unwrap(), AssetClass::Class0);
-        assert_eq!(AssetClass::from_str_class("Class2").unwrap(), AssetClass::Class2);
+        assert_eq!(
+            AssetClass::from_str_class("Class2").unwrap(),
+            AssetClass::Class2
+        );
         assert!(AssetClass::from_str_class("5").is_err());
     }
 
@@ -401,13 +422,22 @@ mod tests {
     fn test_payment_frequency() {
         assert_eq!(PaymentFrequency::Monthly.periods_per_year(), 12);
         assert_eq!(PaymentFrequency::Quarterly.periods_per_year(), 4);
-        assert_eq!(PaymentFrequency::from_str_freq("monthly").unwrap(), PaymentFrequency::Monthly);
+        assert_eq!(
+            PaymentFrequency::from_str_freq("monthly").unwrap(),
+            PaymentFrequency::Monthly
+        );
     }
 
     #[test]
     fn test_amortization_type() {
-        assert_eq!(AmortizationType::from_str_type("linear").unwrap(), AmortizationType::Linear);
-        assert_eq!(AmortizationType::from_str_type("constant").unwrap(), AmortizationType::Constant);
+        assert_eq!(
+            AmortizationType::from_str_type("linear").unwrap(),
+            AmortizationType::Linear
+        );
+        assert_eq!(
+            AmortizationType::from_str_type("constant").unwrap(),
+            AmortizationType::Constant
+        );
         assert!(AmortizationType::from_str_type("unknown").is_err());
     }
 }

@@ -62,11 +62,7 @@ impl TransactionMonitoringService {
         // Fetch recent history for scenario evaluation (24h window)
         let history = self
             .tx_repo
-            .find_by_date_range(
-                account_id,
-                Utc::now() - Duration::hours(24),
-                Utc::now(),
-            )
+            .find_by_date_range(account_id, Utc::now() - Duration::hours(24), Utc::now())
             .await
             .map_err(AmlServiceError::Internal)?;
 
@@ -381,10 +377,7 @@ impl InvestigationService {
         })
     }
 
-    async fn get_investigation_entity(
-        &self,
-        id: Uuid,
-    ) -> Result<Investigation, AmlServiceError> {
+    async fn get_investigation_entity(&self, id: Uuid) -> Result<Investigation, AmlServiceError> {
         self.investigation_repo
             .find_by_id(id)
             .await
@@ -480,10 +473,7 @@ impl DosReportService {
         Ok(Self::report_to_response(&report))
     }
 
-    pub async fn get_report(
-        &self,
-        id: Uuid,
-    ) -> Result<SuspicionReportResponse, AmlServiceError> {
+    pub async fn get_report(&self, id: Uuid) -> Result<SuspicionReportResponse, AmlServiceError> {
         let report = self
             .report_repo
             .find_by_id(id)
@@ -575,10 +565,7 @@ impl AssetFreezeService {
         Ok(freeze.is_some())
     }
 
-    pub async fn get_freeze(
-        &self,
-        id: Uuid,
-    ) -> Result<AssetFreezeResponse, AmlServiceError> {
+    pub async fn get_freeze(&self, id: Uuid) -> Result<AssetFreezeResponse, AmlServiceError> {
         let freeze = self
             .freeze_repo
             .find_by_id(id)
@@ -660,7 +647,11 @@ mod tests {
         }
         async fn find_by_account_id(&self, account_id: Uuid) -> Result<Vec<Transaction>, String> {
             let txs = self.txs.lock().unwrap();
-            Ok(txs.iter().filter(|t| t.account_id() == account_id).cloned().collect())
+            Ok(txs
+                .iter()
+                .filter(|t| t.account_id() == account_id)
+                .cloned()
+                .collect())
         }
         async fn find_by_date_range(
             &self,
@@ -672,9 +663,7 @@ mod tests {
             Ok(txs
                 .iter()
                 .filter(|t| {
-                    t.account_id() == account_id
-                        && t.timestamp() >= from
-                        && t.timestamp() <= to
+                    t.account_id() == account_id && t.timestamp() >= from && t.timestamp() <= to
                 })
                 .cloned()
                 .collect())
@@ -727,13 +716,24 @@ mod tests {
             let alerts = self.alerts.lock().unwrap();
             Ok(alerts.iter().find(|a| a.id() == id).cloned())
         }
-        async fn find_by_transaction_id(&self, tx_id: &TransactionId) -> Result<Vec<Alert>, String> {
+        async fn find_by_transaction_id(
+            &self,
+            tx_id: &TransactionId,
+        ) -> Result<Vec<Alert>, String> {
             let alerts = self.alerts.lock().unwrap();
-            Ok(alerts.iter().filter(|a| a.transaction_id() == tx_id).cloned().collect())
+            Ok(alerts
+                .iter()
+                .filter(|a| a.transaction_id() == tx_id)
+                .cloned()
+                .collect())
         }
         async fn find_by_status(&self, status: AlertStatus) -> Result<Vec<Alert>, String> {
             let alerts = self.alerts.lock().unwrap();
-            Ok(alerts.iter().filter(|a| a.status() == status).cloned().collect())
+            Ok(alerts
+                .iter()
+                .filter(|a| a.status() == status)
+                .cloned()
+                .collect())
         }
         async fn find_all(
             &self,
@@ -786,11 +786,21 @@ mod tests {
         }
         async fn find_by_alert_id(&self, alert_id: Uuid) -> Result<Option<Investigation>, String> {
             let investigations = self.investigations.lock().unwrap();
-            Ok(investigations.iter().find(|i| i.alert_id() == alert_id).cloned())
+            Ok(investigations
+                .iter()
+                .find(|i| i.alert_id() == alert_id)
+                .cloned())
         }
-        async fn find_by_status(&self, status: InvestigationStatus) -> Result<Vec<Investigation>, String> {
+        async fn find_by_status(
+            &self,
+            status: InvestigationStatus,
+        ) -> Result<Vec<Investigation>, String> {
             let investigations = self.investigations.lock().unwrap();
-            Ok(investigations.iter().filter(|i| i.status() == status).cloned().collect())
+            Ok(investigations
+                .iter()
+                .filter(|i| i.status() == status)
+                .cloned()
+                .collect())
         }
         async fn find_all(
             &self,
@@ -840,9 +850,15 @@ mod tests {
             let reports = self.reports.lock().unwrap();
             Ok(reports.iter().find(|r| r.id() == id).cloned())
         }
-        async fn find_by_investigation_id(&self, inv_id: Uuid) -> Result<Option<SuspicionReport>, String> {
+        async fn find_by_investigation_id(
+            &self,
+            inv_id: Uuid,
+        ) -> Result<Option<SuspicionReport>, String> {
             let reports = self.reports.lock().unwrap();
-            Ok(reports.iter().find(|r| r.investigation_id() == inv_id).cloned())
+            Ok(reports
+                .iter()
+                .find(|r| r.investigation_id() == inv_id)
+                .cloned())
         }
     }
 
@@ -872,11 +888,21 @@ mod tests {
         }
         async fn find_by_account_id(&self, account_id: Uuid) -> Result<Vec<AssetFreeze>, String> {
             let freezes = self.freezes.lock().unwrap();
-            Ok(freezes.iter().filter(|f| f.account_id() == account_id).cloned().collect())
+            Ok(freezes
+                .iter()
+                .filter(|f| f.account_id() == account_id)
+                .cloned()
+                .collect())
         }
-        async fn find_active_by_account_id(&self, account_id: Uuid) -> Result<Option<AssetFreeze>, String> {
+        async fn find_active_by_account_id(
+            &self,
+            account_id: Uuid,
+        ) -> Result<Option<AssetFreeze>, String> {
             let freezes = self.freezes.lock().unwrap();
-            Ok(freezes.iter().find(|f| f.account_id() == account_id && f.is_active()).cloned())
+            Ok(freezes
+                .iter()
+                .find(|f| f.account_id() == account_id && f.is_active())
+                .cloned())
         }
     }
 
@@ -970,10 +996,8 @@ mod tests {
         let alert_id = alert.id();
         alert_repo.save(&alert).await.unwrap();
 
-        let inv_service = InvestigationService::new(
-            Arc::new(MockInvestigationRepo::new()),
-            alert_repo.clone(),
-        );
+        let inv_service =
+            InvestigationService::new(Arc::new(MockInvestigationRepo::new()), alert_repo.clone());
 
         // Open
         let inv = inv_service
@@ -1035,7 +1059,11 @@ mod tests {
         let account_id = Uuid::new_v4();
 
         let freeze = service
-            .freeze_account(account_id, "Suspicious".to_string(), "supervisor".to_string())
+            .freeze_account(
+                account_id,
+                "Suspicious".to_string(),
+                "supervisor".to_string(),
+            )
             .await
             .unwrap();
 
@@ -1051,12 +1079,19 @@ mod tests {
         let account_id = Uuid::new_v4();
 
         let freeze = service
-            .freeze_account(account_id, "Suspicious".to_string(), "supervisor".to_string())
+            .freeze_account(
+                account_id,
+                "Suspicious".to_string(),
+                "supervisor".to_string(),
+            )
             .await
             .unwrap();
 
         let freeze_id = Uuid::parse_str(&freeze.id).unwrap();
-        let lifted = service.lift_freeze(freeze_id, "CTAF_officer".to_string()).await.unwrap();
+        let lifted = service
+            .lift_freeze(freeze_id, "CTAF_officer".to_string())
+            .await
+            .unwrap();
         assert_eq!(lifted.status, "Lifted");
         assert_eq!(lifted.lifted_by, Some("CTAF_officer".to_string()));
     }

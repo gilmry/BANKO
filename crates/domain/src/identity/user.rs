@@ -214,10 +214,7 @@ pub struct User {
 }
 
 impl User {
-    pub fn new(
-        email: EmailAddress,
-        password_hash: PasswordHash,
-    ) -> Result<Self, DomainError> {
+    pub fn new(email: EmailAddress, password_hash: PasswordHash) -> Result<Self, DomainError> {
         let now = Utc::now();
         Ok(User {
             id: UserId::new(),
@@ -359,10 +356,8 @@ mod tests {
     }
 
     fn valid_hash() -> PasswordHash {
-        PasswordHash::new(
-            "$2b$12$LJ3m4ys3Lg2HEOjdLNRsWuBNRZLJDhG5JQqJK9qJKj3K4hNqXKwu".to_string(),
-        )
-        .unwrap()
+        PasswordHash::new("$2b$12$LJ3m4ys3Lg2HEOjdLNRsWuBNRZLJDhG5JQqJK9qJKj3K4hNqXKwu".to_string())
+            .unwrap()
     }
 
     // --- UserId tests ---

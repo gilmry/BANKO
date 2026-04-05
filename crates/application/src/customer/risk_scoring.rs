@@ -1,4 +1,6 @@
-use banko_domain::customer::{Customer, CustomerType, PepStatus, RiskLevel, RiskScore, SourceOfFunds};
+use banko_domain::customer::{
+    Customer, CustomerType, PepStatus, RiskLevel, RiskScore, SourceOfFunds,
+};
 
 /// Calculates risk scores for customers based on their profile attributes.
 pub struct RiskScoringService;
@@ -190,10 +192,7 @@ mod tests {
         let score = RiskScoringService::calculate_risk_score(&customer);
         // base 10 + PEP 30 + business 15 + legal 10 = 65
         assert_eq!(score.value(), 65);
-        assert_eq!(
-            RiskScoringService::risk_level(&score),
-            RiskLevel::High
-        );
+        assert_eq!(RiskScoringService::risk_level(&score), RiskLevel::High);
     }
 
     #[test]
@@ -201,9 +200,6 @@ mod tests {
         // Even with all factors, score should not exceed 100
         let score = RiskScore::new(100).unwrap();
         assert_eq!(score.value(), 100);
-        assert_eq!(
-            RiskScoringService::risk_level(&score),
-            RiskLevel::Critical
-        );
+        assert_eq!(RiskScoringService::risk_level(&score), RiskLevel::Critical);
     }
 }

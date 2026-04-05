@@ -82,12 +82,24 @@ pub async fn list_bct_entries_handler(
     }
 
     let filter = BctAuditFilter {
-        user_id: query.user_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()),
+        user_id: query
+            .user_id
+            .as_deref()
+            .and_then(|s| Uuid::parse_str(s).ok()),
         action: query.action.clone(),
         resource_type: query.resource_type.clone(),
-        resource_id: query.resource_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()),
-        from: query.date_from.as_deref().and_then(|s| s.parse::<DateTime<Utc>>().ok()),
-        to: query.date_to.as_deref().and_then(|s| s.parse::<DateTime<Utc>>().ok()),
+        resource_id: query
+            .resource_id
+            .as_deref()
+            .and_then(|s| Uuid::parse_str(s).ok()),
+        from: query
+            .date_from
+            .as_deref()
+            .and_then(|s| s.parse::<DateTime<Utc>>().ok()),
+        to: query
+            .date_to
+            .as_deref()
+            .and_then(|s| s.parse::<DateTime<Utc>>().ok()),
         ip_address: query.ip_address.clone(),
         sort_by: query.sort_by.clone(),
         sort_order: query.sort_order.clone(),
@@ -115,12 +127,24 @@ pub async fn export_entries_handler(
     }
 
     let filter = BctAuditFilter {
-        user_id: query.user_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()),
+        user_id: query
+            .user_id
+            .as_deref()
+            .and_then(|s| Uuid::parse_str(s).ok()),
         action: query.action.clone(),
         resource_type: query.resource_type.clone(),
-        resource_id: query.resource_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()),
-        from: query.date_from.as_deref().and_then(|s| s.parse::<DateTime<Utc>>().ok()),
-        to: query.date_to.as_deref().and_then(|s| s.parse::<DateTime<Utc>>().ok()),
+        resource_id: query
+            .resource_id
+            .as_deref()
+            .and_then(|s| Uuid::parse_str(s).ok()),
+        from: query
+            .date_from
+            .as_deref()
+            .and_then(|s| s.parse::<DateTime<Utc>>().ok()),
+        to: query
+            .date_to
+            .as_deref()
+            .and_then(|s| s.parse::<DateTime<Utc>>().ok()),
         ip_address: None,
         sort_by: None,
         sort_order: None,
@@ -131,7 +155,10 @@ pub async fn export_entries_handler(
         "csv" => match service.export_csv(&filter).await {
             Ok(resp) => HttpResponse::Ok()
                 .content_type("text/csv")
-                .insert_header(("Content-Disposition", "attachment; filename=\"audit_export.csv\""))
+                .insert_header((
+                    "Content-Disposition",
+                    "attachment; filename=\"audit_export.csv\"",
+                ))
                 .json(resp),
             Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
                 error: e.to_string(),

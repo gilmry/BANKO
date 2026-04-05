@@ -24,13 +24,17 @@ mod tests {
 
     use super::*;
     use crate::config::JwtConfig;
+    use crate::test_helpers::make_test_user_service;
     use crate::web::handlers::auth_handlers::{
         login_handler, register_handler, ErrorResponse, LoginResponse,
     };
-    use crate::test_helpers::make_test_user_service;
 
     fn test_jwt_config() -> JwtConfig {
-        JwtConfig::new("test-secret-must-be-long-enough-for-jwt".to_string(), 3600, 604800)
+        JwtConfig::new(
+            "test-secret-must-be-long-enough-for-jwt".to_string(),
+            3600,
+            604800,
+        )
     }
 
     #[actix_rt::test]
@@ -94,9 +98,7 @@ mod tests {
         )
         .await;
 
-        let req = test::TestRequest::get()
-            .uri("/api/profile")
-            .to_request();
+        let req = test::TestRequest::get().uri("/api/profile").to_request();
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), 401);
     }
@@ -125,7 +127,11 @@ mod tests {
     async fn test_profile_with_expired_token_returns_401() {
         let service = make_test_user_service();
         let jwt_normal = test_jwt_config();
-        let jwt_expired = JwtConfig::new("test-secret-must-be-long-enough-for-jwt".to_string(), -10, -10);
+        let jwt_expired = JwtConfig::new(
+            "test-secret-must-be-long-enough-for-jwt".to_string(),
+            -10,
+            -10,
+        );
 
         let token = jwt_expired
             .generate_access_token("user-123", "test@banko.tn", &["user".to_string()])

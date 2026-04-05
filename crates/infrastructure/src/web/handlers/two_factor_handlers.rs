@@ -162,7 +162,11 @@ mod tests {
     }
 
     fn test_jwt_config() -> JwtConfig {
-        JwtConfig::new("test-secret-must-be-long-enough-for-jwt".to_string(), 3600, 604800)
+        JwtConfig::new(
+            "test-secret-must-be-long-enough-for-jwt".to_string(),
+            3600,
+            604800,
+        )
     }
 
     fn get_token_for_user(jwt: &JwtConfig, user_id: &str) -> String {

@@ -64,7 +64,9 @@ impl RetentionService {
 
     /// Run anonymization job: find all closed customers where closed_at > 10 years ago,
     /// anonymize them and persist.
-    pub async fn run_anonymization_job(&self) -> Result<AnonymizationReport, RetentionServiceError> {
+    pub async fn run_anonymization_job(
+        &self,
+    ) -> Result<AnonymizationReport, RetentionServiceError> {
         let now = Utc::now();
         let cutoff = now - chrono::Duration::days((RETENTION_YEARS as i64) * 365 + 3); // slight buffer
 
@@ -220,10 +222,7 @@ mod tests {
             Ok(())
         }
 
-        async fn find_closed_before(
-            &self,
-            before: DateTime<Utc>,
-        ) -> Result<Vec<Customer>, String> {
+        async fn find_closed_before(&self, before: DateTime<Utc>) -> Result<Vec<Customer>, String> {
             let customers = self.customers.lock().unwrap();
             Ok(customers
                 .iter()
@@ -319,20 +318,29 @@ mod tests {
     #[test]
     fn test_is_retention_expired_true() {
         let closed_at = Utc::now() - Duration::days(3660); // ~10.02 years
-        assert!(RetentionService::is_retention_expired(closed_at, Utc::now()));
+        assert!(RetentionService::is_retention_expired(
+            closed_at,
+            Utc::now()
+        ));
     }
 
     #[test]
     fn test_is_retention_expired_false() {
         let closed_at = Utc::now() - Duration::days(365 * 5); // 5 years
-        assert!(!RetentionService::is_retention_expired(closed_at, Utc::now()));
+        assert!(!RetentionService::is_retention_expired(
+            closed_at,
+            Utc::now()
+        ));
     }
 
     #[test]
     fn test_is_retention_expired_boundary() {
         // Exactly 10 years (3652.5 days ~ 3653)
         let closed_at = Utc::now() - Duration::days(3653);
-        assert!(RetentionService::is_retention_expired(closed_at, Utc::now()));
+        assert!(RetentionService::is_retention_expired(
+            closed_at,
+            Utc::now()
+        ));
     }
 
     // --- Service tests ---
@@ -357,20 +365,12 @@ mod tests {
         assert!(report.errors.is_empty());
 
         // Verify the eligible customer was anonymized in the repo
-        let anon = repo
-            .find_by_id(eligible.id())
-            .await
-            .unwrap()
-            .unwrap();
+        let anon = repo.find_by_id(eligible.id()).await.unwrap().unwrap();
         assert!(anon.is_anonymized());
         assert_eq!(anon.kyc_profile().full_name(), "[ANONYMIZED]");
 
         // Verify the not-eligible customer was NOT anonymized
-        let still_closed = repo
-            .find_by_id(not_eligible.id())
-            .await
-            .unwrap()
-            .unwrap();
+        let still_closed = repo.find_by_id(not_eligible.id()).await.unwrap().unwrap();
         assert_eq!(still_closed.status(), CustomerStatus::Closed);
         assert_ne!(still_closed.kyc_profile().full_name(), "[ANONYMIZED]");
     }
@@ -431,6 +431,9 @@ mod tests {
         let service = RetentionService::new(repo);
 
         let result = service.check_retention(uuid::Uuid::new_v4()).await;
-        assert!(matches!(result, Err(RetentionServiceError::CustomerNotFound)));
+        assert!(matches!(
+            result,
+            Err(RetentionServiceError::CustomerNotFound)
+        ));
     }
 }

@@ -1,7 +1,9 @@
 use async_trait::async_trait;
 use uuid::Uuid;
 
-use banko_domain::payment::{OrderId, PaymentOrder, PaymentStatus, SwiftMessage, Transfer, TransferId};
+use banko_domain::payment::{
+    OrderId, PaymentOrder, PaymentStatus, SwiftMessage, Transfer, TransferId,
+};
 
 // --- Payment Order Repository ---
 

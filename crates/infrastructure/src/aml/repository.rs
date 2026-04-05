@@ -4,8 +4,8 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use banko_application::aml::{
-    IAlertRepository, IAssetFreezeRepository, IInvestigationRepository,
-    ISuspicionReportRepository, ITransactionRepository,
+    IAlertRepository, IAssetFreezeRepository, IInvestigationRepository, ISuspicionReportRepository,
+    ITransactionRepository,
 };
 use banko_domain::aml::*;
 use banko_domain::shared::{Currency, Money};
@@ -265,16 +265,14 @@ impl IAlertRepository for PgAlertRepository {
         row.map(|r| r.into_domain()).transpose()
     }
 
-    async fn find_by_transaction_id(
-        &self,
-        tx_id: &TransactionId,
-    ) -> Result<Vec<Alert>, String> {
-        let rows: Vec<AlertRow> =
-            sqlx::query_as("SELECT * FROM aml.alerts WHERE transaction_id = $1 ORDER BY created_at")
-                .bind(tx_id.as_uuid())
-                .fetch_all(&self.pool)
-                .await
-                .map_err(|e| e.to_string())?;
+    async fn find_by_transaction_id(&self, tx_id: &TransactionId) -> Result<Vec<Alert>, String> {
+        let rows: Vec<AlertRow> = sqlx::query_as(
+            "SELECT * FROM aml.alerts WHERE transaction_id = $1 ORDER BY created_at",
+        )
+        .bind(tx_id.as_uuid())
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
         rows.into_iter().map(|r| r.into_domain()).collect()
     }
 
@@ -472,12 +470,13 @@ impl IInvestigationRepository for PgInvestigationRepository {
         &self,
         status: InvestigationStatus,
     ) -> Result<Vec<Investigation>, String> {
-        let rows: Vec<InvestigationRow> =
-            sqlx::query_as("SELECT * FROM aml.investigations WHERE status = $1 ORDER BY created_at DESC")
-                .bind(status.as_str())
-                .fetch_all(&self.pool)
-                .await
-                .map_err(|e| e.to_string())?;
+        let rows: Vec<InvestigationRow> = sqlx::query_as(
+            "SELECT * FROM aml.investigations WHERE status = $1 ORDER BY created_at DESC",
+        )
+        .bind(status.as_str())
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
         let mut result = Vec::new();
         for r in rows {
             let notes = self.load_notes(r.id).await?;
@@ -706,12 +705,13 @@ impl IAssetFreezeRepository for PgAssetFreezeRepository {
     }
 
     async fn find_by_account_id(&self, account_id: Uuid) -> Result<Vec<AssetFreeze>, String> {
-        let rows: Vec<FreezeRow> =
-            sqlx::query_as("SELECT * FROM aml.asset_freezes WHERE account_id = $1 ORDER BY frozen_at DESC")
-                .bind(account_id)
-                .fetch_all(&self.pool)
-                .await
-                .map_err(|e| e.to_string())?;
+        let rows: Vec<FreezeRow> = sqlx::query_as(
+            "SELECT * FROM aml.asset_freezes WHERE account_id = $1 ORDER BY frozen_at DESC",
+        )
+        .bind(account_id)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
         rows.into_iter().map(|r| r.into_domain()).collect()
     }
 

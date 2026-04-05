@@ -4,9 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::shared::errors::DomainError;
 use crate::shared::value_objects::{Currency, CustomerId, Money, Rib};
 
-use super::value_objects::{
-    AccountId, AccountStatus, AccountType, MovementId, MovementType,
-};
+use super::value_objects::{AccountId, AccountStatus, AccountType, MovementId, MovementType};
 
 // --- Movement entity ---
 
@@ -350,14 +348,20 @@ mod tests {
 
     #[test]
     fn test_new_account_kyc_not_validated_fails() {
-        let result = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, false);
+        let result = Account::new(
+            valid_customer_id(),
+            valid_rib(),
+            AccountType::Current,
+            false,
+        );
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), DomainError::KycNotValidated);
     }
 
     #[test]
     fn test_new_account_kyc_validated_succeeds() {
-        let account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
         assert_eq!(account.status(), AccountStatus::Active);
         assert!(account.balance().is_zero());
         assert!(account.available_balance().is_zero());
@@ -366,7 +370,8 @@ mod tests {
 
     #[test]
     fn test_new_account_default_currency_tnd() {
-        let account = Account::new(valid_customer_id(), valid_rib(), AccountType::Savings, true).unwrap();
+        let account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Savings, true).unwrap();
         assert_eq!(account.balance().currency(), Currency::TND);
     }
 
@@ -374,7 +379,8 @@ mod tests {
 
     #[test]
     fn test_deposit_success() {
-        let mut account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
         let movement = account.deposit(tnd(1000.0), "Initial deposit").unwrap();
         assert_eq!(account.balance().amount(), 1000.0);
         assert_eq!(account.available_balance().amount(), 1000.0);
@@ -385,21 +391,27 @@ mod tests {
 
     #[test]
     fn test_deposit_zero_amount_fails() {
-        let mut account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
         let result = account.deposit(tnd(0.0), "Zero deposit");
         assert!(result.is_err());
     }
 
     #[test]
     fn test_deposit_negative_amount_fails() {
-        let mut account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
-        let result = account.deposit(Money::new(-100.0, Currency::TND).unwrap(), "Negative deposit");
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let result = account.deposit(
+            Money::new(-100.0, Currency::TND).unwrap(),
+            "Negative deposit",
+        );
         assert!(result.is_err());
     }
 
     #[test]
     fn test_multiple_deposits() {
-        let mut account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
         account.deposit(tnd(500.0), "First").unwrap();
         account.deposit(tnd(300.0), "Second").unwrap();
         assert_eq!(account.balance().amount(), 800.0);
@@ -410,7 +422,8 @@ mod tests {
 
     #[test]
     fn test_withdraw_success() {
-        let mut account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
         account.deposit(tnd(1000.0), "Deposit").unwrap();
         let movement = account.withdraw(tnd(400.0), "ATM withdrawal").unwrap();
         assert_eq!(account.balance().amount(), 600.0);
@@ -421,7 +434,8 @@ mod tests {
 
     #[test]
     fn test_withdraw_insufficient_funds() {
-        let mut account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
         account.deposit(tnd(100.0), "Deposit").unwrap();
         let result = account.withdraw(tnd(200.0), "Overdraft attempt");
         assert!(result.is_err());
@@ -432,7 +446,8 @@ mod tests {
 
     #[test]
     fn test_withdraw_zero_amount_fails() {
-        let mut account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
         account.deposit(tnd(100.0), "Deposit").unwrap();
         let result = account.withdraw(tnd(0.0), "Zero withdrawal");
         assert!(result.is_err());
@@ -440,7 +455,8 @@ mod tests {
 
     #[test]
     fn test_withdraw_exact_balance() {
-        let mut account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
         account.deposit(tnd(500.0), "Deposit").unwrap();
         account.withdraw(tnd(500.0), "Full withdrawal").unwrap();
         assert!(account.balance().is_zero());
@@ -450,7 +466,8 @@ mod tests {
 
     #[test]
     fn test_freeze_account() {
-        let mut account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
         account.deposit(tnd(1000.0), "Deposit").unwrap();
         account.freeze();
         assert_eq!(account.status(), AccountStatus::Suspended);
@@ -461,7 +478,8 @@ mod tests {
 
     #[test]
     fn test_frozen_account_cannot_deposit() {
-        let mut account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
         account.freeze();
         let result = account.deposit(tnd(100.0), "Deposit");
         assert!(result.is_err());
@@ -470,7 +488,8 @@ mod tests {
 
     #[test]
     fn test_frozen_account_cannot_withdraw() {
-        let mut account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
         account.deposit(tnd(1000.0), "Deposit").unwrap();
         account.freeze();
         let result = account.withdraw(tnd(100.0), "Withdrawal");
@@ -480,7 +499,8 @@ mod tests {
 
     #[test]
     fn test_unfreeze_account() {
-        let mut account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
         account.deposit(tnd(1000.0), "Deposit").unwrap();
         account.freeze();
         account.unfreeze();
@@ -492,14 +512,16 @@ mod tests {
 
     #[test]
     fn test_close_account_zero_balance() {
-        let mut account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
         account.close().unwrap();
         assert_eq!(account.status(), AccountStatus::Closed);
     }
 
     #[test]
     fn test_close_account_non_zero_balance_fails() {
-        let mut account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
         account.deposit(tnd(100.0), "Deposit").unwrap();
         let result = account.close();
         assert!(result.is_err());
@@ -507,7 +529,8 @@ mod tests {
 
     #[test]
     fn test_closed_account_cannot_deposit() {
-        let mut account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
         account.close().unwrap();
         let result = account.deposit(tnd(100.0), "Deposit");
         assert!(result.is_err());
@@ -518,7 +541,8 @@ mod tests {
 
     #[test]
     fn test_apply_hold() {
-        let mut account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
         account.deposit(tnd(1000.0), "Deposit").unwrap();
         account.apply_hold(tnd(300.0)).unwrap();
         assert_eq!(account.balance().amount(), 1000.0);
@@ -527,7 +551,8 @@ mod tests {
 
     #[test]
     fn test_apply_hold_insufficient_available() {
-        let mut account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
         account.deposit(tnd(100.0), "Deposit").unwrap();
         let result = account.apply_hold(tnd(200.0));
         assert!(result.is_err());
@@ -536,7 +561,8 @@ mod tests {
 
     #[test]
     fn test_release_hold() {
-        let mut account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
         account.deposit(tnd(1000.0), "Deposit").unwrap();
         account.apply_hold(tnd(300.0)).unwrap();
         account.release_hold(tnd(200.0)).unwrap();
@@ -545,7 +571,8 @@ mod tests {
 
     #[test]
     fn test_release_hold_caps_at_balance() {
-        let mut account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
         account.deposit(tnd(1000.0), "Deposit").unwrap();
         account.apply_hold(tnd(300.0)).unwrap();
         // Release more than held
@@ -556,7 +583,8 @@ mod tests {
 
     #[test]
     fn test_hold_then_withdraw_checks_available() {
-        let mut account = Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
         account.deposit(tnd(1000.0), "Deposit").unwrap();
         account.apply_hold(tnd(800.0)).unwrap();
         // Only 200 available
@@ -604,7 +632,13 @@ mod tests {
 
     #[test]
     fn test_getters() {
-        let account = Account::new(valid_customer_id(), valid_rib(), AccountType::TimeDeposit, true).unwrap();
+        let account = Account::new(
+            valid_customer_id(),
+            valid_rib(),
+            AccountType::TimeDeposit,
+            true,
+        )
+        .unwrap();
         assert!(!account.id().as_uuid().is_nil());
         assert_eq!(account.account_type(), AccountType::TimeDeposit);
         assert!(account.movements().is_empty());

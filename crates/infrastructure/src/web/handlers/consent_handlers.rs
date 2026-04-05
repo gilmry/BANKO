@@ -37,12 +37,12 @@ fn map_service_error(err: CustomerServiceError) -> HttpResponse {
         CustomerServiceError::CustomerNotFound => HttpResponse::NotFound().json(ErrorResponse {
             error: "Customer not found".to_string(),
         }),
-        CustomerServiceError::Validation(msg) => HttpResponse::BadRequest().json(ErrorResponse {
-            error: msg,
-        }),
-        CustomerServiceError::Domain(msg) => HttpResponse::BadRequest().json(ErrorResponse {
-            error: msg,
-        }),
+        CustomerServiceError::Validation(msg) => {
+            HttpResponse::BadRequest().json(ErrorResponse { error: msg })
+        }
+        CustomerServiceError::Domain(msg) => {
+            HttpResponse::BadRequest().json(ErrorResponse { error: msg })
+        }
         CustomerServiceError::Internal(msg) => {
             tracing::error!("Consent internal error: {msg}");
             HttpResponse::InternalServerError().json(ErrorResponse {
@@ -55,9 +55,7 @@ fn map_service_error(err: CustomerServiceError) -> HttpResponse {
     }
 }
 
-fn consent_to_response(
-    consent: &banko_domain::customer::ConsentRecord,
-) -> ConsentResponse {
+fn consent_to_response(consent: &banko_domain::customer::ConsentRecord) -> ConsentResponse {
     ConsentResponse {
         consent_id: consent.consent_id().to_string(),
         customer_id: consent.customer_id().to_string(),

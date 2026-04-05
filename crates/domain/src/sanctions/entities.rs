@@ -406,7 +406,11 @@ impl ScreeningResult {
     }
 
     pub fn highest_score(&self) -> u8 {
-        self.matched_entries.iter().map(|m| m.score).max().unwrap_or(0)
+        self.matched_entries
+            .iter()
+            .map(|m| m.score)
+            .max()
+            .unwrap_or(0)
     }
 
     pub fn is_hit(&self) -> bool {
@@ -436,11 +440,7 @@ impl ScreeningResult {
 }
 
 /// High-level screening function: screen a name against all entries in a list.
-pub fn screen_name(
-    name: &str,
-    entries: &[SanctionEntry],
-    threshold: u8,
-) -> ScreeningResult {
+pub fn screen_name(name: &str, entries: &[SanctionEntry], threshold: u8) -> ScreeningResult {
     let active_entries: Vec<_> = entries.iter().filter(|e| e.active()).collect();
 
     let entry_data: Vec<(String, Vec<String>)> = active_entries
@@ -474,17 +474,14 @@ mod tests {
     use super::*;
 
     fn make_entry(name: &str, source: ListSource) -> SanctionEntry {
-        SanctionEntry::new(
-            source,
-            name.to_string(),
-            vec![],
-            None,
-            None,
-        )
-        .unwrap()
+        SanctionEntry::new(source, name.to_string(), vec![], None, None).unwrap()
     }
 
-    fn make_entry_with_aliases(name: &str, aliases: Vec<&str>, source: ListSource) -> SanctionEntry {
+    fn make_entry_with_aliases(
+        name: &str,
+        aliases: Vec<&str>,
+        source: ListSource,
+    ) -> SanctionEntry {
         SanctionEntry::new(
             source,
             name.to_string(),

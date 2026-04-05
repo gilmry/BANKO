@@ -298,23 +298,21 @@ impl IPeriodRepository for PgPeriodRepository {
     }
 
     async fn is_closed(&self, period: &str) -> Result<bool, String> {
-        let row: (i64,) = sqlx::query_as(
-            "SELECT COUNT(*) FROM accounting.closed_periods WHERE period = $1",
-        )
-        .bind(period)
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|e| e.to_string())?;
+        let row: (i64,) =
+            sqlx::query_as("SELECT COUNT(*) FROM accounting.closed_periods WHERE period = $1")
+                .bind(period)
+                .fetch_one(&self.pool)
+                .await
+                .map_err(|e| e.to_string())?;
         Ok(row.0 > 0)
     }
 
     async fn find_closed_periods(&self) -> Result<Vec<String>, String> {
-        let rows: Vec<(String,)> = sqlx::query_as(
-            "SELECT period FROM accounting.closed_periods ORDER BY period",
-        )
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| e.to_string())?;
+        let rows: Vec<(String,)> =
+            sqlx::query_as("SELECT period FROM accounting.closed_periods ORDER BY period")
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| e.to_string())?;
         Ok(rows.into_iter().map(|r| r.0).collect())
     }
 }

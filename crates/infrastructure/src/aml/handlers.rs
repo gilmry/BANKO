@@ -104,40 +104,77 @@ pub async fn create_transaction_handler(
 ) -> HttpResponse {
     let account_id = match Uuid::parse_str(&body.account_id) {
         Ok(id) => id,
-        Err(_) => return HttpResponse::BadRequest().json(ErrorResponse { error: "Invalid account_id".to_string() }),
+        Err(_) => {
+            return HttpResponse::BadRequest().json(ErrorResponse {
+                error: "Invalid account_id".to_string(),
+            })
+        }
     };
     let customer_id = match Uuid::parse_str(&body.customer_id) {
         Ok(id) => id,
-        Err(_) => return HttpResponse::BadRequest().json(ErrorResponse { error: "Invalid customer_id".to_string() }),
+        Err(_) => {
+            return HttpResponse::BadRequest().json(ErrorResponse {
+                error: "Invalid customer_id".to_string(),
+            })
+        }
     };
     let currency = Currency::from_code(body.currency.as_deref().unwrap_or("TND"));
     let currency = match currency {
         Ok(c) => c,
-        Err(_) => return HttpResponse::BadRequest().json(ErrorResponse { error: "Invalid currency".to_string() }),
+        Err(_) => {
+            return HttpResponse::BadRequest().json(ErrorResponse {
+                error: "Invalid currency".to_string(),
+            })
+        }
     };
     let amount = match Money::new(body.amount, currency) {
         Ok(m) => m,
-        Err(e) => return HttpResponse::BadRequest().json(ErrorResponse { error: e.to_string() }),
+        Err(e) => {
+            return HttpResponse::BadRequest().json(ErrorResponse {
+                error: e.to_string(),
+            })
+        }
     };
     let tx_type = match TransactionType::from_str_type(&body.transaction_type) {
         Ok(t) => t,
-        Err(_) => return HttpResponse::BadRequest().json(ErrorResponse { error: "Invalid transaction_type".to_string() }),
+        Err(_) => {
+            return HttpResponse::BadRequest().json(ErrorResponse {
+                error: "Invalid transaction_type".to_string(),
+            })
+        }
     };
     let direction = match Direction::from_str_dir(&body.direction) {
         Ok(d) => d,
-        Err(_) => return HttpResponse::BadRequest().json(ErrorResponse { error: "Invalid direction".to_string() }),
+        Err(_) => {
+            return HttpResponse::BadRequest().json(ErrorResponse {
+                error: "Invalid direction".to_string(),
+            })
+        }
     };
 
-    match service.record_transaction(account_id, customer_id, body.counterparty.clone(), amount, tx_type, direction).await {
+    match service
+        .record_transaction(
+            account_id,
+            customer_id,
+            body.counterparty.clone(),
+            amount,
+            tx_type,
+            direction,
+        )
+        .await
+    {
         Ok((tx, alerts)) => {
-            let alert_responses: Vec<AlertResponse> = alerts.iter().map(|a| AlertResponse {
-                id: a.id().to_string(),
-                transaction_id: a.transaction_id().to_string(),
-                risk_level: a.risk_level().as_str().to_string(),
-                reason: a.reason().to_string(),
-                status: a.status().as_str().to_string(),
-                created_at: a.created_at(),
-            }).collect();
+            let alert_responses: Vec<AlertResponse> = alerts
+                .iter()
+                .map(|a| AlertResponse {
+                    id: a.id().to_string(),
+                    transaction_id: a.transaction_id().to_string(),
+                    risk_level: a.risk_level().as_str().to_string(),
+                    reason: a.reason().to_string(),
+                    status: a.status().as_str().to_string(),
+                    created_at: a.created_at(),
+                })
+                .collect();
 
             HttpResponse::Created().json(TransactionResponse {
                 id: tx.id().to_string(),
@@ -153,7 +190,9 @@ pub async fn create_transaction_handler(
                 alerts: alert_responses,
             })
         }
-        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse { error: e.to_string() }),
+        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
+            error: e.to_string(),
+        }),
     }
 }
 
@@ -163,13 +202,18 @@ pub async fn list_transactions_handler(
     service: web::Data<Arc<TransactionMonitoringService>>,
     query: web::Query<ListTransactionsQuery>,
 ) -> HttpResponse {
-    let account_id = query.account_id.as_ref().and_then(|s| Uuid::parse_str(s).ok());
+    let account_id = query
+        .account_id
+        .as_ref()
+        .and_then(|s| Uuid::parse_str(s).ok());
     let page = query.page.unwrap_or(1);
     let limit = query.limit.unwrap_or(20);
 
     match service.list_transactions(account_id, page, limit).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse { error: e.to_string() }),
+        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
+            error: e.to_string(),
+        }),
     }
 }
 
@@ -181,13 +225,21 @@ pub async fn get_transaction_handler(
 ) -> HttpResponse {
     let tx_id = match Uuid::parse_str(&path.into_inner()) {
         Ok(id) => TransactionId::from_uuid(id),
-        Err(_) => return HttpResponse::BadRequest().json(ErrorResponse { error: "Invalid ID".to_string() }),
+        Err(_) => {
+            return HttpResponse::BadRequest().json(ErrorResponse {
+                error: "Invalid ID".to_string(),
+            })
+        }
     };
 
     match service.get_transaction(&tx_id).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(AmlServiceError::TransactionNotFound) => HttpResponse::NotFound().json(ErrorResponse { error: "Transaction not found".to_string() }),
-        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse { error: e.to_string() }),
+        Err(AmlServiceError::TransactionNotFound) => HttpResponse::NotFound().json(ErrorResponse {
+            error: "Transaction not found".to_string(),
+        }),
+        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
+            error: e.to_string(),
+        }),
     }
 }
 
@@ -197,14 +249,22 @@ pub async fn list_alerts_handler(
     service: web::Data<Arc<TransactionMonitoringService>>,
     query: web::Query<ListAlertsQuery>,
 ) -> HttpResponse {
-    let status = query.status.as_ref().and_then(|s| AlertStatus::from_str_status(s).ok());
-    let risk_level = query.risk_level.as_ref().and_then(|s| RiskLevel::from_str_level(s).ok());
+    let status = query
+        .status
+        .as_ref()
+        .and_then(|s| AlertStatus::from_str_status(s).ok());
+    let risk_level = query
+        .risk_level
+        .as_ref()
+        .and_then(|s| RiskLevel::from_str_level(s).ok());
     let page = query.page.unwrap_or(1);
     let limit = query.limit.unwrap_or(20);
 
     match service.list_alerts(status, risk_level, page, limit).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse { error: e.to_string() }),
+        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
+            error: e.to_string(),
+        }),
     }
 }
 
@@ -216,13 +276,21 @@ pub async fn get_alert_handler(
 ) -> HttpResponse {
     let alert_id = match Uuid::parse_str(&path.into_inner()) {
         Ok(id) => id,
-        Err(_) => return HttpResponse::BadRequest().json(ErrorResponse { error: "Invalid ID".to_string() }),
+        Err(_) => {
+            return HttpResponse::BadRequest().json(ErrorResponse {
+                error: "Invalid ID".to_string(),
+            })
+        }
     };
 
     match service.get_alert(alert_id).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(AmlServiceError::AlertNotFound) => HttpResponse::NotFound().json(ErrorResponse { error: "Alert not found".to_string() }),
-        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse { error: e.to_string() }),
+        Err(AmlServiceError::AlertNotFound) => HttpResponse::NotFound().json(ErrorResponse {
+            error: "Alert not found".to_string(),
+        }),
+        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
+            error: e.to_string(),
+        }),
     }
 }
 
@@ -236,13 +304,24 @@ pub async fn open_investigation_handler(
 ) -> HttpResponse {
     let alert_id = match Uuid::parse_str(&body.alert_id) {
         Ok(id) => id,
-        Err(_) => return HttpResponse::BadRequest().json(ErrorResponse { error: "Invalid alert_id".to_string() }),
+        Err(_) => {
+            return HttpResponse::BadRequest().json(ErrorResponse {
+                error: "Invalid alert_id".to_string(),
+            })
+        }
     };
 
-    match service.open_investigation(alert_id, body.assigned_to.clone()).await {
+    match service
+        .open_investigation(alert_id, body.assigned_to.clone())
+        .await
+    {
         Ok(resp) => HttpResponse::Created().json(resp),
-        Err(AmlServiceError::AlertNotFound) => HttpResponse::NotFound().json(ErrorResponse { error: "Alert not found".to_string() }),
-        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse { error: e.to_string() }),
+        Err(AmlServiceError::AlertNotFound) => HttpResponse::NotFound().json(ErrorResponse {
+            error: "Alert not found".to_string(),
+        }),
+        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
+            error: e.to_string(),
+        }),
     }
 }
 
@@ -254,13 +333,23 @@ pub async fn get_investigation_handler(
 ) -> HttpResponse {
     let id = match Uuid::parse_str(&path.into_inner()) {
         Ok(id) => id,
-        Err(_) => return HttpResponse::BadRequest().json(ErrorResponse { error: "Invalid ID".to_string() }),
+        Err(_) => {
+            return HttpResponse::BadRequest().json(ErrorResponse {
+                error: "Invalid ID".to_string(),
+            })
+        }
     };
 
     match service.get_investigation(id).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(AmlServiceError::InvestigationNotFound) => HttpResponse::NotFound().json(ErrorResponse { error: "Investigation not found".to_string() }),
-        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse { error: e.to_string() }),
+        Err(AmlServiceError::InvestigationNotFound) => {
+            HttpResponse::NotFound().json(ErrorResponse {
+                error: "Investigation not found".to_string(),
+            })
+        }
+        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
+            error: e.to_string(),
+        }),
     }
 }
 
@@ -273,12 +362,21 @@ pub async fn add_note_handler(
 ) -> HttpResponse {
     let id = match Uuid::parse_str(&path.into_inner()) {
         Ok(id) => id,
-        Err(_) => return HttpResponse::BadRequest().json(ErrorResponse { error: "Invalid ID".to_string() }),
+        Err(_) => {
+            return HttpResponse::BadRequest().json(ErrorResponse {
+                error: "Invalid ID".to_string(),
+            })
+        }
     };
 
-    match service.add_note(id, body.note.clone(), body.author.clone()).await {
+    match service
+        .add_note(id, body.note.clone(), body.author.clone())
+        .await
+    {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse { error: e.to_string() }),
+        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
+            error: e.to_string(),
+        }),
     }
 }
 
@@ -290,12 +388,18 @@ pub async fn escalate_investigation_handler(
 ) -> HttpResponse {
     let id = match Uuid::parse_str(&path.into_inner()) {
         Ok(id) => id,
-        Err(_) => return HttpResponse::BadRequest().json(ErrorResponse { error: "Invalid ID".to_string() }),
+        Err(_) => {
+            return HttpResponse::BadRequest().json(ErrorResponse {
+                error: "Invalid ID".to_string(),
+            })
+        }
     };
 
     match service.escalate(id).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse { error: e.to_string() }),
+        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
+            error: e.to_string(),
+        }),
     }
 }
 
@@ -308,18 +412,28 @@ pub async fn close_investigation_handler(
 ) -> HttpResponse {
     let id = match Uuid::parse_str(&path.into_inner()) {
         Ok(id) => id,
-        Err(_) => return HttpResponse::BadRequest().json(ErrorResponse { error: "Invalid ID".to_string() }),
+        Err(_) => {
+            return HttpResponse::BadRequest().json(ErrorResponse {
+                error: "Invalid ID".to_string(),
+            })
+        }
     };
 
     let result = match body.outcome.as_str() {
         "confirmed" => service.close_confirmed(id).await,
         "dismissed" => service.close_dismissed(id).await,
-        _ => return HttpResponse::BadRequest().json(ErrorResponse { error: "outcome must be 'confirmed' or 'dismissed'".to_string() }),
+        _ => {
+            return HttpResponse::BadRequest().json(ErrorResponse {
+                error: "outcome must be 'confirmed' or 'dismissed'".to_string(),
+            })
+        }
     };
 
     match result {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse { error: e.to_string() }),
+        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
+            error: e.to_string(),
+        }),
     }
 }
 
@@ -333,12 +447,28 @@ pub async fn generate_report_handler(
 ) -> HttpResponse {
     let investigation_id = match Uuid::parse_str(&body.investigation_id) {
         Ok(id) => id,
-        Err(_) => return HttpResponse::BadRequest().json(ErrorResponse { error: "Invalid investigation_id".to_string() }),
+        Err(_) => {
+            return HttpResponse::BadRequest().json(ErrorResponse {
+                error: "Invalid investigation_id".to_string(),
+            })
+        }
     };
 
-    match service.generate_report(investigation_id, body.customer_info.clone(), body.transaction_details.clone(), body.reasons.clone(), body.evidence.clone(), body.timeline.clone()).await {
+    match service
+        .generate_report(
+            investigation_id,
+            body.customer_info.clone(),
+            body.transaction_details.clone(),
+            body.reasons.clone(),
+            body.evidence.clone(),
+            body.timeline.clone(),
+        )
+        .await
+    {
         Ok(resp) => HttpResponse::Created().json(resp),
-        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse { error: e.to_string() }),
+        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
+            error: e.to_string(),
+        }),
     }
 }
 
@@ -350,12 +480,18 @@ pub async fn submit_report_handler(
 ) -> HttpResponse {
     let id = match Uuid::parse_str(&path.into_inner()) {
         Ok(id) => id,
-        Err(_) => return HttpResponse::BadRequest().json(ErrorResponse { error: "Invalid ID".to_string() }),
+        Err(_) => {
+            return HttpResponse::BadRequest().json(ErrorResponse {
+                error: "Invalid ID".to_string(),
+            })
+        }
     };
 
     match service.submit_to_ctaf(id).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse { error: e.to_string() }),
+        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
+            error: e.to_string(),
+        }),
     }
 }
 
@@ -369,12 +505,21 @@ pub async fn freeze_account_handler(
 ) -> HttpResponse {
     let account_id = match Uuid::parse_str(&body.account_id) {
         Ok(id) => id,
-        Err(_) => return HttpResponse::BadRequest().json(ErrorResponse { error: "Invalid account_id".to_string() }),
+        Err(_) => {
+            return HttpResponse::BadRequest().json(ErrorResponse {
+                error: "Invalid account_id".to_string(),
+            })
+        }
     };
 
-    match service.freeze_account(account_id, body.reason.clone(), body.ordered_by.clone()).await {
+    match service
+        .freeze_account(account_id, body.reason.clone(), body.ordered_by.clone())
+        .await
+    {
         Ok(resp) => HttpResponse::Created().json(resp),
-        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse { error: e.to_string() }),
+        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
+            error: e.to_string(),
+        }),
     }
 }
 
@@ -387,12 +532,18 @@ pub async fn lift_freeze_handler(
 ) -> HttpResponse {
     let id = match Uuid::parse_str(&path.into_inner()) {
         Ok(id) => id,
-        Err(_) => return HttpResponse::BadRequest().json(ErrorResponse { error: "Invalid ID".to_string() }),
+        Err(_) => {
+            return HttpResponse::BadRequest().json(ErrorResponse {
+                error: "Invalid ID".to_string(),
+            })
+        }
     };
 
     match service.lift_freeze(id, body.lifted_by.clone()).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse { error: e.to_string() }),
+        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
+            error: e.to_string(),
+        }),
     }
 }
 
@@ -405,13 +556,23 @@ pub async fn list_freezes_handler(
     let account_id = match query.account_id.as_ref() {
         Some(s) => match Uuid::parse_str(s) {
             Ok(id) => id,
-            Err(_) => return HttpResponse::BadRequest().json(ErrorResponse { error: "Invalid account_id".to_string() }),
+            Err(_) => {
+                return HttpResponse::BadRequest().json(ErrorResponse {
+                    error: "Invalid account_id".to_string(),
+                })
+            }
         },
-        None => return HttpResponse::BadRequest().json(ErrorResponse { error: "account_id is required".to_string() }),
+        None => {
+            return HttpResponse::BadRequest().json(ErrorResponse {
+                error: "account_id is required".to_string(),
+            })
+        }
     };
 
     match service.list_freezes_for_account(account_id).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse { error: e.to_string() }),
+        Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
+            error: e.to_string(),
+        }),
     }
 }

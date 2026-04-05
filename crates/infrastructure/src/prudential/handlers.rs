@@ -13,7 +13,9 @@ pub async fn get_ratios_handler(
 ) -> HttpResponse {
     let institution_id = match Uuid::parse_str(&query.institution_id) {
         Ok(id) => id,
-        Err(e) => return HttpResponse::BadRequest().json(serde_json::json!({"error": e.to_string()})),
+        Err(e) => {
+            return HttpResponse::BadRequest().json(serde_json::json!({"error": e.to_string()}))
+        }
     };
 
     match service.get_current_ratios(institution_id).await {
@@ -21,7 +23,9 @@ pub async fn get_ratios_handler(
         Err(PrudentialServiceError::RatioNotFound) => {
             HttpResponse::NotFound().json(serde_json::json!({"error": "Ratios not found"}))
         }
-        Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({"error": e.to_string()})),
+        Err(e) => {
+            HttpResponse::InternalServerError().json(serde_json::json!({"error": e.to_string()}))
+        }
     }
 }
 
@@ -37,7 +41,9 @@ pub async fn calculate_ratios_handler(
         Err(PrudentialServiceError::InvalidInput(msg)) => {
             HttpResponse::BadRequest().json(serde_json::json!({"error": msg}))
         }
-        Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({"error": e.to_string()})),
+        Err(e) => {
+            HttpResponse::InternalServerError().json(serde_json::json!({"error": e.to_string()}))
+        }
     }
 }
 
@@ -47,7 +53,9 @@ pub async fn check_solvency_handler(
 ) -> HttpResponse {
     let institution_id = match Uuid::parse_str(&query.institution_id) {
         Ok(id) => id,
-        Err(e) => return HttpResponse::BadRequest().json(serde_json::json!({"error": e.to_string()})),
+        Err(e) => {
+            return HttpResponse::BadRequest().json(serde_json::json!({"error": e.to_string()}))
+        }
     };
 
     match service.check_solvency(institution_id).await {
@@ -55,7 +63,9 @@ pub async fn check_solvency_handler(
         Err(PrudentialServiceError::RatioNotFound) => {
             HttpResponse::NotFound().json(serde_json::json!({"error": "Ratios not found"}))
         }
-        Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({"error": e.to_string()})),
+        Err(e) => {
+            HttpResponse::InternalServerError().json(serde_json::json!({"error": e.to_string()}))
+        }
     }
 }
 
@@ -65,7 +75,9 @@ pub async fn check_tier1_handler(
 ) -> HttpResponse {
     let institution_id = match Uuid::parse_str(&query.institution_id) {
         Ok(id) => id,
-        Err(e) => return HttpResponse::BadRequest().json(serde_json::json!({"error": e.to_string()})),
+        Err(e) => {
+            return HttpResponse::BadRequest().json(serde_json::json!({"error": e.to_string()}))
+        }
     };
 
     match service.check_tier1(institution_id).await {
@@ -73,7 +85,9 @@ pub async fn check_tier1_handler(
         Err(PrudentialServiceError::RatioNotFound) => {
             HttpResponse::NotFound().json(serde_json::json!({"error": "Ratios not found"}))
         }
-        Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({"error": e.to_string()})),
+        Err(e) => {
+            HttpResponse::InternalServerError().json(serde_json::json!({"error": e.to_string()}))
+        }
     }
 }
 
@@ -83,7 +97,9 @@ pub async fn check_credit_deposit_handler(
 ) -> HttpResponse {
     let institution_id = match Uuid::parse_str(&query.institution_id) {
         Ok(id) => id,
-        Err(e) => return HttpResponse::BadRequest().json(serde_json::json!({"error": e.to_string()})),
+        Err(e) => {
+            return HttpResponse::BadRequest().json(serde_json::json!({"error": e.to_string()}))
+        }
     };
 
     match service.check_credit_deposit(institution_id).await {
@@ -91,7 +107,9 @@ pub async fn check_credit_deposit_handler(
         Err(PrudentialServiceError::RatioNotFound) => {
             HttpResponse::NotFound().json(serde_json::json!({"error": "Ratios not found"}))
         }
-        Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({"error": e.to_string()})),
+        Err(e) => {
+            HttpResponse::InternalServerError().json(serde_json::json!({"error": e.to_string()}))
+        }
     }
 }
 
@@ -101,19 +119,28 @@ pub async fn check_concentration_handler(
 ) -> HttpResponse {
     let institution_id = match Uuid::parse_str(&query.institution_id) {
         Ok(id) => id,
-        Err(e) => return HttpResponse::BadRequest().json(serde_json::json!({"error": e.to_string()})),
+        Err(e) => {
+            return HttpResponse::BadRequest().json(serde_json::json!({"error": e.to_string()}))
+        }
     };
     let beneficiary_id = match Uuid::parse_str(&query.beneficiary_id) {
         Ok(id) => id,
-        Err(e) => return HttpResponse::BadRequest().json(serde_json::json!({"error": e.to_string()})),
+        Err(e) => {
+            return HttpResponse::BadRequest().json(serde_json::json!({"error": e.to_string()}))
+        }
     };
 
-    match service.check_concentration(institution_id, beneficiary_id).await {
+    match service
+        .check_concentration(institution_id, beneficiary_id)
+        .await
+    {
         Ok(check) => HttpResponse::Ok().json(check),
         Err(PrudentialServiceError::RatioNotFound) => {
             HttpResponse::NotFound().json(serde_json::json!({"error": "Ratios not found"}))
         }
-        Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({"error": e.to_string()})),
+        Err(e) => {
+            HttpResponse::InternalServerError().json(serde_json::json!({"error": e.to_string()}))
+        }
     }
 }
 
@@ -129,15 +156,22 @@ pub async fn get_alerts_handler(
 
     let institution_id = match institution_id {
         Ok(id) => id,
-        Err(e) => return HttpResponse::BadRequest().json(serde_json::json!({"error": e.to_string()})),
+        Err(e) => {
+            return HttpResponse::BadRequest().json(serde_json::json!({"error": e.to_string()}))
+        }
     };
 
     let limit = query.limit.unwrap_or(50);
     let offset = query.offset.unwrap_or(0);
 
-    match service.get_breach_alerts(institution_id, limit, offset).await {
+    match service
+        .get_breach_alerts(institution_id, limit, offset)
+        .await
+    {
         Ok(alerts) => HttpResponse::Ok().json(alerts),
-        Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({"error": e.to_string()})),
+        Err(e) => {
+            HttpResponse::InternalServerError().json(serde_json::json!({"error": e.to_string()}))
+        }
     }
 }
 

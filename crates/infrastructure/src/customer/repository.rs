@@ -70,8 +70,7 @@ fn row_to_domain(
         CustomerType::from_str_type(&row.customer_type).map_err(|e| e.to_string())?;
     let status = CustomerStatus::from_str_status(&row.status).map_err(|e| e.to_string())?;
     let risk_score = RiskScore::new(row.risk_score as u8).map_err(|e| e.to_string())?;
-    let consent =
-        ConsentStatus::from_str_consent(&row.consent).map_err(|e| e.to_string())?;
+    let consent = ConsentStatus::from_str_consent(&row.consent).map_err(|e| e.to_string())?;
 
     // For anonymized customers, bypass validation since "[ANONYMIZED]" won't pass
     let is_anonymized = status == CustomerStatus::Anonymized;
@@ -144,7 +143,11 @@ fn row_to_domain(
         .into_iter()
         .map(|b| {
             use rust_decimal::prelude::ToPrimitive;
-            Beneficiary::reconstitute(b.id, b.full_name, b.share_percentage.to_f64().unwrap_or(0.0))
+            Beneficiary::reconstitute(
+                b.id,
+                b.full_name,
+                b.share_percentage.to_f64().unwrap_or(0.0),
+            )
         })
         .collect();
 
@@ -302,7 +305,11 @@ impl ICustomerRepository for PgCustomerRepository {
                 .await
                 .map_err(|e| format!("DB find beneficiaries error: {e}"))?;
 
-                Ok(Some(row_to_domain(customer_row, kyc_row, beneficiary_rows)?))
+                Ok(Some(row_to_domain(
+                    customer_row,
+                    kyc_row,
+                    beneficiary_rows,
+                )?))
             }
             None => Ok(None),
         }
@@ -341,7 +348,11 @@ impl ICustomerRepository for PgCustomerRepository {
                 .await
                 .map_err(|e| format!("DB find beneficiaries error: {e}"))?;
 
-                Ok(Some(row_to_domain(customer_row, kyc_row, beneficiary_rows)?))
+                Ok(Some(row_to_domain(
+                    customer_row,
+                    kyc_row,
+                    beneficiary_rows,
+                )?))
             }
             None => Ok(None),
         }

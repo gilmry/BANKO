@@ -293,7 +293,9 @@ impl EmailAddress {
     pub fn new(value: &str) -> Result<Self, DomainError> {
         let trimmed = value.trim().to_lowercase();
         if trimmed.is_empty() {
-            return Err(DomainError::InvalidEmail("Email cannot be empty".to_string()));
+            return Err(DomainError::InvalidEmail(
+                "Email cannot be empty".to_string(),
+            ));
         }
         let parts: Vec<&str> = trimmed.split('@').collect();
         if parts.len() != 2 {
@@ -316,7 +318,9 @@ impl EmailAddress {
 
     /// Create an EmailAddress without validation (for anonymization/reconstitution).
     pub fn unchecked(value: &str) -> Self {
-        EmailAddress { value: value.to_string() }
+        EmailAddress {
+            value: value.to_string(),
+        }
     }
 
     pub fn as_str(&self) -> &str {
@@ -347,7 +351,10 @@ pub struct PhoneNumber {
 
 impl PhoneNumber {
     pub fn new(value: &str) -> Result<Self, DomainError> {
-        let cleaned: String = value.chars().filter(|c| c.is_ascii_digit() || *c == '+').collect();
+        let cleaned: String = value
+            .chars()
+            .filter(|c| c.is_ascii_digit() || *c == '+')
+            .collect();
         if cleaned.len() < 8 {
             return Err(DomainError::InvalidPhoneNumber(format!(
                 "Phone number too short: {cleaned}"
@@ -363,7 +370,9 @@ impl PhoneNumber {
 
     /// Create a PhoneNumber without validation (for anonymization/reconstitution).
     pub fn unchecked(value: &str) -> Self {
-        PhoneNumber { value: value.to_string() }
+        PhoneNumber {
+            value: value.to_string(),
+        }
     }
 
     pub fn as_str(&self) -> &str {
@@ -724,10 +733,7 @@ mod tests {
     #[test]
     fn test_customer_id_from_str_valid() {
         let id = CustomerId::parse("550e8400-e29b-41d4-a716-446655440000").unwrap();
-        assert_eq!(
-            id.to_string(),
-            "550e8400-e29b-41d4-a716-446655440000"
-        );
+        assert_eq!(id.to_string(), "550e8400-e29b-41d4-a716-446655440000");
     }
 
     #[test]

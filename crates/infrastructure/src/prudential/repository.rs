@@ -68,7 +68,10 @@ impl IPrudentialRepository for PgPrudentialRepository {
         }
     }
 
-    async fn find_by_institution(&self, institution_id: Uuid) -> Result<Option<PrudentialRatio>, String> {
+    async fn find_by_institution(
+        &self,
+        institution_id: Uuid,
+    ) -> Result<Option<PrudentialRatio>, String> {
         let row = sqlx::query_as::<_, PrudentialRatioRow>(
             "SELECT * FROM prudential.ratios WHERE institution_id = $1 ORDER BY calculated_at DESC LIMIT 1",
         )
@@ -156,7 +159,13 @@ impl IPrudentialRepository for PgPrudentialRepository {
 
         Ok(rows
             .into_iter()
-            .map(|r| Exposure::new(r.beneficiary_id, r.amount, r.description.unwrap_or_default()))
+            .map(|r| {
+                Exposure::new(
+                    r.beneficiary_id,
+                    r.amount,
+                    r.description.unwrap_or_default(),
+                )
+            })
             .collect())
     }
 }
@@ -219,12 +228,11 @@ impl IBreachAlertRepository for PgBreachAlertRepository {
     }
 
     async fn count_active(&self, _institution_id: Option<Uuid>) -> Result<i64, String> {
-        let row: (i64,) = sqlx::query_as(
-            "SELECT COUNT(*) FROM prudential.breach_alerts WHERE status = 'Breach'",
-        )
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|e| e.to_string())?;
+        let row: (i64,) =
+            sqlx::query_as("SELECT COUNT(*) FROM prudential.breach_alerts WHERE status = 'Breach'")
+                .fetch_one(&self.pool)
+                .await
+                .map_err(|e| e.to_string())?;
         Ok(row.0)
     }
 }
@@ -301,6 +309,7 @@ fn row_to_snapshot(row: RatioSnapshotRow) -> RatioSnapshot {
         row.solvency_ratio,
         row.tier1_ratio,
         row.credit_deposit_ratio,
-        row.breach_type.and_then(|s| BreachType::from_str_value(&s).ok()),
+        row.breach_type
+            .and_then(|s| BreachType::from_str_value(&s).ok()),
     )
 }

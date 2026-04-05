@@ -43,8 +43,7 @@ impl AccountRow {
         let currency = Currency::from_code(&self.currency).map_err(|e| e.to_string())?;
         let balance = Money::from_cents(self.balance, currency);
         let available_balance = Money::from_cents(self.available_balance, currency);
-        let status =
-            AccountStatus::from_str_status(&self.status).map_err(|e| e.to_string())?;
+        let status = AccountStatus::from_str_status(&self.status).map_err(|e| e.to_string())?;
 
         Ok(Account::reconstitute(
             id,
@@ -141,10 +140,7 @@ impl IAccountRepository for PgAccountRepository {
         }
     }
 
-    async fn find_by_customer_id(
-        &self,
-        customer_id: &CustomerId,
-    ) -> Result<Vec<Account>, String> {
+    async fn find_by_customer_id(&self, customer_id: &CustomerId) -> Result<Vec<Account>, String> {
         let rows: Vec<AccountRow> = sqlx::query_as(
             "SELECT id, customer_id, rib, account_type, balance, available_balance, currency, status, created_at, updated_at FROM account.accounts WHERE customer_id = $1 ORDER BY created_at DESC",
         )

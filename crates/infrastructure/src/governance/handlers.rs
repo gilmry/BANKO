@@ -90,12 +90,24 @@ pub async fn list_audit_handler(
     query: web::Query<AuditQuery>,
 ) -> HttpResponse {
     let filters = AuditFilter {
-        user_id: query.user_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()),
+        user_id: query
+            .user_id
+            .as_deref()
+            .and_then(|s| Uuid::parse_str(s).ok()),
         action: query.action.clone(),
         resource_type: query.resource_type.clone(),
-        resource_id: query.resource_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()),
-        from: query.from.as_deref().and_then(|s| s.parse::<DateTime<Utc>>().ok()),
-        to: query.to.as_deref().and_then(|s| s.parse::<DateTime<Utc>>().ok()),
+        resource_id: query
+            .resource_id
+            .as_deref()
+            .and_then(|s| Uuid::parse_str(s).ok()),
+        from: query
+            .from
+            .as_deref()
+            .and_then(|s| s.parse::<DateTime<Utc>>().ok()),
+        to: query
+            .to
+            .as_deref()
+            .and_then(|s| s.parse::<DateTime<Utc>>().ok()),
     };
 
     let page = query.page.unwrap_or(1);
@@ -158,11 +170,7 @@ pub async fn create_committee_handler(
     service: web::Data<Arc<CommitteeService>>,
     body: web::Json<CreateCommitteeBody>,
 ) -> HttpResponse {
-    let members: Result<Vec<Uuid>, _> = body
-        .members
-        .iter()
-        .map(|s| Uuid::parse_str(s))
-        .collect();
+    let members: Result<Vec<Uuid>, _> = body.members.iter().map(|s| Uuid::parse_str(s)).collect();
 
     let members = match members {
         Ok(m) => m,
@@ -178,7 +186,8 @@ pub async fn create_committee_handler(
         .await
     {
         Ok(resp) => HttpResponse::Created().json(resp),
-        Err(GovernanceServiceError::InvalidInput(e)) | Err(GovernanceServiceError::DomainError(e)) => {
+        Err(GovernanceServiceError::InvalidInput(e))
+        | Err(GovernanceServiceError::DomainError(e)) => {
             HttpResponse::BadRequest().json(ErrorResponse { error: e })
         }
         Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
@@ -234,7 +243,8 @@ pub async fn record_decision_handler(
                 error: "Committee not found".to_string(),
             })
         }
-        Err(GovernanceServiceError::InvalidInput(e)) | Err(GovernanceServiceError::DomainError(e)) => {
+        Err(GovernanceServiceError::InvalidInput(e))
+        | Err(GovernanceServiceError::DomainError(e)) => {
             HttpResponse::BadRequest().json(ErrorResponse { error: e })
         }
         Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
@@ -256,10 +266,7 @@ pub async fn list_controls_handler(
     let page = query.page.unwrap_or(1);
     let limit = query.limit.unwrap_or(20);
 
-    match service
-        .list_checks(query.status.clone(), page, limit)
-        .await
-    {
+    match service.list_checks(query.status.clone(), page, limit).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
         Err(GovernanceServiceError::InvalidInput(e)) => {
             HttpResponse::BadRequest().json(ErrorResponse { error: e })
@@ -410,26 +417,14 @@ pub fn configure_governance_routes(cfg: &mut web::ServiceConfig) {
     );
     cfg.service(
         web::scope("/api/v1/governance")
-            .route(
-                "/committees",
-                web::get().to(list_committees_handler),
-            )
-            .route(
-                "/committees",
-                web::post().to(create_committee_handler),
-            )
+            .route("/committees", web::get().to(list_committees_handler))
+            .route("/committees", web::post().to(create_committee_handler))
             .route(
                 "/committees/{id}/decisions",
                 web::post().to(record_decision_handler),
             )
-            .route(
-                "/controls",
-                web::get().to(list_controls_handler),
-            )
-            .route(
-                "/controls",
-                web::post().to(create_control_handler),
-            )
+            .route("/controls", web::get().to(list_controls_handler))
+            .route("/controls", web::post().to(create_control_handler))
             .route(
                 "/controls/{id}/approve",
                 web::post().to(approve_control_handler),

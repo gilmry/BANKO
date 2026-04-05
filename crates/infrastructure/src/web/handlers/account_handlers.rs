@@ -202,11 +202,9 @@ pub async fn get_account_handler(
                 recent_movements: movement_responses,
             })
         }
-        Err(AccountServiceError::AccountNotFound) => {
-            HttpResponse::NotFound().json(ErrorResponse {
-                error: "Account not found".to_string(),
-            })
-        }
+        Err(AccountServiceError::AccountNotFound) => HttpResponse::NotFound().json(ErrorResponse {
+            error: "Account not found".to_string(),
+        }),
         Err(e) => {
             tracing::error!("Get account error: {e}");
             HttpResponse::InternalServerError().json(ErrorResponse {
@@ -407,11 +405,9 @@ pub async fn list_movements_handler(
                 .collect();
             HttpResponse::Ok().json(responses)
         }
-        Err(AccountServiceError::AccountNotFound) => {
-            HttpResponse::NotFound().json(ErrorResponse {
-                error: "Account not found".to_string(),
-            })
-        }
+        Err(AccountServiceError::AccountNotFound) => HttpResponse::NotFound().json(ErrorResponse {
+            error: "Account not found".to_string(),
+        }),
         Err(e) => {
             tracing::error!("List movements error: {e}");
             HttpResponse::InternalServerError().json(ErrorResponse {
@@ -466,9 +462,7 @@ pub async fn get_statement_handler(
                         m.description.replace(',', ";"),
                     ));
                 }
-                HttpResponse::Ok()
-                    .content_type("text/csv")
-                    .body(csv)
+                HttpResponse::Ok().content_type("text/csv").body(csv)
             } else {
                 let movement_responses: Vec<MovementResponse> = statement
                     .movements
@@ -497,11 +491,9 @@ pub async fn get_statement_handler(
                 })
             }
         }
-        Err(AccountServiceError::AccountNotFound) => {
-            HttpResponse::NotFound().json(ErrorResponse {
-                error: "Account not found".to_string(),
-            })
-        }
+        Err(AccountServiceError::AccountNotFound) => HttpResponse::NotFound().json(ErrorResponse {
+            error: "Account not found".to_string(),
+        }),
         Err(e) => {
             tracing::error!("Get statement error: {e}");
             HttpResponse::InternalServerError().json(ErrorResponse {

@@ -571,23 +571,14 @@ mod tests {
     use super::*;
 
     fn make_line(account: &str, debit: i64, credit: i64) -> JournalLine {
-        JournalLine::new(
-            AccountCode::new(account).unwrap(),
-            debit,
-            credit,
-            None,
-        )
-        .unwrap()
+        JournalLine::new(AccountCode::new(account).unwrap(), debit, credit, None).unwrap()
     }
 
     // --- ACC-01: JournalEntry domain invariants ---
 
     #[test]
     fn test_balanced_entry_valid() {
-        let lines = vec![
-            make_line("31", 1000, 0),
-            make_line("42", 0, 1000),
-        ];
+        let lines = vec![make_line("31", 1000, 0), make_line("42", 0, 1000)];
         let entry = JournalEntry::new(
             JournalCode::OD,
             NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
@@ -605,10 +596,7 @@ mod tests {
     #[test]
     fn test_unbalanced_entry_rejected() {
         // INV-11: debit 1000 / credit 999 → error
-        let lines = vec![
-            make_line("31", 1000, 0),
-            make_line("42", 0, 999),
-        ];
+        let lines = vec![make_line("31", 1000, 0), make_line("42", 0, 999)];
         let result = JournalEntry::new(
             JournalCode::OD,
             NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
@@ -638,10 +626,7 @@ mod tests {
 
     #[test]
     fn test_entry_requires_description() {
-        let lines = vec![
-            make_line("31", 500, 0),
-            make_line("42", 0, 500),
-        ];
+        let lines = vec![make_line("31", 500, 0), make_line("42", 0, 500)];
         let result = JournalEntry::new(
             JournalCode::OD,
             NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
@@ -653,10 +638,7 @@ mod tests {
 
     #[test]
     fn test_post_entry() {
-        let lines = vec![
-            make_line("31", 5000, 0),
-            make_line("42", 0, 5000),
-        ];
+        let lines = vec![make_line("31", 5000, 0), make_line("42", 0, 5000)];
         let mut entry = JournalEntry::new(
             JournalCode::CP,
             NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
@@ -673,10 +655,7 @@ mod tests {
 
     #[test]
     fn test_double_post_rejected() {
-        let lines = vec![
-            make_line("31", 5000, 0),
-            make_line("42", 0, 5000),
-        ];
+        let lines = vec![make_line("31", 5000, 0), make_line("42", 0, 5000)];
         let mut entry = JournalEntry::new(
             JournalCode::CP,
             NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
@@ -692,10 +671,7 @@ mod tests {
 
     #[test]
     fn test_reversal_creates_swapped_entry() {
-        let lines = vec![
-            make_line("31", 1000, 0),
-            make_line("42", 0, 1000),
-        ];
+        let lines = vec![make_line("31", 1000, 0), make_line("42", 0, 1000)];
         let mut entry = JournalEntry::new(
             JournalCode::OD,
             NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
@@ -718,10 +694,7 @@ mod tests {
 
     #[test]
     fn test_reversal_requires_posted_status() {
-        let lines = vec![
-            make_line("31", 500, 0),
-            make_line("42", 0, 500),
-        ];
+        let lines = vec![make_line("31", 500, 0), make_line("42", 0, 500)];
         let entry = JournalEntry::new(
             JournalCode::OD,
             NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
@@ -736,10 +709,7 @@ mod tests {
 
     #[test]
     fn test_mark_reversed() {
-        let lines = vec![
-            make_line("31", 500, 0),
-            make_line("42", 0, 500),
-        ];
+        let lines = vec![make_line("31", 500, 0), make_line("42", 0, 500)];
         let mut entry = JournalEntry::new(
             JournalCode::OD,
             NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
@@ -791,37 +761,31 @@ mod tests {
     fn test_journal_line_valid_debit() {
         let line = JournalLine::new(
             AccountCode::new("31").unwrap(),
-            1000, 0, Some("Test".into()),
-        ).unwrap();
+            1000,
+            0,
+            Some("Test".into()),
+        )
+        .unwrap();
         assert_eq!(line.debit(), 1000);
         assert_eq!(line.credit(), 0);
     }
 
     #[test]
     fn test_journal_line_valid_credit() {
-        let line = JournalLine::new(
-            AccountCode::new("42").unwrap(),
-            0, 1000, None,
-        ).unwrap();
+        let line = JournalLine::new(AccountCode::new("42").unwrap(), 0, 1000, None).unwrap();
         assert_eq!(line.debit(), 0);
         assert_eq!(line.credit(), 1000);
     }
 
     #[test]
     fn test_journal_line_zero_both_rejected() {
-        let result = JournalLine::new(
-            AccountCode::new("31").unwrap(),
-            0, 0, None,
-        );
+        let result = JournalLine::new(AccountCode::new("31").unwrap(), 0, 0, None);
         assert!(matches!(result, Err(DomainError::InvalidJournalEntry(_))));
     }
 
     #[test]
     fn test_journal_line_negative_rejected() {
-        let result = JournalLine::new(
-            AccountCode::new("31").unwrap(),
-            -100, 0, None,
-        );
+        let result = JournalLine::new(AccountCode::new("31").unwrap(), -100, 0, None);
         assert!(matches!(result, Err(DomainError::InvalidJournalEntry(_))));
     }
 
@@ -829,7 +793,13 @@ mod tests {
 
     #[test]
     fn test_journal_code_roundtrip() {
-        for jc in [JournalCode::OD, JournalCode::CP, JournalCode::VT, JournalCode::IN, JournalCode::PR] {
+        for jc in [
+            JournalCode::OD,
+            JournalCode::CP,
+            JournalCode::VT,
+            JournalCode::IN,
+            JournalCode::PR,
+        ] {
             assert_eq!(JournalCode::from_str_value(jc.as_str()).unwrap(), jc);
         }
     }
@@ -838,7 +808,11 @@ mod tests {
 
     #[test]
     fn test_entry_status_roundtrip() {
-        for es in [EntryStatus::Draft, EntryStatus::Posted, EntryStatus::Reversed] {
+        for es in [
+            EntryStatus::Draft,
+            EntryStatus::Posted,
+            EntryStatus::Reversed,
+        ] {
             assert_eq!(EntryStatus::from_str_value(es.as_str()).unwrap(), es);
         }
     }
@@ -847,7 +821,13 @@ mod tests {
 
     #[test]
     fn test_account_type_roundtrip() {
-        for at in [AccountType::Asset, AccountType::Liability, AccountType::Equity, AccountType::Revenue, AccountType::Expense] {
+        for at in [
+            AccountType::Asset,
+            AccountType::Liability,
+            AccountType::Equity,
+            AccountType::Revenue,
+            AccountType::Expense,
+        ] {
             assert_eq!(AccountType::from_str_value(at.as_str()).unwrap(), at);
         }
     }
@@ -874,8 +854,8 @@ mod tests {
         let ecl = ExpectedCreditLoss::new(
             Uuid::new_v4(),
             EclStage::Stage1,
-            0.02,  // 2% PD
-            0.45,  // 45% LGD
+            0.02,      // 2% PD
+            0.45,      // 45% LGD
             1_000_000, // 1M EAD
         );
         // ECL = 0.02 * 0.45 * 1_000_000 = 9000

@@ -4,9 +4,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use banko_application::customer::IConsentRepository;
-use banko_domain::customer::{
-    ConsentId, ConsentPurpose, ConsentRecord, ConsentRecordStatus,
-};
+use banko_domain::customer::{ConsentId, ConsentPurpose, ConsentRecord, ConsentRecordStatus};
 
 pub struct PgConsentRepository {
     pool: PgPool,
@@ -30,10 +28,8 @@ struct ConsentRow {
 
 fn row_to_domain(row: ConsentRow) -> Result<ConsentRecord, String> {
     let consent_id = ConsentId::from_uuid(row.id);
-    let purpose =
-        ConsentPurpose::from_str_purpose(&row.purpose).map_err(|e| e.to_string())?;
-    let status =
-        ConsentRecordStatus::from_str_status(&row.status).map_err(|e| e.to_string())?;
+    let purpose = ConsentPurpose::from_str_purpose(&row.purpose).map_err(|e| e.to_string())?;
+    let status = ConsentRecordStatus::from_str_status(&row.status).map_err(|e| e.to_string())?;
 
     Ok(ConsentRecord::reconstitute(
         consent_id,

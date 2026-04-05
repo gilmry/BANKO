@@ -39,7 +39,8 @@ struct ReportRow {
 
 impl ReportRow {
     fn into_domain(self) -> Result<RegulatoryReport, String> {
-        let report_type = ReportType::from_str_type(&self.report_type).map_err(|e| e.to_string())?;
+        let report_type =
+            ReportType::from_str_type(&self.report_type).map_err(|e| e.to_string())?;
         let status = ReportStatus::from_str_type(&self.status).map_err(|e| e.to_string())?;
 
         Ok(RegulatoryReport::from_raw(
@@ -63,8 +64,8 @@ impl ReportRow {
 #[async_trait]
 impl IReportRepository for PgReportRepository {
     async fn save(&self, report: &RegulatoryReport) -> Result<(), String> {
-        let data: serde_json::Value =
-            serde_json::from_str(report.data()).unwrap_or(serde_json::Value::String(report.data().to_string()));
+        let data: serde_json::Value = serde_json::from_str(report.data())
+            .unwrap_or(serde_json::Value::String(report.data().to_string()));
 
         sqlx::query(
             r#"
@@ -221,7 +222,8 @@ struct TemplateRow {
 
 impl TemplateRow {
     fn into_domain(self) -> Result<ReportTemplate, String> {
-        let report_type = ReportType::from_str_type(&self.report_type).map_err(|e| e.to_string())?;
+        let report_type =
+            ReportType::from_str_type(&self.report_type).map_err(|e| e.to_string())?;
 
         Ok(ReportTemplate::from_raw(
             TemplateId::from_uuid(self.id),

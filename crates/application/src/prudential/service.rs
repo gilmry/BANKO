@@ -28,16 +28,18 @@ impl RatioCalculationService {
         &self,
         request: CalculateRatiosRequest,
     ) -> Result<PrudentialRatioResponse, PrudentialServiceError> {
-        let institution_id = Uuid::parse_str(&request.institution_id)
-            .map_err(|e| PrudentialServiceError::InvalidInput(format!("Invalid institution_id: {e}")))?;
+        let institution_id = Uuid::parse_str(&request.institution_id).map_err(|e| {
+            PrudentialServiceError::InvalidInput(format!("Invalid institution_id: {e}"))
+        })?;
 
         let exposures: Vec<Exposure> = request
             .exposures
             .unwrap_or_default()
             .into_iter()
             .map(|e| {
-                let ben_id = Uuid::parse_str(&e.beneficiary_id)
-                    .map_err(|err| PrudentialServiceError::InvalidInput(format!("Invalid beneficiary_id: {err}")))?;
+                let ben_id = Uuid::parse_str(&e.beneficiary_id).map_err(|err| {
+                    PrudentialServiceError::InvalidInput(format!("Invalid beneficiary_id: {err}"))
+                })?;
                 Ok(Exposure::new(ben_id, e.amount, e.description))
             })
             .collect::<Result<Vec<_>, PrudentialServiceError>>()?;
@@ -150,7 +152,11 @@ impl RatioCalculationService {
             ratio: solvency,
             minimum: SOLVENCY_MINIMUM,
             compliant,
-            status: if compliant { "Clear".into() } else { "Breach".into() },
+            status: if compliant {
+                "Clear".into()
+            } else {
+                "Breach".into()
+            },
         })
     }
 
@@ -171,7 +177,11 @@ impl RatioCalculationService {
             ratio: tier1,
             minimum: TIER1_MINIMUM,
             compliant,
-            status: if compliant { "Clear".into() } else { "Breach".into() },
+            status: if compliant {
+                "Clear".into()
+            } else {
+                "Breach".into()
+            },
         })
     }
 
@@ -192,7 +202,11 @@ impl RatioCalculationService {
             ratio: cd,
             maximum: CREDIT_DEPOSIT_MAXIMUM,
             compliant,
-            status: if compliant { "Clear".into() } else { "Breach".into() },
+            status: if compliant {
+                "Clear".into()
+            } else {
+                "Breach".into()
+            },
         })
     }
 
@@ -302,18 +316,54 @@ mod tests {
             Ok(())
         }
         async fn find_by_id(&self, id: &RatioId) -> Result<Option<PrudentialRatio>, String> {
-            Ok(self.ratios.lock().unwrap().iter().find(|r| r.ratio_id() == id).cloned())
+            Ok(self
+                .ratios
+                .lock()
+                .unwrap()
+                .iter()
+                .find(|r| r.ratio_id() == id)
+                .cloned())
         }
         async fn find_by_institution(&self, id: Uuid) -> Result<Option<PrudentialRatio>, String> {
-            Ok(self.ratios.lock().unwrap().iter().find(|r| *r.institution_id().as_uuid() == id).cloned())
+            Ok(self
+                .ratios
+                .lock()
+                .unwrap()
+                .iter()
+                .find(|r| *r.institution_id().as_uuid() == id)
+                .cloned())
         }
         async fn find_latest(&self, id: Uuid) -> Result<Option<PrudentialRatio>, String> {
-            Ok(self.ratios.lock().unwrap().iter().rev().find(|r| *r.institution_id().as_uuid() == id).cloned())
+            Ok(self
+                .ratios
+                .lock()
+                .unwrap()
+                .iter()
+                .rev()
+                .find(|r| *r.institution_id().as_uuid() == id)
+                .cloned())
         }
-        async fn save_snapshot(&self, _snapshot: &RatioSnapshot) -> Result<(), String> { Ok(()) }
-        async fn find_snapshots(&self, _id: Uuid, _from: NaiveDate, _to: NaiveDate) -> Result<Vec<RatioSnapshot>, String> { Ok(vec![]) }
-        async fn save_exposure(&self, _ratio_id: &RatioId, _exposure: &Exposure) -> Result<(), String> { Ok(()) }
-        async fn find_exposures(&self, _ratio_id: &RatioId) -> Result<Vec<Exposure>, String> { Ok(vec![]) }
+        async fn save_snapshot(&self, _snapshot: &RatioSnapshot) -> Result<(), String> {
+            Ok(())
+        }
+        async fn find_snapshots(
+            &self,
+            _id: Uuid,
+            _from: NaiveDate,
+            _to: NaiveDate,
+        ) -> Result<Vec<RatioSnapshot>, String> {
+            Ok(vec![])
+        }
+        async fn save_exposure(
+            &self,
+            _ratio_id: &RatioId,
+            _exposure: &Exposure,
+        ) -> Result<(), String> {
+            Ok(())
+        }
+        async fn find_exposures(&self, _ratio_id: &RatioId) -> Result<Vec<Exposure>, String> {
+            Ok(vec![])
+        }
     }
 
     struct MockBreachAlertRepo {
@@ -334,8 +384,15 @@ mod tests {
             self.alerts.lock().unwrap().push(alert.clone());
             Ok(())
         }
-        async fn find_active(&self, _id: Uuid) -> Result<Vec<BreachAlert>, String> { Ok(vec![]) }
-        async fn find_all(&self, _id: Option<Uuid>, _limit: i64, _offset: i64) -> Result<Vec<BreachAlert>, String> {
+        async fn find_active(&self, _id: Uuid) -> Result<Vec<BreachAlert>, String> {
+            Ok(vec![])
+        }
+        async fn find_all(
+            &self,
+            _id: Option<Uuid>,
+            _limit: i64,
+            _offset: i64,
+        ) -> Result<Vec<BreachAlert>, String> {
             Ok(self.alerts.lock().unwrap().clone())
         }
         async fn count_active(&self, _id: Option<Uuid>) -> Result<i64, String> {
@@ -351,15 +408,18 @@ mod tests {
         );
 
         let inst_id = Uuid::new_v4();
-        let result = service.calculate_and_save(CalculateRatiosRequest {
-            institution_id: inst_id.to_string(),
-            capital_tier1: 150_000,
-            capital_tier2: 50_000,
-            risk_weighted_assets: 1_000_000,
-            total_credits: 500_000,
-            total_deposits: 800_000,
-            exposures: None,
-        }).await.unwrap();
+        let result = service
+            .calculate_and_save(CalculateRatiosRequest {
+                institution_id: inst_id.to_string(),
+                capital_tier1: 150_000,
+                capital_tier2: 50_000,
+                risk_weighted_assets: 1_000_000,
+                total_credits: 500_000,
+                total_deposits: 800_000,
+                exposures: None,
+            })
+            .await
+            .unwrap();
 
         assert!(result.solvency_ratio >= 10.0);
         assert!(result.tier1_ratio >= 7.0);
@@ -374,34 +434,43 @@ mod tests {
             Arc::new(MockBreachAlertRepo::new()),
         );
 
-        let result = service.calculate_and_save(CalculateRatiosRequest {
-            institution_id: Uuid::new_v4().to_string(),
-            capital_tier1: 50_000,
-            capital_tier2: 20_000,
-            risk_weighted_assets: 1_000_000,
-            total_credits: 500_000,
-            total_deposits: 800_000,
-            exposures: None,
-        }).await;
+        let result = service
+            .calculate_and_save(CalculateRatiosRequest {
+                institution_id: Uuid::new_v4().to_string(),
+                capital_tier1: 50_000,
+                capital_tier2: 20_000,
+                risk_weighted_assets: 1_000_000,
+                total_credits: 500_000,
+                total_deposits: 800_000,
+                exposures: None,
+            })
+            .await;
 
-        assert!(matches!(result, Err(PrudentialServiceError::DomainError(_))));
+        assert!(matches!(
+            result,
+            Err(PrudentialServiceError::DomainError(_))
+        ));
     }
 
     #[tokio::test]
     async fn test_get_current_ratios() {
         let repo = Arc::new(MockPrudentialRepo::new());
-        let service = RatioCalculationService::new(repo.clone(), Arc::new(MockBreachAlertRepo::new()));
+        let service =
+            RatioCalculationService::new(repo.clone(), Arc::new(MockBreachAlertRepo::new()));
 
         let inst_id = Uuid::new_v4();
-        service.calculate_and_save(CalculateRatiosRequest {
-            institution_id: inst_id.to_string(),
-            capital_tier1: 150_000,
-            capital_tier2: 50_000,
-            risk_weighted_assets: 1_000_000,
-            total_credits: 500_000,
-            total_deposits: 800_000,
-            exposures: None,
-        }).await.unwrap();
+        service
+            .calculate_and_save(CalculateRatiosRequest {
+                institution_id: inst_id.to_string(),
+                capital_tier1: 150_000,
+                capital_tier2: 50_000,
+                risk_weighted_assets: 1_000_000,
+                total_credits: 500_000,
+                total_deposits: 800_000,
+                exposures: None,
+            })
+            .await
+            .unwrap();
 
         let result = service.get_current_ratios(inst_id).await.unwrap();
         assert!(result.solvency_ratio >= 10.0);
@@ -410,18 +479,22 @@ mod tests {
     #[tokio::test]
     async fn test_check_solvency_compliant() {
         let repo = Arc::new(MockPrudentialRepo::new());
-        let service = RatioCalculationService::new(repo.clone(), Arc::new(MockBreachAlertRepo::new()));
+        let service =
+            RatioCalculationService::new(repo.clone(), Arc::new(MockBreachAlertRepo::new()));
 
         let inst_id = Uuid::new_v4();
-        service.calculate_and_save(CalculateRatiosRequest {
-            institution_id: inst_id.to_string(),
-            capital_tier1: 150_000,
-            capital_tier2: 50_000,
-            risk_weighted_assets: 1_000_000,
-            total_credits: 500_000,
-            total_deposits: 800_000,
-            exposures: None,
-        }).await.unwrap();
+        service
+            .calculate_and_save(CalculateRatiosRequest {
+                institution_id: inst_id.to_string(),
+                capital_tier1: 150_000,
+                capital_tier2: 50_000,
+                risk_weighted_assets: 1_000_000,
+                total_credits: 500_000,
+                total_deposits: 800_000,
+                exposures: None,
+            })
+            .await
+            .unwrap();
 
         let check = service.check_solvency(inst_id).await.unwrap();
         assert!(check.compliant);

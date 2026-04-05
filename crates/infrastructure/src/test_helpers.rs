@@ -74,10 +74,9 @@ pub fn make_test_user_service() -> Arc<UserService> {
 
 pub fn create_test_user(email: &str) -> User {
     let email = EmailAddress::new(email).unwrap();
-    let hash = PasswordHash::new(
-        "$2b$12$hashed_SecurePass123!_padded_to_be_long_enough".to_string(),
-    )
-    .unwrap();
+    let hash =
+        PasswordHash::new("$2b$12$hashed_SecurePass123!_padded_to_be_long_enough".to_string())
+            .unwrap();
     User::new(email, hash).unwrap()
 }
 

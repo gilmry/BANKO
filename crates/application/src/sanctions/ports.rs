@@ -31,28 +31,13 @@ pub trait ISanctionEntryRepository: Send + Sync {
 #[async_trait]
 pub trait IScreeningResultRepository: Send + Sync {
     async fn save(&self, result: &ScreeningResult) -> Result<(), String>;
-    async fn find_by_id(
-        &self,
-        id: &ScreeningResultId,
-    ) -> Result<Option<ScreeningResult>, String>;
-    async fn find_recent(
-        &self,
-        limit: i64,
-        offset: i64,
-    ) -> Result<Vec<ScreeningResult>, String>;
-    async fn count_by_status(
-        &self,
-        status: Option<ScreeningStatus>,
-    ) -> Result<i64, String>;
+    async fn find_by_id(&self, id: &ScreeningResultId) -> Result<Option<ScreeningResult>, String>;
+    async fn find_recent(&self, limit: i64, offset: i64) -> Result<Vec<ScreeningResult>, String>;
+    async fn count_by_status(&self, status: Option<ScreeningStatus>) -> Result<i64, String>;
 }
 
 // --- Matching Strategy (pluggable) ---
 
 pub trait IMatchingStrategy: Send + Sync {
-    fn screen(
-        &self,
-        name: &str,
-        entries: &[SanctionEntry],
-        threshold: u8,
-    ) -> Vec<MatchDetail>;
+    fn screen(&self, name: &str, entries: &[SanctionEntry], threshold: u8) -> Vec<MatchDetail>;
 }

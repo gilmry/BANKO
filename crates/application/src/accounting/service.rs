@@ -38,13 +38,9 @@ impl AccountingService {
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        let mut entry = JournalEntry::new(
-            journal_code,
-            request.entry_date,
-            request.description,
-            lines,
-        )
-        .map_err(|e| AccountingServiceError::DomainError(e.to_string()))?;
+        let mut entry =
+            JournalEntry::new(journal_code, request.entry_date, request.description, lines)
+                .map_err(|e| AccountingServiceError::DomainError(e.to_string()))?;
 
         entry
             .post()
@@ -162,8 +158,20 @@ impl AutoEntryService {
         }
 
         let lines = vec![
-            JournalLine::new(AccountCode::new("51").unwrap(), initial_deposit, 0, Some("Cash received".into())).unwrap(),
-            JournalLine::new(AccountCode::new("42").unwrap(), 0, initial_deposit, Some("Client deposit".into())).unwrap(),
+            JournalLine::new(
+                AccountCode::new("51").unwrap(),
+                initial_deposit,
+                0,
+                Some("Cash received".into()),
+            )
+            .unwrap(),
+            JournalLine::new(
+                AccountCode::new("42").unwrap(),
+                0,
+                initial_deposit,
+                Some("Client deposit".into()),
+            )
+            .unwrap(),
         ];
 
         let mut entry = JournalEntry::new(
@@ -174,7 +182,9 @@ impl AutoEntryService {
         )
         .map_err(|e| AccountingServiceError::DomainError(e.to_string()))?;
 
-        entry.post().map_err(|e| AccountingServiceError::DomainError(e.to_string()))?;
+        entry
+            .post()
+            .map_err(|e| AccountingServiceError::DomainError(e.to_string()))?;
 
         self.journal_repo
             .save(&entry)
@@ -196,8 +206,20 @@ impl AutoEntryService {
         }
 
         let lines = vec![
-            JournalLine::new(AccountCode::new("31").unwrap(), amount, 0, Some("Loan disbursement".into())).unwrap(),
-            JournalLine::new(AccountCode::new("51").unwrap(), 0, amount, Some("Cash disbursed".into())).unwrap(),
+            JournalLine::new(
+                AccountCode::new("31").unwrap(),
+                amount,
+                0,
+                Some("Loan disbursement".into()),
+            )
+            .unwrap(),
+            JournalLine::new(
+                AccountCode::new("51").unwrap(),
+                0,
+                amount,
+                Some("Cash disbursed".into()),
+            )
+            .unwrap(),
         ];
 
         let mut entry = JournalEntry::new(
@@ -208,7 +230,9 @@ impl AutoEntryService {
         )
         .map_err(|e| AccountingServiceError::DomainError(e.to_string()))?;
 
-        entry.post().map_err(|e| AccountingServiceError::DomainError(e.to_string()))?;
+        entry
+            .post()
+            .map_err(|e| AccountingServiceError::DomainError(e.to_string()))?;
 
         self.journal_repo
             .save(&entry)
@@ -230,8 +254,20 @@ impl AutoEntryService {
         }
 
         let lines = vec![
-            JournalLine::new(AccountCode::new("31").unwrap(), interest, 0, Some("Interest accrual".into())).unwrap(),
-            JournalLine::new(AccountCode::new("71").unwrap(), 0, interest, Some("Interest revenue".into())).unwrap(),
+            JournalLine::new(
+                AccountCode::new("31").unwrap(),
+                interest,
+                0,
+                Some("Interest accrual".into()),
+            )
+            .unwrap(),
+            JournalLine::new(
+                AccountCode::new("71").unwrap(),
+                0,
+                interest,
+                Some("Interest revenue".into()),
+            )
+            .unwrap(),
         ];
 
         let mut entry = JournalEntry::new(
@@ -242,7 +278,9 @@ impl AutoEntryService {
         )
         .map_err(|e| AccountingServiceError::DomainError(e.to_string()))?;
 
-        entry.post().map_err(|e| AccountingServiceError::DomainError(e.to_string()))?;
+        entry
+            .post()
+            .map_err(|e| AccountingServiceError::DomainError(e.to_string()))?;
 
         self.journal_repo
             .save(&entry)
@@ -364,10 +402,7 @@ impl PeriodService {
         })
     }
 
-    pub async fn is_period_closed(
-        &self,
-        period: &str,
-    ) -> Result<bool, AccountingServiceError> {
+    pub async fn is_period_closed(&self, period: &str) -> Result<bool, AccountingServiceError> {
         self.period_repo
             .is_closed(period)
             .await
@@ -473,17 +508,44 @@ mod tests {
             Ok(())
         }
         async fn find_by_id(&self, id: &EntryId) -> Result<Option<JournalEntry>, String> {
-            Ok(self.entries.lock().unwrap().iter().find(|e| e.entry_id() == id).cloned())
+            Ok(self
+                .entries
+                .lock()
+                .unwrap()
+                .iter()
+                .find(|e| e.entry_id() == id)
+                .cloned())
         }
-        async fn find_by_period(&self, start: NaiveDate, end: NaiveDate) -> Result<Vec<JournalEntry>, String> {
-            Ok(self.entries.lock().unwrap().iter().filter(|e| e.entry_date() >= start && e.entry_date() <= end).cloned().collect())
+        async fn find_by_period(
+            &self,
+            start: NaiveDate,
+            end: NaiveDate,
+        ) -> Result<Vec<JournalEntry>, String> {
+            Ok(self
+                .entries
+                .lock()
+                .unwrap()
+                .iter()
+                .filter(|e| e.entry_date() >= start && e.entry_date() <= end)
+                .cloned()
+                .collect())
         }
-        async fn find_by_account(&self, _code: &AccountCode, _start: NaiveDate, _end: NaiveDate) -> Result<Vec<JournalEntry>, String> {
+        async fn find_by_account(
+            &self,
+            _code: &AccountCode,
+            _start: NaiveDate,
+            _end: NaiveDate,
+        ) -> Result<Vec<JournalEntry>, String> {
             Ok(vec![])
         }
         async fn find_all(&self, offset: i64, limit: i64) -> Result<Vec<JournalEntry>, String> {
             let entries = self.entries.lock().unwrap();
-            Ok(entries.iter().skip(offset as usize).take(limit as usize).cloned().collect())
+            Ok(entries
+                .iter()
+                .skip(offset as usize)
+                .take(limit as usize)
+                .cloned()
+                .collect())
         }
         async fn count_all(&self) -> Result<i64, String> {
             Ok(self.entries.lock().unwrap().len() as i64)
@@ -520,15 +582,28 @@ mod tests {
     async fn test_post_balanced_entry() {
         let service = AccountingService::new(Arc::new(MockJournalRepo::new()));
 
-        let result = service.post_entry(CreateEntryRequest {
-            journal_code: "OD".into(),
-            entry_date: NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
-            description: "Test balanced".into(),
-            lines: vec![
-                CreateEntryLineRequest { account_code: "31".into(), debit: 1000, credit: 0, description: None },
-                CreateEntryLineRequest { account_code: "42".into(), debit: 0, credit: 1000, description: None },
-            ],
-        }).await.unwrap();
+        let result = service
+            .post_entry(CreateEntryRequest {
+                journal_code: "OD".into(),
+                entry_date: NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
+                description: "Test balanced".into(),
+                lines: vec![
+                    CreateEntryLineRequest {
+                        account_code: "31".into(),
+                        debit: 1000,
+                        credit: 0,
+                        description: None,
+                    },
+                    CreateEntryLineRequest {
+                        account_code: "42".into(),
+                        debit: 0,
+                        credit: 1000,
+                        description: None,
+                    },
+                ],
+            })
+            .await
+            .unwrap();
 
         assert_eq!(result.status, "Posted");
         assert_eq!(result.total_debit, 1000);
@@ -539,17 +614,32 @@ mod tests {
     async fn test_post_unbalanced_entry_rejected() {
         let service = AccountingService::new(Arc::new(MockJournalRepo::new()));
 
-        let result = service.post_entry(CreateEntryRequest {
-            journal_code: "OD".into(),
-            entry_date: NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
-            description: "Unbalanced".into(),
-            lines: vec![
-                CreateEntryLineRequest { account_code: "31".into(), debit: 1000, credit: 0, description: None },
-                CreateEntryLineRequest { account_code: "42".into(), debit: 0, credit: 999, description: None },
-            ],
-        }).await;
+        let result = service
+            .post_entry(CreateEntryRequest {
+                journal_code: "OD".into(),
+                entry_date: NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
+                description: "Unbalanced".into(),
+                lines: vec![
+                    CreateEntryLineRequest {
+                        account_code: "31".into(),
+                        debit: 1000,
+                        credit: 0,
+                        description: None,
+                    },
+                    CreateEntryLineRequest {
+                        account_code: "42".into(),
+                        debit: 0,
+                        credit: 999,
+                        description: None,
+                    },
+                ],
+            })
+            .await;
 
-        assert!(matches!(result, Err(AccountingServiceError::DomainError(_))));
+        assert!(matches!(
+            result,
+            Err(AccountingServiceError::DomainError(_))
+        ));
     }
 
     #[tokio::test]
@@ -557,15 +647,28 @@ mod tests {
         let repo = Arc::new(MockJournalRepo::new());
         let service = AccountingService::new(repo.clone());
 
-        let posted = service.post_entry(CreateEntryRequest {
-            journal_code: "OD".into(),
-            entry_date: NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
-            description: "To reverse".into(),
-            lines: vec![
-                CreateEntryLineRequest { account_code: "31".into(), debit: 5000, credit: 0, description: None },
-                CreateEntryLineRequest { account_code: "42".into(), debit: 0, credit: 5000, description: None },
-            ],
-        }).await.unwrap();
+        let posted = service
+            .post_entry(CreateEntryRequest {
+                journal_code: "OD".into(),
+                entry_date: NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
+                description: "To reverse".into(),
+                lines: vec![
+                    CreateEntryLineRequest {
+                        account_code: "31".into(),
+                        debit: 5000,
+                        credit: 0,
+                        description: None,
+                    },
+                    CreateEntryLineRequest {
+                        account_code: "42".into(),
+                        debit: 0,
+                        credit: 5000,
+                        description: None,
+                    },
+                ],
+            })
+            .await
+            .unwrap();
 
         let entry_id = Uuid::parse_str(&posted.id).unwrap();
         let reversal = service.reverse_entry(entry_id).await.unwrap();
@@ -579,7 +682,10 @@ mod tests {
     #[tokio::test]
     async fn test_auto_entry_account_opened() {
         let service = AutoEntryService::new(Arc::new(MockJournalRepo::new()));
-        let result = service.on_account_opened(Uuid::new_v4(), 50_000).await.unwrap();
+        let result = service
+            .on_account_opened(Uuid::new_v4(), 50_000)
+            .await
+            .unwrap();
         assert_eq!(result.status, "Posted");
         assert_eq!(result.total_debit, 50_000);
         assert_eq!(result.total_credit, 50_000);
@@ -588,7 +694,10 @@ mod tests {
     #[tokio::test]
     async fn test_auto_entry_loan_disbursed() {
         let service = AutoEntryService::new(Arc::new(MockJournalRepo::new()));
-        let result = service.on_loan_disbursed(Uuid::new_v4(), 100_000).await.unwrap();
+        let result = service
+            .on_loan_disbursed(Uuid::new_v4(), 100_000)
+            .await
+            .unwrap();
         assert_eq!(result.status, "Posted");
         assert_eq!(result.total_debit, 100_000);
     }
@@ -596,7 +705,10 @@ mod tests {
     #[tokio::test]
     async fn test_auto_entry_interest() {
         let service = AutoEntryService::new(Arc::new(MockJournalRepo::new()));
-        let result = service.on_interest_calculated(Uuid::new_v4(), 2500).await.unwrap();
+        let result = service
+            .on_interest_calculated(Uuid::new_v4(), 2500)
+            .await
+            .unwrap();
         assert_eq!(result.status, "Posted");
     }
 
@@ -612,7 +724,10 @@ mod tests {
         let service = PeriodService::new(Arc::new(MockPeriodRepo::new()));
         service.close_period("2026-03").await.unwrap();
         let result = service.close_period("2026-03").await;
-        assert!(matches!(result, Err(AccountingServiceError::PeriodAlreadyClosed(_))));
+        assert!(matches!(
+            result,
+            Err(AccountingServiceError::PeriodAlreadyClosed(_))
+        ));
     }
 
     #[test]

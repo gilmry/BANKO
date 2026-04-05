@@ -3,7 +3,9 @@ use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use banko_application::governance::{AuditFilter, IAuditRepository, ICommitteeRepository, IControlCheckRepository};
+use banko_application::governance::{
+    AuditFilter, IAuditRepository, ICommitteeRepository, IControlCheckRepository,
+};
 use banko_domain::governance::*;
 
 // ============================================================
@@ -416,7 +418,7 @@ impl ICommitteeRepository for CommitteeRepository {
         let mut decisions = Vec::new();
         for row in rows {
             let vote_rows = sqlx::query_as::<_, VoteRow>(
-                "SELECT member_id, vote FROM governance.decision_votes WHERE decision_id = $1"
+                "SELECT member_id, vote FROM governance.decision_votes WHERE decision_id = $1",
             )
             .bind(row.id)
             .fetch_all(&self.pool)
@@ -463,8 +465,7 @@ struct CommitteeRow {
 
 impl CommitteeRow {
     fn into_entity(self) -> Result<Committee, String> {
-        let ct =
-            CommitteeType::from_str_type(&self.committee_type).map_err(|e| e.to_string())?;
+        let ct = CommitteeType::from_str_type(&self.committee_type).map_err(|e| e.to_string())?;
         Ok(Committee::from_raw(
             self.id,
             self.name,

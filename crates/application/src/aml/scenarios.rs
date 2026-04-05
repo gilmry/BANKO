@@ -1,6 +1,4 @@
-use banko_domain::aml::{
-    Alert, RiskLevel, Transaction, TransactionType, AML_CASH_THRESHOLD_TND,
-};
+use banko_domain::aml::{Alert, RiskLevel, Transaction, TransactionType, AML_CASH_THRESHOLD_TND};
 use banko_domain::shared::Currency;
 
 use super::ports::IAmlScenario;
@@ -15,11 +13,7 @@ impl IAmlScenario for ThresholdScenario {
         "threshold_5000_tnd"
     }
 
-    fn evaluate(
-        &self,
-        transaction: &Transaction,
-        _history: &[Transaction],
-    ) -> Option<Alert> {
+    fn evaluate(&self, transaction: &Transaction, _history: &[Transaction]) -> Option<Alert> {
         if transaction.requires_aml_check() {
             Alert::new(
                 transaction.id().clone(),
@@ -61,11 +55,7 @@ impl IAmlScenario for StructuringScenario {
         "structuring_detection"
     }
 
-    fn evaluate(
-        &self,
-        transaction: &Transaction,
-        history: &[Transaction],
-    ) -> Option<Alert> {
+    fn evaluate(&self, transaction: &Transaction, history: &[Transaction]) -> Option<Alert> {
         if !transaction.transaction_type().is_cash() {
             return None;
         }
@@ -74,8 +64,7 @@ impl IAmlScenario for StructuringScenario {
         }
 
         let near_threshold = AML_CASH_THRESHOLD_TND * self.near_threshold_pct;
-        let window_start = transaction.timestamp()
-            - chrono::Duration::hours(self.window_hours);
+        let window_start = transaction.timestamp() - chrono::Duration::hours(self.window_hours);
 
         // Count recent cash transactions near threshold from same account
         let near_threshold_count = history
@@ -138,11 +127,7 @@ impl IAmlScenario for HighRiskCountryScenario {
         "high_risk_country"
     }
 
-    fn evaluate(
-        &self,
-        transaction: &Transaction,
-        _history: &[Transaction],
-    ) -> Option<Alert> {
+    fn evaluate(&self, transaction: &Transaction, _history: &[Transaction]) -> Option<Alert> {
         if transaction.transaction_type() != TransactionType::Transfer {
             return None;
         }
@@ -153,10 +138,7 @@ impl IAmlScenario for HighRiskCountryScenario {
                 return Alert::new(
                     transaction.id().clone(),
                     RiskLevel::High,
-                    format!(
-                        "Transfer involves high-risk jurisdiction: {}",
-                        country
-                    ),
+                    format!("Transfer involves high-risk jurisdiction: {}", country),
                 )
                 .ok();
             }
@@ -190,17 +172,12 @@ impl IAmlScenario for VolumeScenario {
         "high_volume"
     }
 
-    fn evaluate(
-        &self,
-        transaction: &Transaction,
-        history: &[Transaction],
-    ) -> Option<Alert> {
+    fn evaluate(&self, transaction: &Transaction, history: &[Transaction]) -> Option<Alert> {
         if transaction.amount().currency() != Currency::TND {
             return None;
         }
 
-        let window_start = transaction.timestamp()
-            - chrono::Duration::hours(self.window_hours);
+        let window_start = transaction.timestamp() - chrono::Duration::hours(self.window_hours);
 
         let large_tx_count = history
             .iter()
@@ -258,7 +235,11 @@ mod tests {
         .unwrap()
     }
 
-    fn make_tx_with_account(amount: f64, tx_type: TransactionType, account_id: Uuid) -> Transaction {
+    fn make_tx_with_account(
+        amount: f64,
+        tx_type: TransactionType,
+        account_id: Uuid,
+    ) -> Transaction {
         Transaction::new(
             account_id,
             Uuid::new_v4(),
@@ -396,9 +377,11 @@ mod tests {
         let scenario = VolumeScenario::default();
         let account_id = Uuid::new_v4();
 
-        let history = vec![
-            make_tx_with_account(150_000.0, TransactionType::Transfer, account_id),
-        ];
+        let history = vec![make_tx_with_account(
+            150_000.0,
+            TransactionType::Transfer,
+            account_id,
+        )];
 
         let tx = make_tx_with_account(200_000.0, TransactionType::Transfer, account_id);
         assert!(scenario.evaluate(&tx, &history).is_none());

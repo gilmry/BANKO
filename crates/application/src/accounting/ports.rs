@@ -32,10 +32,7 @@ pub trait ILedgerRepository: Send + Sync {
     ) -> Result<(i64, i64), String>;
 
     /// Returns all account balances as (code, label, type, debit, credit)
-    async fn get_all_balances(
-        &self,
-        as_of: NaiveDate,
-    ) -> Result<Vec<AccountBalanceRow>, String>;
+    async fn get_all_balances(&self, as_of: NaiveDate) -> Result<Vec<AccountBalanceRow>, String>;
 
     async fn save_chart_entry(&self, entry: &LedgerAccount) -> Result<(), String>;
     async fn find_chart_entry(&self, code: &AccountCode) -> Result<Option<LedgerAccount>, String>;

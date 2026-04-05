@@ -39,11 +39,8 @@ impl DataRightsService {
         customer_id: Uuid,
         details: String,
     ) -> Result<DataRightsRequest, CustomerServiceError> {
-        let request = DataRightsRequest::new(
-            customer_id,
-            DataRequestType::Rectification,
-            Some(details),
-        );
+        let request =
+            DataRightsRequest::new(customer_id, DataRequestType::Rectification, Some(details));
         self.repo
             .save(&request)
             .await
@@ -266,9 +263,7 @@ mod tests {
         )
     }
 
-    fn make_service_with_consent(
-        consent_repo: Arc<dyn IConsentRepository>,
-    ) -> DataRightsService {
+    fn make_service_with_consent(consent_repo: Arc<dyn IConsentRepository>) -> DataRightsService {
         DataRightsService::new(Arc::new(MockDataRightsRepository::new()), consent_repo)
     }
 
@@ -322,10 +317,7 @@ mod tests {
         let cid = Uuid::new_v4();
 
         // Grant a consent first
-        let consent = ConsentRecord::grant(
-            cid,
-            banko_domain::customer::ConsentPurpose::Marketing,
-        );
+        let consent = ConsentRecord::grant(cid, banko_domain::customer::ConsentPurpose::Marketing);
         consent_repo.save(&consent).await.unwrap();
 
         let service = make_service_with_consent(consent_repo.clone());
@@ -335,10 +327,7 @@ mod tests {
             .unwrap();
 
         // Consent should be revoked
-        let active = consent_repo
-            .find_active_by_customer(cid)
-            .await
-            .unwrap();
+        let active = consent_repo.find_active_by_customer(cid).await.unwrap();
         assert!(active.is_empty());
     }
 

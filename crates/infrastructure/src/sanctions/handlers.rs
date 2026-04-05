@@ -84,9 +84,11 @@ pub async fn get_result_handler(
 
     match service.get_result(&id).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(SanctionsServiceError::ResultNotFound) => HttpResponse::NotFound().json(ErrorResponse {
-            error: "Screening result not found".to_string(),
-        }),
+        Err(SanctionsServiceError::ResultNotFound) => {
+            HttpResponse::NotFound().json(ErrorResponse {
+                error: "Screening result not found".to_string(),
+            })
+        }
         Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
             error: e.to_string(),
         }),

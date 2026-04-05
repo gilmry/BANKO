@@ -13,3 +13,6 @@ pub mod prudential;
 pub mod reporting;
 pub mod sanctions;
 pub mod use_cases;
+
+#[cfg(test)]
+mod e2e_tests;

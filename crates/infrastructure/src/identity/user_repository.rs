@@ -55,7 +55,11 @@ impl UserRow {
 #[async_trait]
 impl IUserRepository for PgUserRepository {
     async fn save(&self, user: &User) -> Result<(), String> {
-        let roles: Vec<String> = user.roles().iter().map(|r| r.as_str().to_string()).collect();
+        let roles: Vec<String> = user
+            .roles()
+            .iter()
+            .map(|r| r.as_str().to_string())
+            .collect();
 
         sqlx::query(
             r#"
@@ -114,13 +118,12 @@ impl IUserRepository for PgUserRepository {
     }
 
     async fn exists_by_email(&self, email: &EmailAddress) -> Result<bool, String> {
-        let result: (bool,) = sqlx::query_as(
-            "SELECT EXISTS(SELECT 1 FROM identity.users WHERE email = $1)",
-        )
-        .bind(email.as_str())
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|e| format!("DB exists_by_email error: {e}"))?;
+        let result: (bool,) =
+            sqlx::query_as("SELECT EXISTS(SELECT 1 FROM identity.users WHERE email = $1)")
+                .bind(email.as_str())
+                .fetch_one(&self.pool)
+                .await
+                .map_err(|e| format!("DB exists_by_email error: {e}"))?;
 
         Ok(result.0)
     }

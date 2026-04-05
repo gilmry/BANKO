@@ -42,12 +42,12 @@ fn map_service_error(err: CustomerServiceError) -> HttpResponse {
         CustomerServiceError::CustomerNotFound => HttpResponse::NotFound().json(ErrorResponse {
             error: "Customer not found".to_string(),
         }),
-        CustomerServiceError::Validation(msg) => HttpResponse::BadRequest().json(ErrorResponse {
-            error: msg,
-        }),
-        CustomerServiceError::Domain(msg) => HttpResponse::BadRequest().json(ErrorResponse {
-            error: msg,
-        }),
+        CustomerServiceError::Validation(msg) => {
+            HttpResponse::BadRequest().json(ErrorResponse { error: msg })
+        }
+        CustomerServiceError::Domain(msg) => {
+            HttpResponse::BadRequest().json(ErrorResponse { error: msg })
+        }
         CustomerServiceError::Internal(msg) => {
             tracing::error!("Data rights internal error: {msg}");
             HttpResponse::InternalServerError().json(ErrorResponse {

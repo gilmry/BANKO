@@ -22,9 +22,7 @@ struct CreateResponse {
     status: String,
 }
 
-fn customer_to_response(
-    customer: &banko_domain::customer::Customer,
-) -> CustomerResponse {
+fn customer_to_response(customer: &banko_domain::customer::Customer) -> CustomerResponse {
     CustomerResponse {
         customer_id: customer.id().to_string(),
         customer_type: customer.customer_type().as_str().to_string(),
@@ -40,9 +38,7 @@ fn customer_to_response(
     }
 }
 
-fn kyc_to_response(
-    customer: &banko_domain::customer::Customer,
-) -> KycProfileResponse {
+fn kyc_to_response(customer: &banko_domain::customer::Customer) -> KycProfileResponse {
     let kyc = customer.kyc_profile();
     KycProfileResponse {
         full_name: kyc.full_name().to_string(),
@@ -77,12 +73,12 @@ fn map_service_error(err: CustomerServiceError) -> HttpResponse {
                 error: format!("Email already registered: {email}"),
             })
         }
-        CustomerServiceError::Validation(msg) => HttpResponse::BadRequest().json(ErrorResponse {
-            error: msg,
-        }),
-        CustomerServiceError::Domain(msg) => HttpResponse::BadRequest().json(ErrorResponse {
-            error: msg,
-        }),
+        CustomerServiceError::Validation(msg) => {
+            HttpResponse::BadRequest().json(ErrorResponse { error: msg })
+        }
+        CustomerServiceError::Domain(msg) => {
+            HttpResponse::BadRequest().json(ErrorResponse { error: msg })
+        }
         CustomerServiceError::Internal(msg) => {
             tracing::error!("Customer internal error: {msg}");
             HttpResponse::InternalServerError().json(ErrorResponse {

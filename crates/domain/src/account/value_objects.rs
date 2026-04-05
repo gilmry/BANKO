@@ -207,10 +207,22 @@ mod tests {
 
     #[test]
     fn test_account_type_from_str() {
-        assert_eq!(AccountType::from_str_type("Current").unwrap(), AccountType::Current);
-        assert_eq!(AccountType::from_str_type("savings").unwrap(), AccountType::Savings);
-        assert_eq!(AccountType::from_str_type("TimeDeposit").unwrap(), AccountType::TimeDeposit);
-        assert_eq!(AccountType::from_str_type("time_deposit").unwrap(), AccountType::TimeDeposit);
+        assert_eq!(
+            AccountType::from_str_type("Current").unwrap(),
+            AccountType::Current
+        );
+        assert_eq!(
+            AccountType::from_str_type("savings").unwrap(),
+            AccountType::Savings
+        );
+        assert_eq!(
+            AccountType::from_str_type("TimeDeposit").unwrap(),
+            AccountType::TimeDeposit
+        );
+        assert_eq!(
+            AccountType::from_str_type("time_deposit").unwrap(),
+            AccountType::TimeDeposit
+        );
     }
 
     #[test]
@@ -220,9 +232,18 @@ mod tests {
 
     #[test]
     fn test_account_status_from_str() {
-        assert_eq!(AccountStatus::from_str_status("Active").unwrap(), AccountStatus::Active);
-        assert_eq!(AccountStatus::from_str_status("closed").unwrap(), AccountStatus::Closed);
-        assert_eq!(AccountStatus::from_str_status("suspended").unwrap(), AccountStatus::Suspended);
+        assert_eq!(
+            AccountStatus::from_str_status("Active").unwrap(),
+            AccountStatus::Active
+        );
+        assert_eq!(
+            AccountStatus::from_str_status("closed").unwrap(),
+            AccountStatus::Closed
+        );
+        assert_eq!(
+            AccountStatus::from_str_status("suspended").unwrap(),
+            AccountStatus::Suspended
+        );
     }
 
     #[test]
@@ -232,8 +253,14 @@ mod tests {
 
     #[test]
     fn test_movement_type_from_str() {
-        assert_eq!(MovementType::from_str_type("Deposit").unwrap(), MovementType::Deposit);
-        assert_eq!(MovementType::from_str_type("withdrawal").unwrap(), MovementType::Withdrawal);
+        assert_eq!(
+            MovementType::from_str_type("Deposit").unwrap(),
+            MovementType::Deposit
+        );
+        assert_eq!(
+            MovementType::from_str_type("withdrawal").unwrap(),
+            MovementType::Withdrawal
+        );
     }
 
     #[test]

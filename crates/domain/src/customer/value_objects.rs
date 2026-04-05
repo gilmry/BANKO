@@ -629,7 +629,12 @@ impl KycProfile {
         self.birth_date = None;
         self.nationality = "[ANONYMIZED]".to_string();
         self.profession = "[ANONYMIZED]".to_string();
-        self.address = Address::new_unchecked("[ANONYMIZED]", "[ANONYMIZED]", "[ANONYMIZED]", "[ANONYMIZED]");
+        self.address = Address::new_unchecked(
+            "[ANONYMIZED]",
+            "[ANONYMIZED]",
+            "[ANONYMIZED]",
+            "[ANONYMIZED]",
+        );
         self.phone = PhoneNumber::unchecked("[ANONYMIZED]");
         self.email = EmailAddress::unchecked("[ANONYMIZED]");
         self.sector = None;

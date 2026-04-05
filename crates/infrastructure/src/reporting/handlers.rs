@@ -102,9 +102,11 @@ pub async fn get_report_handler(
 
     match service.get_report(&ReportId::from_uuid(id)).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(ReportingServiceError::ReportNotFound) => HttpResponse::NotFound().json(ErrorResponse {
-            error: "Report not found".to_string(),
-        }),
+        Err(ReportingServiceError::ReportNotFound) => {
+            HttpResponse::NotFound().json(ErrorResponse {
+                error: "Report not found".to_string(),
+            })
+        }
         Err(e) => HttpResponse::InternalServerError().json(ErrorResponse {
             error: e.to_string(),
         }),
@@ -136,7 +138,12 @@ pub async fn generate_report_handler(
     };
 
     match service
-        .generate_report(report_type, body.period_start, body.period_end, generated_by)
+        .generate_report(
+            report_type,
+            body.period_start,
+            body.period_end,
+            generated_by,
+        )
         .await
     {
         Ok(resp) => HttpResponse::Created().json(resp),
@@ -168,9 +175,11 @@ pub async fn validate_report_handler(
 
     match service.validate_report(&ReportId::from_uuid(id)).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(ReportingServiceError::ReportNotFound) => HttpResponse::NotFound().json(ErrorResponse {
-            error: "Report not found".to_string(),
-        }),
+        Err(ReportingServiceError::ReportNotFound) => {
+            HttpResponse::NotFound().json(ErrorResponse {
+                error: "Report not found".to_string(),
+            })
+        }
         Err(e) => HttpResponse::BadRequest().json(ErrorResponse {
             error: e.to_string(),
         }),
@@ -194,9 +203,11 @@ pub async fn submit_report_handler(
 
     match service.submit_report(&ReportId::from_uuid(id)).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(ReportingServiceError::ReportNotFound) => HttpResponse::NotFound().json(ErrorResponse {
-            error: "Report not found".to_string(),
-        }),
+        Err(ReportingServiceError::ReportNotFound) => {
+            HttpResponse::NotFound().json(ErrorResponse {
+                error: "Report not found".to_string(),
+            })
+        }
         Err(e) => HttpResponse::BadRequest().json(ErrorResponse {
             error: e.to_string(),
         }),
@@ -220,9 +231,11 @@ pub async fn acknowledge_report_handler(
 
     match service.acknowledge_report(&ReportId::from_uuid(id)).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
-        Err(ReportingServiceError::ReportNotFound) => HttpResponse::NotFound().json(ErrorResponse {
-            error: "Report not found".to_string(),
-        }),
+        Err(ReportingServiceError::ReportNotFound) => {
+            HttpResponse::NotFound().json(ErrorResponse {
+                error: "Report not found".to_string(),
+            })
+        }
         Err(e) => HttpResponse::BadRequest().json(ErrorResponse {
             error: e.to_string(),
         }),

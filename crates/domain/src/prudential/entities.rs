@@ -666,9 +666,14 @@ mod tests {
         // FPN = 150 + 50 = 200, RWA = 1000 → 20% ≥ 10% ✓
         let ratio = PrudentialRatio::new(
             default_institution(),
-            150_000, 50_000, 1_000_000,
-            500_000, 800_000, vec![],
-        ).unwrap();
+            150_000,
+            50_000,
+            1_000_000,
+            500_000,
+            800_000,
+            vec![],
+        )
+        .unwrap();
         assert!((ratio.solvency_ratio() - 20.0).abs() < 0.01);
     }
 
@@ -677,10 +682,17 @@ mod tests {
         // FPN = 50 + 20 = 70, RWA = 1000 → 7% < 10% ✗
         let result = PrudentialRatio::new(
             default_institution(),
-            50_000, 20_000, 1_000_000,
-            500_000, 800_000, vec![],
+            50_000,
+            20_000,
+            1_000_000,
+            500_000,
+            800_000,
+            vec![],
         );
-        assert!(matches!(result, Err(DomainError::SolvencyRatioBreach { .. })));
+        assert!(matches!(
+            result,
+            Err(DomainError::SolvencyRatioBreach { .. })
+        ));
     }
 
     #[test]
@@ -688,9 +700,14 @@ mod tests {
         // FPN = 100, RWA = 1000 → exactly 10% ✓
         let ratio = PrudentialRatio::new(
             default_institution(),
-            70_000, 30_000, 1_000_000,
-            500_000, 800_000, vec![],
-        ).unwrap();
+            70_000,
+            30_000,
+            1_000_000,
+            500_000,
+            800_000,
+            vec![],
+        )
+        .unwrap();
         assert!((ratio.solvency_ratio() - 10.0).abs() < 0.01);
     }
 
@@ -699,9 +716,14 @@ mod tests {
         // Tier1 = 80, RWA = 1000 → 8% ≥ 7% ✓
         let ratio = PrudentialRatio::new(
             default_institution(),
-            80_000, 30_000, 1_000_000,
-            500_000, 800_000, vec![],
-        ).unwrap();
+            80_000,
+            30_000,
+            1_000_000,
+            500_000,
+            800_000,
+            vec![],
+        )
+        .unwrap();
         assert!((ratio.tier1_ratio() - 8.0).abs() < 0.01);
     }
 
@@ -710,8 +732,12 @@ mod tests {
         // Tier1 = 60, RWA = 1000 → 6% < 7%, but solvency = (60+50)/1000 = 11% OK
         let result = PrudentialRatio::new(
             default_institution(),
-            60_000, 50_000, 1_000_000,
-            500_000, 800_000, vec![],
+            60_000,
+            50_000,
+            1_000_000,
+            500_000,
+            800_000,
+            vec![],
         );
         assert!(matches!(result, Err(DomainError::Tier1RatioBreach { .. })));
     }
@@ -721,9 +747,14 @@ mod tests {
         // C/D = 500/800 = 62.5% ≤ 120% ✓
         let ratio = PrudentialRatio::new(
             default_institution(),
-            150_000, 50_000, 1_000_000,
-            500_000, 800_000, vec![],
-        ).unwrap();
+            150_000,
+            50_000,
+            1_000_000,
+            500_000,
+            800_000,
+            vec![],
+        )
+        .unwrap();
         assert!((ratio.credit_deposit_ratio() - 62.5).abs() < 0.01);
     }
 
@@ -732,10 +763,17 @@ mod tests {
         // C/D = 1210/1000 = 121% > 120% ✗
         let result = PrudentialRatio::new(
             default_institution(),
-            150_000, 50_000, 1_000_000,
-            1_210_000, 1_000_000, vec![],
+            150_000,
+            50_000,
+            1_000_000,
+            1_210_000,
+            1_000_000,
+            vec![],
         );
-        assert!(matches!(result, Err(DomainError::CreditToDepositBreach { .. })));
+        assert!(matches!(
+            result,
+            Err(DomainError::CreditToDepositBreach { .. })
+        ));
     }
 
     #[test]
@@ -743,9 +781,14 @@ mod tests {
         // C/D = 960/800 = 120% ≤ 120% ✓
         let ratio = PrudentialRatio::new(
             default_institution(),
-            150_000, 50_000, 1_000_000,
-            960_000, 800_000, vec![],
-        ).unwrap();
+            150_000,
+            50_000,
+            1_000_000,
+            960_000,
+            800_000,
+            vec![],
+        )
+        .unwrap();
         assert!((ratio.credit_deposit_ratio() - 120.0).abs() < 0.01);
     }
 
@@ -755,10 +798,14 @@ mod tests {
         // FPN = 200, exposure = 40 → 20% ≤ 25% ✓
         let ratio = PrudentialRatio::new(
             default_institution(),
-            150_000, 50_000, 1_000_000,
-            500_000, 800_000,
+            150_000,
+            50_000,
+            1_000_000,
+            500_000,
+            800_000,
             vec![Exposure::new(ben_id, 40_000, "Loan A".into())],
-        ).unwrap();
+        )
+        .unwrap();
         let conc = ratio.check_concentration(ben_id).unwrap();
         assert!((conc - 20.0).abs() < 0.01);
     }
@@ -769,20 +816,31 @@ mod tests {
         // FPN = 200, exposure = 60 → 30% > 25% ✗
         let result = PrudentialRatio::new(
             default_institution(),
-            150_000, 50_000, 1_000_000,
-            500_000, 800_000,
+            150_000,
+            50_000,
+            1_000_000,
+            500_000,
+            800_000,
             vec![Exposure::new(ben_id, 60_000, "Loan A".into())],
         );
-        assert!(matches!(result, Err(DomainError::ConcentrationBreach { .. })));
+        assert!(matches!(
+            result,
+            Err(DomainError::ConcentrationBreach { .. })
+        ));
     }
 
     #[test]
     fn test_check_all_ratios_no_breaches() {
         let ratio = PrudentialRatio::new(
             default_institution(),
-            150_000, 50_000, 1_000_000,
-            500_000, 800_000, vec![],
-        ).unwrap();
+            150_000,
+            50_000,
+            1_000_000,
+            500_000,
+            800_000,
+            vec![],
+        )
+        .unwrap();
         assert!(ratio.check_all_ratios().is_empty());
     }
 
@@ -790,8 +848,12 @@ mod tests {
     fn test_invalid_rwa_zero() {
         let result = PrudentialRatio::new(
             default_institution(),
-            150_000, 50_000, 0,
-            500_000, 800_000, vec![],
+            150_000,
+            50_000,
+            0,
+            500_000,
+            800_000,
+            vec![],
         );
         assert!(matches!(result, Err(DomainError::InvalidPrudentialData(_))));
     }
@@ -800,8 +862,12 @@ mod tests {
     fn test_invalid_deposits_zero() {
         let result = PrudentialRatio::new(
             default_institution(),
-            150_000, 50_000, 1_000_000,
-            500_000, 0, vec![],
+            150_000,
+            50_000,
+            1_000_000,
+            500_000,
+            0,
+            vec![],
         );
         assert!(matches!(result, Err(DomainError::InvalidPrudentialData(_))));
     }
@@ -810,8 +876,12 @@ mod tests {
     fn test_negative_capital_rejected() {
         let result = PrudentialRatio::new(
             default_institution(),
-            -100, 50_000, 1_000_000,
-            500_000, 800_000, vec![],
+            -100,
+            50_000,
+            1_000_000,
+            500_000,
+            800_000,
+            vec![],
         );
         assert!(matches!(result, Err(DomainError::InvalidPrudentialData(_))));
     }
@@ -821,20 +891,34 @@ mod tests {
     #[test]
     fn test_generate_alerts_solvency_breach() {
         let ratio = PrudentialRatio::from_raw(
-            RatioId::new(), default_institution(),
-            50_000, 20_000, 1_000_000,
-            500_000, 800_000, vec![], Utc::now(),
+            RatioId::new(),
+            default_institution(),
+            50_000,
+            20_000,
+            1_000_000,
+            500_000,
+            800_000,
+            vec![],
+            Utc::now(),
         );
         let alerts = ratio.generate_alerts();
-        assert!(alerts.iter().any(|a| a.breach_type() == BreachType::SolvencyBreach));
+        assert!(alerts
+            .iter()
+            .any(|a| a.breach_type() == BreachType::SolvencyBreach));
     }
 
     #[test]
     fn test_generate_alerts_no_breach() {
         let ratio = PrudentialRatio::from_raw(
-            RatioId::new(), default_institution(),
-            150_000, 50_000, 1_000_000,
-            500_000, 800_000, vec![], Utc::now(),
+            RatioId::new(),
+            default_institution(),
+            150_000,
+            50_000,
+            1_000_000,
+            500_000,
+            800_000,
+            vec![],
+            Utc::now(),
         );
         let alerts = ratio.generate_alerts();
         assert!(alerts.is_empty());
@@ -861,7 +945,10 @@ mod tests {
             RatioId::new(),
             default_institution(),
             chrono::NaiveDate::from_ymd_opt(2026, 4, 5).unwrap(),
-            12.5, 8.2, 95.0, None,
+            12.5,
+            8.2,
+            95.0,
+            None,
         );
         assert!((snapshot.solvency_ratio() - 12.5).abs() < 0.01);
         assert!(snapshot.breach_type().is_none());
@@ -874,13 +961,14 @@ mod tests {
         // Simulating: bank has 200M FPN, 1.5B RWA, 1B credits, 900M deposits
         let ratio = PrudentialRatio::new(
             default_institution(),
-            120_000_000, // tier1: 120M
-            80_000_000,  // tier2: 80M
+            120_000_000,   // tier1: 120M
+            80_000_000,    // tier2: 80M
             1_500_000_000, // RWA: 1.5B
             1_000_000_000, // credits: 1B
             900_000_000,   // deposits: 900M
             vec![],
-        ).unwrap();
+        )
+        .unwrap();
 
         // Solvency = 200M / 1.5B = 13.33% ≥ 10% ✓
         assert!(ratio.solvency_ratio() >= 10.0);
@@ -906,14 +994,24 @@ mod tests {
 
     #[test]
     fn test_ratio_type_roundtrip() {
-        for rt in [RatioType::Solvency, RatioType::Tier1, RatioType::CreditToDeposit, RatioType::Concentration] {
+        for rt in [
+            RatioType::Solvency,
+            RatioType::Tier1,
+            RatioType::CreditToDeposit,
+            RatioType::Concentration,
+        ] {
             assert_eq!(RatioType::from_str_value(rt.as_str()).unwrap(), rt);
         }
     }
 
     #[test]
     fn test_breach_type_roundtrip() {
-        for bt in [BreachType::SolvencyBreach, BreachType::Tier1Breach, BreachType::CreditToDepositBreach, BreachType::ConcentrationBreach] {
+        for bt in [
+            BreachType::SolvencyBreach,
+            BreachType::Tier1Breach,
+            BreachType::CreditToDepositBreach,
+            BreachType::ConcentrationBreach,
+        ] {
             assert_eq!(BreachType::from_str_value(bt.as_str()).unwrap(), bt);
         }
     }

@@ -11,7 +11,7 @@ pub struct JwtConfig {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JwtClaims {
-    pub sub: String,       // user_id
+    pub sub: String, // user_id
     pub email: String,
     pub roles: Vec<String>,
     pub iat: i64,
@@ -118,7 +118,11 @@ mod tests {
     use super::*;
 
     fn test_config() -> JwtConfig {
-        JwtConfig::new("test-secret-must-be-long-enough-for-jwt".to_string(), 3600, 604800)
+        JwtConfig::new(
+            "test-secret-must-be-long-enough-for-jwt".to_string(),
+            3600,
+            604800,
+        )
     }
 
     #[test]
@@ -164,7 +168,11 @@ mod tests {
     #[test]
     fn test_token_with_wrong_secret_rejected() {
         let config1 = test_config();
-        let config2 = JwtConfig::new("different-secret-also-long-enough-for-test".to_string(), 3600, 604800);
+        let config2 = JwtConfig::new(
+            "different-secret-also-long-enough-for-test".to_string(),
+            3600,
+            604800,
+        );
         let token = config1
             .generate_access_token("user-123", "test@banko.tn", &["user".to_string()])
             .unwrap();
@@ -174,7 +182,11 @@ mod tests {
 
     #[test]
     fn test_expired_token_rejected() {
-        let config = JwtConfig::new("test-secret-must-be-long-enough-for-jwt".to_string(), -10, -10); // already expired
+        let config = JwtConfig::new(
+            "test-secret-must-be-long-enough-for-jwt".to_string(),
+            -10,
+            -10,
+        ); // already expired
         let token = config
             .generate_access_token("user-123", "test@banko.tn", &["user".to_string()])
             .unwrap();

@@ -17,10 +17,7 @@ pub struct CustomerService {
 }
 
 impl CustomerService {
-    pub fn new(
-        repo: Arc<dyn ICustomerRepository>,
-        pep_checker: Arc<dyn IPepCheckService>,
-    ) -> Self {
+    pub fn new(repo: Arc<dyn ICustomerRepository>, pep_checker: Arc<dyn IPepCheckService>) -> Self {
         CustomerService { repo, pep_checker }
     }
 
@@ -61,9 +58,7 @@ impl CustomerService {
             .await
             .map_err(CustomerServiceError::Internal)?;
         if existing.is_some() {
-            return Err(CustomerServiceError::EmailAlreadyExists(
-                req.email.clone(),
-            ));
+            return Err(CustomerServiceError::EmailAlreadyExists(req.email.clone()));
         }
 
         // Parse PEP and source of funds
@@ -151,9 +146,8 @@ impl CustomerService {
         };
 
         // Create customer aggregate
-        let mut customer =
-            Customer::new(customer_type, kyc_profile, beneficiaries, consent)
-                .map_err(|e| CustomerServiceError::Domain(e.to_string()))?;
+        let mut customer = Customer::new(customer_type, kyc_profile, beneficiaries, consent)
+            .map_err(|e| CustomerServiceError::Domain(e.to_string()))?;
 
         // STORY-C08: Auto-calculate risk score
         let risk_score = RiskScoringService::calculate_risk_score(&customer);
@@ -170,10 +164,7 @@ impl CustomerService {
         Ok(customer_id)
     }
 
-    pub async fn find_by_id(
-        &self,
-        id: &CustomerId,
-    ) -> Result<Customer, CustomerServiceError> {
+    pub async fn find_by_id(&self, id: &CustomerId) -> Result<Customer, CustomerServiceError> {
         self.repo
             .find_by_id(id)
             .await
@@ -181,10 +172,7 @@ impl CustomerService {
             .ok_or(CustomerServiceError::CustomerNotFound)
     }
 
-    pub async fn approve_kyc(
-        &self,
-        id: &CustomerId,
-    ) -> Result<Customer, CustomerServiceError> {
+    pub async fn approve_kyc(&self, id: &CustomerId) -> Result<Customer, CustomerServiceError> {
         let mut customer = self.find_by_id(id).await?;
         customer.approve_kyc();
         self.repo
@@ -246,15 +234,17 @@ impl CustomerService {
 
         let kyc_profile = match customer.customer_type() {
             CustomerType::Individual => {
-                let cin_str = req.cin.as_deref().unwrap_or(customer.kyc_profile().cin_or_rcs());
+                let cin_str = req
+                    .cin
+                    .as_deref()
+                    .unwrap_or(customer.kyc_profile().cin_or_rcs());
                 let cin = Cin::new(cin_str)
                     .map_err(|e| CustomerServiceError::Validation(e.to_string()))?;
 
                 let birth_date = if let Some(ref bd) = req.birth_date {
-                    chrono::NaiveDate::parse_from_str(bd, "%Y-%m-%d")
-                        .map_err(|e| {
-                            CustomerServiceError::Validation(format!("Invalid birth_date: {e}"))
-                        })?
+                    chrono::NaiveDate::parse_from_str(bd, "%Y-%m-%d").map_err(|e| {
+                        CustomerServiceError::Validation(format!("Invalid birth_date: {e}"))
+                    })?
                 } else {
                     customer
                         .kyc_profile()
@@ -266,8 +256,12 @@ impl CustomerService {
                     &req.full_name,
                     cin,
                     birth_date,
-                    req.nationality.as_deref().unwrap_or(customer.kyc_profile().nationality()),
-                    req.profession.as_deref().unwrap_or(customer.kyc_profile().profession()),
+                    req.nationality
+                        .as_deref()
+                        .unwrap_or(customer.kyc_profile().nationality()),
+                    req.profession
+                        .as_deref()
+                        .unwrap_or(customer.kyc_profile().profession()),
                     address,
                     phone,
                     email,
@@ -391,7 +385,10 @@ mod tests {
             Ok(())
         }
 
-        async fn find_closed_before(&self, before: chrono::DateTime<chrono::Utc>) -> Result<Vec<Customer>, String> {
+        async fn find_closed_before(
+            &self,
+            before: chrono::DateTime<chrono::Utc>,
+        ) -> Result<Vec<Customer>, String> {
             let customers = self.customers.lock().unwrap();
             Ok(customers
                 .iter()
@@ -412,9 +409,7 @@ mod tests {
 
     impl MockPepChecker {
         fn new() -> Self {
-            MockPepChecker {
-                pep_names: vec![],
-            }
+            MockPepChecker { pep_names: vec![] }
         }
 
         fn with_pep_names(names: Vec<String>) -> Self {
@@ -578,7 +573,10 @@ mod tests {
     async fn test_find_by_id_not_found() {
         let service = make_service();
         let result = service.find_by_id(&CustomerId::new()).await;
-        assert!(matches!(result, Err(CustomerServiceError::CustomerNotFound)));
+        assert!(matches!(
+            result,
+            Err(CustomerServiceError::CustomerNotFound)
+        ));
     }
 
     // --- Approve/Reject tests ---
@@ -631,8 +629,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_pep_detected_auto_flags() {
-        let service =
-            make_service_with_pep(vec!["Ahmed Ben Ayed".to_string()]);
+        let service = make_service_with_pep(vec!["Ahmed Ben Ayed".to_string()]);
         let id = service
             .create_customer(valid_create_request())
             .await
