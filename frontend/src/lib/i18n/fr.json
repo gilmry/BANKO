@@ -1,0 +1,431 @@
+{
+  "app": {
+    "name": "BANKO",
+    "tagline": "Plateforme bancaire open source — transparente, auditable, conforme."
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Une erreur est survenue",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "next": "Suivant",
+    "previous": "Precedent",
+    "submit": "Soumettre",
+    "close": "Fermer",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "export": "Exporter",
+    "clearFilters": "Effacer les filtres",
+    "page": "Page",
+    "of": "sur",
+    "entries": "entrees",
+    "noResults": "Aucun resultat",
+    "required": "Obligatoire",
+    "skipToContent": "Aller au contenu principal",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "success": "Succes",
+    "confirm": "Confirmer",
+    "back": "Retour",
+    "showing": "Affichage de",
+    "results": "resultats",
+    "yes": "Oui",
+    "no": "Non",
+    "create": "Creer",
+    "update": "Mettre a jour",
+    "details": "Details",
+    "status": "Statut",
+    "date": "Date",
+    "amount": "Montant",
+    "description": "Description",
+    "actions": "Actions",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "pending": "En attente",
+    "approved": "Approuve",
+    "rejected": "Rejete",
+    "currency": "Devise"
+  },
+  "auth": {
+    "login": {
+      "title": "Connexion",
+      "email": "Adresse e-mail",
+      "password": "Mot de passe",
+      "submit": "Se connecter",
+      "noAccount": "Pas encore de compte ?",
+      "register": "Creer un compte",
+      "error": "Identifiants invalides",
+      "forgot_password": "Mot de passe oublie ?"
+    },
+    "register": {
+      "title": "Creer un compte",
+      "email": "Adresse e-mail",
+      "password": "Mot de passe",
+      "confirmPassword": "Confirmer le mot de passe",
+      "acceptTerms": "J'accepte les conditions d'utilisation",
+      "submit": "S'inscrire",
+      "hasAccount": "Deja un compte ?",
+      "login": "Se connecter",
+      "passwordStrength": "Force du mot de passe",
+      "weak": "Faible",
+      "medium": "Moyen",
+      "strong": "Fort",
+      "first_name": "Prenom",
+      "last_name": "Nom"
+    },
+    "twoFactor": {
+      "title": "Authentification a deux facteurs",
+      "scanQr": "Scannez le QR code avec votre application d'authentification",
+      "enterCode": "Entrez le code a 6 chiffres",
+      "verify": "Verifier",
+      "backupCodes": "Codes de secours",
+      "backupCodesWarning": "Conservez ces codes en lieu sur. Chacun ne peut etre utilise qu'une seule fois."
+    },
+    "logout": "Deconnexion"
+  },
+  "nav": {
+    "home": "Accueil",
+    "dashboard": "Tableau de bord",
+    "accounts": "Comptes",
+    "customers": "Clients",
+    "transfers": "Virements",
+    "audit": "Audit",
+    "settings": "Parametres",
+    "risk": "Risques",
+    "profile": "Profil",
+    "logout": "Deconnexion",
+    "credits": "Credits",
+    "reports": "Rapports",
+    "governance": "Gouvernance",
+    "accounting": "Comptabilite"
+  },
+  "roles": {
+    "admin": "Administrateur",
+    "manager": "Responsable",
+    "agent": "Agent",
+    "auditor": "Auditeur",
+    "compliance": "Conformite",
+    "customer": "Client"
+  },
+  "customer": {
+    "title": "Gestion des clients",
+    "onboarding": {
+      "title": "Enregistrement client (KYC)",
+      "step1": "Informations personnelles",
+      "step2": "Informations professionnelles",
+      "step3": "Beneficiaires effectifs",
+      "step4": "Documents",
+      "step5": "Recapitulatif"
+    },
+    "basicInfo": {
+      "firstName": "Prenom",
+      "lastName": "Nom",
+      "dateOfBirth": "Date de naissance",
+      "gender": "Genre",
+      "male": "Homme",
+      "female": "Femme",
+      "cin": "Numero CIN",
+      "nationality": "Nationalite"
+    },
+    "professionalInfo": {
+      "profession": "Profession",
+      "employer": "Employeur",
+      "monthlyIncome": "Revenu mensuel",
+      "sourceOfFunds": "Origine des fonds"
+    },
+    "beneficiary": {
+      "title": "Beneficiaires effectifs",
+      "add": "Ajouter un beneficiaire",
+      "name": "Nom complet",
+      "relationship": "Relation",
+      "ownership": "Part de propriete (%)",
+      "remove": "Retirer"
+    },
+    "documents": {
+      "title": "Documents justificatifs",
+      "upload": "Telecharger un document",
+      "idCard": "Carte d'identite",
+      "proofOfAddress": "Justificatif de domicile",
+      "incomeProof": "Justificatif de revenus"
+    },
+    "summary": {
+      "title": "Recapitulatif",
+      "confirm": "Confirmer et soumettre"
+    },
+    "create": {
+      "title": "Nouveau client",
+      "first_name": "Prenom",
+      "last_name": "Nom",
+      "email": "Adresse e-mail",
+      "phone": "Telephone",
+      "address": "Adresse",
+      "cin": "CIN",
+      "birth_date": "Date de naissance",
+      "nationality": "Nationalite",
+      "submit": "Creer le client"
+    },
+    "kyc": {
+      "title": "Verification KYC",
+      "status": "Statut KYC",
+      "level": "Niveau de verification",
+      "documents": "Documents justificatifs",
+      "verify": "Verifier",
+      "verified": "Verifie",
+      "pending": "En attente de verification",
+      "rejected": "Verification rejetee",
+      "expiry_date": "Date d'expiration"
+    },
+    "risk": {
+      "title": "Evaluation des risques",
+      "level": "Niveau de risque",
+      "low": "Faible",
+      "medium": "Moyen",
+      "high": "Eleve",
+      "critical": "Critique",
+      "score": "Score de risque",
+      "last_review": "Derniere evaluation"
+    }
+  },
+  "accounts": {
+    "title": "Mes comptes",
+    "balance": "Solde",
+    "type": "Type de compte",
+    "current": "Compte courant",
+    "savings": "Compte epargne",
+    "details": "Details du compte",
+    "movements": "Mouvements",
+    "date": "Date",
+    "description": "Description",
+    "amount": "Montant",
+    "transfer": {
+      "title": "Effectuer un virement",
+      "from": "Compte debiteur",
+      "to": "IBAN destinataire",
+      "amount": "Montant",
+      "reference": "Reference",
+      "submit": "Envoyer le virement"
+    }
+  },
+  "account": {
+    "title": "Gestion des comptes",
+    "my_accounts": "Mes comptes",
+    "types": {
+      "current": "Compte courant",
+      "savings": "Compte d'epargne",
+      "term_deposit": "Depot a terme",
+      "joint": "Compte joint"
+    },
+    "balance": {
+      "available": "Solde disponible",
+      "current": "Solde actuel",
+      "reserved": "Montant reserve"
+    },
+    "transfer": {
+      "title": "Nouveau virement",
+      "from": "Compte debiteur",
+      "to": "Compte beneficiaire",
+      "amount": "Montant",
+      "reference": "Reference",
+      "submit": "Effectuer le virement",
+      "success": "Virement effectue avec succes"
+    },
+    "movements": {
+      "title": "Mouvements",
+      "credit": "Credit",
+      "debit": "Debit",
+      "date": "Date",
+      "label": "Libelle",
+      "amount": "Montant",
+      "balance_after": "Solde apres operation"
+    },
+    "open": "Ouvrir un compte",
+    "close": "Cloturer le compte",
+    "rib": "RIB",
+    "iban": "IBAN"
+  },
+  "credit": {
+    "title": "Gestion des credits",
+    "request": "Demande de credit",
+    "amount": "Montant du credit",
+    "duration": "Duree (mois)",
+    "rate": "Taux d'interet",
+    "monthly_payment": "Mensualite",
+    "total_cost": "Cout total",
+    "status": "Statut du credit",
+    "types": {
+      "personal": "Credit personnel",
+      "mortgage": "Credit immobilier",
+      "business": "Credit professionnel",
+      "auto": "Credit automobile"
+    },
+    "guarantees": "Garanties",
+    "schedule": "Echeancier",
+    "remaining": "Capital restant du"
+  },
+  "aml": {
+    "title": "Lutte anti-blanchiment",
+    "alerts": "Alertes LAB",
+    "threshold": "Seuil de declaration",
+    "suspicious_activity": "Activite suspecte",
+    "report": "Declaration de soupcon",
+    "investigation": "Enquete",
+    "status": {
+      "open": "Ouverte",
+      "investigating": "En cours d'enquete",
+      "closed": "Cloturee",
+      "escalated": "Escaladee"
+    },
+    "scenarios": "Scenarios de detection",
+    "freeze": "Gel des avoirs"
+  },
+  "sanctions": {
+    "title": "Controle des sanctions",
+    "screening": "Filtrage",
+    "lists": "Listes de sanctions",
+    "match": "Correspondance",
+    "no_match": "Aucune correspondance",
+    "potential_match": "Correspondance potentielle",
+    "false_positive": "Faux positif",
+    "last_check": "Dernier controle",
+    "source": "Source"
+  },
+  "prudential": {
+    "title": "Exigences prudentielles",
+    "capital_ratio": "Ratio de fonds propres",
+    "solvency": "Ratio de solvabilite",
+    "liquidity": "Ratio de liquidite",
+    "leverage": "Ratio de levier",
+    "risk_weighted_assets": "Actifs ponderes par le risque",
+    "tier1": "Fonds propres de categorie 1",
+    "tier2": "Fonds propres de categorie 2",
+    "requirements": "Exigences reglementaires"
+  },
+  "accounting": {
+    "title": "Comptabilite",
+    "journal": "Journal comptable",
+    "entries": "Ecritures",
+    "debit": "Debit",
+    "credit": "Credit",
+    "balance": "Solde",
+    "period": "Periode comptable",
+    "account_code": "Code comptable",
+    "general_ledger": "Grand livre",
+    "trial_balance": "Balance generale",
+    "closing": "Cloture comptable"
+  },
+  "reporting": {
+    "title": "Rapports",
+    "generate": "Generer un rapport",
+    "schedule": "Planifier",
+    "regulatory": "Rapports reglementaires",
+    "statistical": "Rapports statistiques",
+    "custom": "Rapport personnalise",
+    "format": "Format",
+    "period": "Periode",
+    "download": "Telecharger"
+  },
+  "governance": {
+    "title": "Gouvernance",
+    "roles": "Roles",
+    "permissions": "Permissions",
+    "audit_trail": "Piste d'audit",
+    "policies": "Politiques",
+    "committees": "Comites",
+    "assign_role": "Attribuer un role",
+    "revoke_role": "Revoquer un role"
+  },
+  "payment": {
+    "title": "Paiements",
+    "sepa": "Virement SEPA",
+    "swift": "Virement SWIFT",
+    "domestic": "National",
+    "international": "International",
+    "beneficiary": "Beneficiaire",
+    "bic": "Code BIC",
+    "status": {
+      "initiated": "Initie",
+      "processing": "En traitement",
+      "completed": "Effectue",
+      "failed": "Echoue",
+      "cancelled": "Annule"
+    }
+  },
+  "forex": {
+    "title": "Change",
+    "exchange_rate": "Taux de change",
+    "buy": "Achat",
+    "sell": "Vente",
+    "pair": "Paire de devises",
+    "spot": "Comptant",
+    "forward": "A terme",
+    "conversion": "Conversion"
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "solvency_ratio": "Ratio de solvabilite",
+    "tier1_ratio": "Ratio Tier 1",
+    "cd_ratio": "Ratio credits/depots",
+    "concentration": "Concentration",
+    "alerts": "Alertes",
+    "overview": "Vue d'ensemble",
+    "recent_activity": "Activite recente",
+    "total_assets": "Total des actifs",
+    "total_liabilities": "Total des passifs",
+    "total_customers": "Nombre de clients",
+    "total_accounts": "Nombre de comptes",
+    "risk": {
+      "title": "Tableau de bord prudentiel",
+      "compliant": "Conforme",
+      "warning": "Attention",
+      "breach": "Depassement",
+      "ratioName": "Ratio",
+      "currentValue": "Valeur actuelle",
+      "target": "Cible",
+      "status": "Statut",
+      "trend": "Tendance sur 30 jours"
+    }
+  },
+  "audit": {
+    "title": "Journal d'audit",
+    "who": "Utilisateur",
+    "when": "Date et heure",
+    "what": "Action effectuee",
+    "filter": "Filtrer les evenements",
+    "export": "Exporter le journal",
+    "action": "Action",
+    "entity": "Entite",
+    "old_value": "Ancienne valeur",
+    "new_value": "Nouvelle valeur",
+    "timestamp": "Horodatage",
+    "actor": "Acteur",
+    "resourceType": "Type de ressource",
+    "resourceId": "ID ressource",
+    "filters": "Filtres",
+    "dateFrom": "Date debut",
+    "dateTo": "Date fin",
+    "allActions": "Toutes les actions",
+    "allResources": "Toutes les ressources",
+    "exportCsv": "Exporter CSV",
+    "exportJson": "Exporter JSON"
+  },
+  "validation": {
+    "required": "Ce champ est obligatoire",
+    "email": "Adresse e-mail invalide",
+    "min_length": "Minimum {min} caracteres requis",
+    "max_length": "Maximum {max} caracteres autorises",
+    "password_uppercase": "Le mot de passe doit contenir au moins une majuscule",
+    "password_lowercase": "Le mot de passe doit contenir au moins une minuscule",
+    "password_number": "Le mot de passe doit contenir au moins un chiffre",
+    "password_special": "Le mot de passe doit contenir au moins un caractere special",
+    "password_min_length": "Le mot de passe doit contenir au moins 8 caracteres",
+    "passwords_match": "Les mots de passe ne correspondent pas",
+    "cin_format": "Format CIN invalide (8 chiffres attendus)",
+    "rib_format": "Format RIB invalide (20 chiffres attendus)",
+    "iban_format": "Format IBAN invalide",
+    "amount_positive": "Le montant doit etre positif",
+    "amount_max": "Le montant depasse la limite autorisee de {max}",
+    "phone_format": "Format de numero de telephone invalide",
+    "date_past": "La date doit etre dans le passe",
+    "date_future": "La date doit etre dans le futur"
+  }
+}

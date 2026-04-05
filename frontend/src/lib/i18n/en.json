@@ -1,0 +1,431 @@
+{
+  "app": {
+    "name": "BANKO",
+    "tagline": "Open source banking platform — transparent, auditable, compliant."
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "save": "Save",
+    "cancel": "Cancel",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "close": "Close",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "clearFilters": "Clear filters",
+    "page": "Page",
+    "of": "of",
+    "entries": "entries",
+    "noResults": "No results",
+    "required": "Required",
+    "skipToContent": "Skip to main content",
+    "delete": "Delete",
+    "edit": "Edit",
+    "success": "Success",
+    "confirm": "Confirm",
+    "back": "Back",
+    "showing": "Showing",
+    "results": "results",
+    "yes": "Yes",
+    "no": "No",
+    "create": "Create",
+    "update": "Update",
+    "details": "Details",
+    "status": "Status",
+    "date": "Date",
+    "amount": "Amount",
+    "description": "Description",
+    "actions": "Actions",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "currency": "Currency"
+  },
+  "auth": {
+    "login": {
+      "title": "Login",
+      "email": "Email address",
+      "password": "Password",
+      "submit": "Sign in",
+      "noAccount": "Don't have an account?",
+      "register": "Create account",
+      "error": "Invalid credentials",
+      "forgot_password": "Forgot password?"
+    },
+    "register": {
+      "title": "Create an account",
+      "email": "Email address",
+      "password": "Password",
+      "confirmPassword": "Confirm password",
+      "acceptTerms": "I accept the terms of service",
+      "submit": "Sign up",
+      "hasAccount": "Already have an account?",
+      "login": "Sign in",
+      "passwordStrength": "Password strength",
+      "weak": "Weak",
+      "medium": "Medium",
+      "strong": "Strong",
+      "first_name": "First name",
+      "last_name": "Last name"
+    },
+    "twoFactor": {
+      "title": "Two-Factor Authentication",
+      "scanQr": "Scan the QR code with your authenticator app",
+      "enterCode": "Enter the 6-digit code",
+      "verify": "Verify",
+      "backupCodes": "Backup codes",
+      "backupCodesWarning": "Keep these codes safe. Each can only be used once."
+    },
+    "logout": "Logout"
+  },
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "accounts": "Accounts",
+    "customers": "Customers",
+    "transfers": "Transfers",
+    "audit": "Audit",
+    "settings": "Settings",
+    "risk": "Risk",
+    "profile": "Profile",
+    "logout": "Logout",
+    "credits": "Credits",
+    "reports": "Reports",
+    "governance": "Governance",
+    "accounting": "Accounting"
+  },
+  "roles": {
+    "admin": "Administrator",
+    "manager": "Manager",
+    "agent": "Agent",
+    "auditor": "Auditor",
+    "compliance": "Compliance",
+    "customer": "Customer"
+  },
+  "customer": {
+    "title": "Customer management",
+    "onboarding": {
+      "title": "Customer Registration (KYC)",
+      "step1": "Personal Information",
+      "step2": "Professional Information",
+      "step3": "Beneficial Owners",
+      "step4": "Documents",
+      "step5": "Summary"
+    },
+    "basicInfo": {
+      "firstName": "First name",
+      "lastName": "Last name",
+      "dateOfBirth": "Date of birth",
+      "gender": "Gender",
+      "male": "Male",
+      "female": "Female",
+      "cin": "CIN number",
+      "nationality": "Nationality"
+    },
+    "professionalInfo": {
+      "profession": "Profession",
+      "employer": "Employer",
+      "monthlyIncome": "Monthly income",
+      "sourceOfFunds": "Source of funds"
+    },
+    "beneficiary": {
+      "title": "Beneficial owners",
+      "add": "Add beneficiary",
+      "name": "Full name",
+      "relationship": "Relationship",
+      "ownership": "Ownership share (%)",
+      "remove": "Remove"
+    },
+    "documents": {
+      "title": "Supporting documents",
+      "upload": "Upload document",
+      "idCard": "ID card",
+      "proofOfAddress": "Proof of address",
+      "incomeProof": "Income proof"
+    },
+    "summary": {
+      "title": "Summary",
+      "confirm": "Confirm and submit"
+    },
+    "create": {
+      "title": "New customer",
+      "first_name": "First name",
+      "last_name": "Last name",
+      "email": "Email address",
+      "phone": "Phone",
+      "address": "Address",
+      "cin": "National ID (CIN)",
+      "birth_date": "Date of birth",
+      "nationality": "Nationality",
+      "submit": "Create customer"
+    },
+    "kyc": {
+      "title": "KYC verification",
+      "status": "KYC status",
+      "level": "Verification level",
+      "documents": "Supporting documents",
+      "verify": "Verify",
+      "verified": "Verified",
+      "pending": "Pending verification",
+      "rejected": "Verification rejected",
+      "expiry_date": "Expiry date"
+    },
+    "risk": {
+      "title": "Risk assessment",
+      "level": "Risk level",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical",
+      "score": "Risk score",
+      "last_review": "Last review"
+    }
+  },
+  "accounts": {
+    "title": "My accounts",
+    "balance": "Balance",
+    "type": "Account type",
+    "current": "Current account",
+    "savings": "Savings account",
+    "details": "Account details",
+    "movements": "Transactions",
+    "date": "Date",
+    "description": "Description",
+    "amount": "Amount",
+    "transfer": {
+      "title": "Make a transfer",
+      "from": "From account",
+      "to": "Recipient IBAN",
+      "amount": "Amount",
+      "reference": "Reference",
+      "submit": "Send transfer"
+    }
+  },
+  "account": {
+    "title": "Account management",
+    "my_accounts": "My accounts",
+    "types": {
+      "current": "Current account",
+      "savings": "Savings account",
+      "term_deposit": "Term deposit",
+      "joint": "Joint account"
+    },
+    "balance": {
+      "available": "Available balance",
+      "current": "Current balance",
+      "reserved": "Reserved amount"
+    },
+    "transfer": {
+      "title": "New transfer",
+      "from": "From account",
+      "to": "To account",
+      "amount": "Amount",
+      "reference": "Reference",
+      "submit": "Make transfer",
+      "success": "Transfer completed successfully"
+    },
+    "movements": {
+      "title": "Transactions",
+      "credit": "Credit",
+      "debit": "Debit",
+      "date": "Date",
+      "label": "Label",
+      "amount": "Amount",
+      "balance_after": "Balance after transaction"
+    },
+    "open": "Open an account",
+    "close": "Close account",
+    "rib": "RIB",
+    "iban": "IBAN"
+  },
+  "credit": {
+    "title": "Credit management",
+    "request": "Credit request",
+    "amount": "Credit amount",
+    "duration": "Duration (months)",
+    "rate": "Interest rate",
+    "monthly_payment": "Monthly payment",
+    "total_cost": "Total cost",
+    "status": "Credit status",
+    "types": {
+      "personal": "Personal loan",
+      "mortgage": "Mortgage",
+      "business": "Business loan",
+      "auto": "Auto loan"
+    },
+    "guarantees": "Guarantees",
+    "schedule": "Payment schedule",
+    "remaining": "Outstanding principal"
+  },
+  "aml": {
+    "title": "Anti-money laundering",
+    "alerts": "AML alerts",
+    "threshold": "Reporting threshold",
+    "suspicious_activity": "Suspicious activity",
+    "report": "Suspicious activity report",
+    "investigation": "Investigation",
+    "status": {
+      "open": "Open",
+      "investigating": "Under investigation",
+      "closed": "Closed",
+      "escalated": "Escalated"
+    },
+    "scenarios": "Detection scenarios",
+    "freeze": "Asset freeze"
+  },
+  "sanctions": {
+    "title": "Sanctions screening",
+    "screening": "Screening",
+    "lists": "Sanctions lists",
+    "match": "Match",
+    "no_match": "No match",
+    "potential_match": "Potential match",
+    "false_positive": "False positive",
+    "last_check": "Last check",
+    "source": "Source"
+  },
+  "prudential": {
+    "title": "Prudential requirements",
+    "capital_ratio": "Capital ratio",
+    "solvency": "Solvency ratio",
+    "liquidity": "Liquidity ratio",
+    "leverage": "Leverage ratio",
+    "risk_weighted_assets": "Risk-weighted assets",
+    "tier1": "Tier 1 capital",
+    "tier2": "Tier 2 capital",
+    "requirements": "Regulatory requirements"
+  },
+  "accounting": {
+    "title": "Accounting",
+    "journal": "Accounting journal",
+    "entries": "Entries",
+    "debit": "Debit",
+    "credit": "Credit",
+    "balance": "Balance",
+    "period": "Accounting period",
+    "account_code": "Account code",
+    "general_ledger": "General ledger",
+    "trial_balance": "Trial balance",
+    "closing": "Accounting closing"
+  },
+  "reporting": {
+    "title": "Reports",
+    "generate": "Generate report",
+    "schedule": "Schedule",
+    "regulatory": "Regulatory reports",
+    "statistical": "Statistical reports",
+    "custom": "Custom report",
+    "format": "Format",
+    "period": "Period",
+    "download": "Download"
+  },
+  "governance": {
+    "title": "Governance",
+    "roles": "Roles",
+    "permissions": "Permissions",
+    "audit_trail": "Audit trail",
+    "policies": "Policies",
+    "committees": "Committees",
+    "assign_role": "Assign role",
+    "revoke_role": "Revoke role"
+  },
+  "payment": {
+    "title": "Payments",
+    "sepa": "SEPA transfer",
+    "swift": "SWIFT transfer",
+    "domestic": "Domestic",
+    "international": "International",
+    "beneficiary": "Beneficiary",
+    "bic": "BIC code",
+    "status": {
+      "initiated": "Initiated",
+      "processing": "Processing",
+      "completed": "Completed",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    }
+  },
+  "forex": {
+    "title": "Foreign exchange",
+    "exchange_rate": "Exchange rate",
+    "buy": "Buy",
+    "sell": "Sell",
+    "pair": "Currency pair",
+    "spot": "Spot",
+    "forward": "Forward",
+    "conversion": "Conversion"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "solvency_ratio": "Solvency ratio",
+    "tier1_ratio": "Tier 1 ratio",
+    "cd_ratio": "Credit/deposit ratio",
+    "concentration": "Concentration",
+    "alerts": "Alerts",
+    "overview": "Overview",
+    "recent_activity": "Recent activity",
+    "total_assets": "Total assets",
+    "total_liabilities": "Total liabilities",
+    "total_customers": "Total customers",
+    "total_accounts": "Total accounts",
+    "risk": {
+      "title": "Prudential Dashboard",
+      "compliant": "Compliant",
+      "warning": "Warning",
+      "breach": "Breach",
+      "ratioName": "Ratio",
+      "currentValue": "Current value",
+      "target": "Target",
+      "status": "Status",
+      "trend": "30-day trend"
+    }
+  },
+  "audit": {
+    "title": "Audit Log",
+    "who": "User",
+    "when": "Date and time",
+    "what": "Action performed",
+    "filter": "Filter events",
+    "export": "Export log",
+    "action": "Action",
+    "entity": "Entity",
+    "old_value": "Old value",
+    "new_value": "New value",
+    "timestamp": "Timestamp",
+    "actor": "Actor",
+    "resourceType": "Resource type",
+    "resourceId": "Resource ID",
+    "filters": "Filters",
+    "dateFrom": "Start date",
+    "dateTo": "End date",
+    "allActions": "All actions",
+    "allResources": "All resources",
+    "exportCsv": "Export CSV",
+    "exportJson": "Export JSON"
+  },
+  "validation": {
+    "required": "This field is required",
+    "email": "Invalid email address",
+    "min_length": "Minimum {min} characters required",
+    "max_length": "Maximum {max} characters allowed",
+    "password_uppercase": "Password must contain at least one uppercase letter",
+    "password_lowercase": "Password must contain at least one lowercase letter",
+    "password_number": "Password must contain at least one number",
+    "password_special": "Password must contain at least one special character",
+    "password_min_length": "Password must be at least 8 characters long",
+    "passwords_match": "Passwords do not match",
+    "cin_format": "Invalid CIN format (8 digits expected)",
+    "rib_format": "Invalid RIB format (20 digits expected)",
+    "iban_format": "Invalid IBAN format",
+    "amount_positive": "Amount must be positive",
+    "amount_max": "Amount exceeds the allowed limit of {max}",
+    "phone_format": "Invalid phone number format",
+    "date_past": "Date must be in the past",
+    "date_future": "Date must be in the future"
+  }
+}

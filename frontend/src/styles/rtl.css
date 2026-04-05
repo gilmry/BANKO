@@ -1,0 +1,58 @@
+/* RTL (Right-to-Left) support for Arabic locale */
+/* Uses CSS logical properties where possible */
+
+[dir='rtl'] {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir='rtl'] .ms-auto {
+  margin-inline-start: auto;
+}
+
+[dir='rtl'] .me-auto {
+  margin-inline-end: auto;
+}
+
+[dir='rtl'] .sidebar {
+  border-inline-end: 1px solid var(--border-color, #e5e7eb);
+  border-inline-start: none;
+}
+
+[dir='rtl'] input,
+[dir='rtl'] select,
+[dir='rtl'] textarea {
+  text-align: right;
+}
+
+[dir='rtl'] input[type='number'] {
+  text-align: left;
+  direction: ltr;
+}
+
+[dir='rtl'] table {
+  text-align: right;
+}
+
+[dir='rtl'] th,
+[dir='rtl'] td {
+  text-align: right;
+}
+
+[dir='rtl'] .icon-directional {
+  transform: scaleX(-1);
+}
+
+[dir='rtl'] .nav-item {
+  padding-inline-start: 1rem;
+  padding-inline-end: 0.75rem;
+}
+
+[dir='rtl'] .modal-close {
+  inset-inline-end: 1rem;
+  inset-inline-start: auto;
+}
+
+[dir='rtl'] :focus-visible {
+  outline-offset: 2px;
+}

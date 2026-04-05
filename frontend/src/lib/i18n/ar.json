@@ -1,0 +1,431 @@
+{
+  "app": {
+    "name": "BANKO",
+    "tagline": "منصة بنكية مفتوحة المصدر — شفافة، قابلة للتدقيق، متوافقة مع المعايير."
+  },
+  "common": {
+    "loading": "جاري التحميل...",
+    "error": "حدث خطأ",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "next": "التالي",
+    "previous": "السابق",
+    "submit": "إرسال",
+    "close": "إغلاق",
+    "search": "بحث",
+    "filter": "تصفية",
+    "export": "تصدير",
+    "clearFilters": "مسح الفلاتر",
+    "page": "صفحة",
+    "of": "من",
+    "entries": "إدخالات",
+    "noResults": "لا توجد نتائج",
+    "required": "مطلوب",
+    "skipToContent": "انتقل إلى المحتوى الرئيسي",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "success": "نجاح",
+    "confirm": "تأكيد",
+    "back": "رجوع",
+    "showing": "عرض",
+    "results": "نتائج",
+    "yes": "نعم",
+    "no": "لا",
+    "create": "إنشاء",
+    "update": "تحديث",
+    "details": "التفاصيل",
+    "status": "الحالة",
+    "date": "التاريخ",
+    "amount": "المبلغ",
+    "description": "الوصف",
+    "actions": "الإجراءات",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "pending": "قيد الانتظار",
+    "approved": "موافق عليه",
+    "rejected": "مرفوض",
+    "currency": "العملة"
+  },
+  "auth": {
+    "login": {
+      "title": "تسجيل الدخول",
+      "email": "البريد الإلكتروني",
+      "password": "كلمة المرور",
+      "submit": "دخول",
+      "noAccount": "ليس لديك حساب؟",
+      "register": "إنشاء حساب",
+      "error": "بيانات الاعتماد غير صالحة",
+      "forgot_password": "نسيت كلمة المرور؟"
+    },
+    "register": {
+      "title": "إنشاء حساب",
+      "email": "البريد الإلكتروني",
+      "password": "كلمة المرور",
+      "confirmPassword": "تأكيد كلمة المرور",
+      "acceptTerms": "أوافق على شروط الاستخدام",
+      "submit": "تسجيل",
+      "hasAccount": "لديك حساب بالفعل؟",
+      "login": "تسجيل الدخول",
+      "passwordStrength": "قوة كلمة المرور",
+      "weak": "ضعيفة",
+      "medium": "متوسطة",
+      "strong": "قوية",
+      "first_name": "الاسم",
+      "last_name": "اللقب"
+    },
+    "twoFactor": {
+      "title": "المصادقة الثنائية",
+      "scanQr": "امسح رمز QR بتطبيق المصادقة",
+      "enterCode": "أدخل الرمز المكون من 6 أرقام",
+      "verify": "تحقق",
+      "backupCodes": "رموز الاسترداد",
+      "backupCodesWarning": "احتفظ بهذه الرموز في مكان آمن. كل رمز يمكن استخدامه مرة واحدة فقط."
+    },
+    "logout": "تسجيل الخروج"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "dashboard": "لوحة التحكم",
+    "accounts": "الحسابات",
+    "customers": "العملاء",
+    "transfers": "التحويلات",
+    "audit": "التدقيق",
+    "settings": "الإعدادات",
+    "risk": "المخاطر",
+    "profile": "الملف الشخصي",
+    "logout": "تسجيل الخروج",
+    "credits": "القروض",
+    "reports": "التقارير",
+    "governance": "الحوكمة",
+    "accounting": "المحاسبة"
+  },
+  "roles": {
+    "admin": "مدير النظام",
+    "manager": "مسؤول",
+    "agent": "وكيل",
+    "auditor": "مدقق",
+    "compliance": "الامتثال",
+    "customer": "عميل"
+  },
+  "customer": {
+    "title": "إدارة العملاء",
+    "onboarding": {
+      "title": "تسجيل العميل (KYC)",
+      "step1": "المعلومات الشخصية",
+      "step2": "المعلومات المهنية",
+      "step3": "المستفيدون الفعليون",
+      "step4": "الوثائق",
+      "step5": "الملخص"
+    },
+    "basicInfo": {
+      "firstName": "الاسم الأول",
+      "lastName": "اسم العائلة",
+      "dateOfBirth": "تاريخ الميلاد",
+      "gender": "الجنس",
+      "male": "ذكر",
+      "female": "أنثى",
+      "cin": "رقم بطاقة الهوية",
+      "nationality": "الجنسية"
+    },
+    "professionalInfo": {
+      "profession": "المهنة",
+      "employer": "جهة العمل",
+      "monthlyIncome": "الدخل الشهري",
+      "sourceOfFunds": "مصدر الأموال"
+    },
+    "beneficiary": {
+      "title": "المستفيدون الفعليون",
+      "add": "إضافة مستفيد",
+      "name": "الاسم الكامل",
+      "relationship": "العلاقة",
+      "ownership": "نسبة الملكية (%)",
+      "remove": "حذف"
+    },
+    "documents": {
+      "title": "الوثائق المطلوبة",
+      "upload": "تحميل وثيقة",
+      "idCard": "بطاقة الهوية",
+      "proofOfAddress": "إثبات العنوان",
+      "incomeProof": "إثبات الدخل"
+    },
+    "summary": {
+      "title": "الملخص",
+      "confirm": "تأكيد وإرسال"
+    },
+    "create": {
+      "title": "عميل جديد",
+      "first_name": "الاسم",
+      "last_name": "اللقب",
+      "email": "البريد الإلكتروني",
+      "phone": "الهاتف",
+      "address": "العنوان",
+      "cin": "بطاقة التعريف الوطنية",
+      "birth_date": "تاريخ الميلاد",
+      "nationality": "الجنسية",
+      "submit": "إنشاء العميل"
+    },
+    "kyc": {
+      "title": "التحقق من هوية العميل",
+      "status": "حالة التحقق",
+      "level": "مستوى التحقق",
+      "documents": "الوثائق المطلوبة",
+      "verify": "تحقق",
+      "verified": "تم التحقق",
+      "pending": "في انتظار التحقق",
+      "rejected": "تم رفض التحقق",
+      "expiry_date": "تاريخ الانتهاء"
+    },
+    "risk": {
+      "title": "تقييم المخاطر",
+      "level": "مستوى المخاطر",
+      "low": "منخفض",
+      "medium": "متوسط",
+      "high": "مرتفع",
+      "critical": "حرج",
+      "score": "درجة المخاطر",
+      "last_review": "آخر تقييم"
+    }
+  },
+  "accounts": {
+    "title": "حساباتي",
+    "balance": "الرصيد",
+    "type": "نوع الحساب",
+    "current": "حساب جاري",
+    "savings": "حساب توفير",
+    "details": "تفاصيل الحساب",
+    "movements": "الحركات",
+    "date": "التاريخ",
+    "description": "الوصف",
+    "amount": "المبلغ",
+    "transfer": {
+      "title": "إجراء تحويل",
+      "from": "من الحساب",
+      "to": "رقم IBAN المستفيد",
+      "amount": "المبلغ",
+      "reference": "المرجع",
+      "submit": "إرسال التحويل"
+    }
+  },
+  "account": {
+    "title": "إدارة الحسابات",
+    "my_accounts": "حساباتي",
+    "types": {
+      "current": "حساب جاري",
+      "savings": "حساب توفير",
+      "term_deposit": "وديعة لأجل",
+      "joint": "حساب مشترك"
+    },
+    "balance": {
+      "available": "الرصيد المتاح",
+      "current": "الرصيد الحالي",
+      "reserved": "المبلغ المحجوز"
+    },
+    "transfer": {
+      "title": "تحويل جديد",
+      "from": "من حساب",
+      "to": "إلى حساب",
+      "amount": "المبلغ",
+      "reference": "المرجع",
+      "submit": "إجراء التحويل",
+      "success": "تم التحويل بنجاح"
+    },
+    "movements": {
+      "title": "الحركات",
+      "credit": "دائن",
+      "debit": "مدين",
+      "date": "التاريخ",
+      "label": "البيان",
+      "amount": "المبلغ",
+      "balance_after": "الرصيد بعد العملية"
+    },
+    "open": "فتح حساب",
+    "close": "إغلاق الحساب",
+    "rib": "المعرف البنكي",
+    "iban": "رقم الحساب البنكي الدولي"
+  },
+  "credit": {
+    "title": "إدارة القروض",
+    "request": "طلب قرض",
+    "amount": "مبلغ القرض",
+    "duration": "المدة (أشهر)",
+    "rate": "نسبة الفائدة",
+    "monthly_payment": "القسط الشهري",
+    "total_cost": "التكلفة الإجمالية",
+    "status": "حالة القرض",
+    "types": {
+      "personal": "قرض شخصي",
+      "mortgage": "قرض عقاري",
+      "business": "قرض مهني",
+      "auto": "قرض سيارة"
+    },
+    "guarantees": "الضمانات",
+    "schedule": "جدول السداد",
+    "remaining": "الأصل المتبقي"
+  },
+  "aml": {
+    "title": "مكافحة غسل الأموال",
+    "alerts": "تنبيهات مكافحة غسل الأموال",
+    "threshold": "عتبة التصريح",
+    "suspicious_activity": "نشاط مشبوه",
+    "report": "تقرير بالاشتباه",
+    "investigation": "تحقيق",
+    "status": {
+      "open": "مفتوح",
+      "investigating": "قيد التحقيق",
+      "closed": "مغلق",
+      "escalated": "تم التصعيد"
+    },
+    "scenarios": "سيناريوهات الكشف",
+    "freeze": "تجميد الأموال"
+  },
+  "sanctions": {
+    "title": "مراقبة العقوبات",
+    "screening": "الفحص",
+    "lists": "قوائم العقوبات",
+    "match": "تطابق",
+    "no_match": "لا يوجد تطابق",
+    "potential_match": "تطابق محتمل",
+    "false_positive": "إنذار كاذب",
+    "last_check": "آخر فحص",
+    "source": "المصدر"
+  },
+  "prudential": {
+    "title": "المتطلبات الاحترازية",
+    "capital_ratio": "نسبة الأموال الذاتية",
+    "solvency": "نسبة الملاءة",
+    "liquidity": "نسبة السيولة",
+    "leverage": "نسبة الرافعة المالية",
+    "risk_weighted_assets": "الأصول المرجحة بالمخاطر",
+    "tier1": "الأموال الذاتية من الفئة الأولى",
+    "tier2": "الأموال الذاتية من الفئة الثانية",
+    "requirements": "المتطلبات التنظيمية"
+  },
+  "accounting": {
+    "title": "المحاسبة",
+    "journal": "دفتر اليومية",
+    "entries": "القيود",
+    "debit": "مدين",
+    "credit": "دائن",
+    "balance": "الرصيد",
+    "period": "الفترة المحاسبية",
+    "account_code": "رمز الحساب",
+    "general_ledger": "دفتر الأستاذ العام",
+    "trial_balance": "ميزان المراجعة",
+    "closing": "إقفال الحسابات"
+  },
+  "reporting": {
+    "title": "التقارير",
+    "generate": "إنشاء تقرير",
+    "schedule": "جدولة",
+    "regulatory": "التقارير التنظيمية",
+    "statistical": "التقارير الإحصائية",
+    "custom": "تقرير مخصص",
+    "format": "الصيغة",
+    "period": "الفترة",
+    "download": "تحميل"
+  },
+  "governance": {
+    "title": "الحوكمة",
+    "roles": "الأدوار",
+    "permissions": "الصلاحيات",
+    "audit_trail": "مسار التدقيق",
+    "policies": "السياسات",
+    "committees": "اللجان",
+    "assign_role": "تعيين دور",
+    "revoke_role": "إلغاء دور"
+  },
+  "payment": {
+    "title": "المدفوعات",
+    "sepa": "تحويل SEPA",
+    "swift": "تحويل SWIFT",
+    "domestic": "محلي",
+    "international": "دولي",
+    "beneficiary": "المستفيد",
+    "bic": "رمز BIC",
+    "status": {
+      "initiated": "تم البدء",
+      "processing": "قيد المعالجة",
+      "completed": "مكتمل",
+      "failed": "فشل",
+      "cancelled": "ملغى"
+    }
+  },
+  "forex": {
+    "title": "الصرف الأجنبي",
+    "exchange_rate": "سعر الصرف",
+    "buy": "شراء",
+    "sell": "بيع",
+    "pair": "زوج العملات",
+    "spot": "فوري",
+    "forward": "آجل",
+    "conversion": "تحويل العملات"
+  },
+  "dashboard": {
+    "title": "لوحة القيادة",
+    "solvency_ratio": "نسبة الملاءة",
+    "tier1_ratio": "نسبة الفئة الأولى",
+    "cd_ratio": "نسبة القروض/الودائع",
+    "concentration": "التركيز",
+    "alerts": "التنبيهات",
+    "overview": "نظرة عامة",
+    "recent_activity": "النشاط الأخير",
+    "total_assets": "إجمالي الأصول",
+    "total_liabilities": "إجمالي الخصوم",
+    "total_customers": "عدد العملاء",
+    "total_accounts": "عدد الحسابات",
+    "risk": {
+      "title": "لوحة الرقابة الاحترازية",
+      "compliant": "متوافق",
+      "warning": "تحذير",
+      "breach": "تجاوز",
+      "ratioName": "النسبة",
+      "currentValue": "القيمة الحالية",
+      "target": "الهدف",
+      "status": "الحالة",
+      "trend": "الاتجاه خلال 30 يوم"
+    }
+  },
+  "audit": {
+    "title": "سجل التدقيق",
+    "who": "المستخدم",
+    "when": "التاريخ والوقت",
+    "what": "الإجراء المنفذ",
+    "filter": "تصفية الأحداث",
+    "export": "تصدير السجل",
+    "action": "الإجراء",
+    "entity": "الكيان",
+    "old_value": "القيمة السابقة",
+    "new_value": "القيمة الجديدة",
+    "timestamp": "الطابع الزمني",
+    "actor": "الفاعل",
+    "resourceType": "نوع المورد",
+    "resourceId": "معرف المورد",
+    "filters": "الفلاتر",
+    "dateFrom": "تاريخ البداية",
+    "dateTo": "تاريخ النهاية",
+    "allActions": "جميع الإجراءات",
+    "allResources": "جميع الموارد",
+    "exportCsv": "تصدير CSV",
+    "exportJson": "تصدير JSON"
+  },
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "email": "عنوان البريد الإلكتروني غير صالح",
+    "min_length": "يجب أن يحتوي على {min} أحرف على الأقل",
+    "max_length": "الحد الأقصى {max} حرف",
+    "password_uppercase": "يجب أن تحتوي كلمة المرور على حرف كبير واحد على الأقل",
+    "password_lowercase": "يجب أن تحتوي كلمة المرور على حرف صغير واحد على الأقل",
+    "password_number": "يجب أن تحتوي كلمة المرور على رقم واحد على الأقل",
+    "password_special": "يجب أن تحتوي كلمة المرور على رمز خاص واحد على الأقل",
+    "password_min_length": "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل",
+    "passwords_match": "كلمتا المرور غير متطابقتين",
+    "cin_format": "صيغة بطاقة التعريف غير صالحة (8 أرقام مطلوبة)",
+    "rib_format": "صيغة المعرف البنكي غير صالحة (20 رقم مطلوب)",
+    "iban_format": "صيغة رقم الحساب البنكي الدولي غير صالحة",
+    "amount_positive": "يجب أن يكون المبلغ إيجابيا",
+    "amount_max": "المبلغ يتجاوز الحد المسموح به وهو {max}",
+    "phone_format": "صيغة رقم الهاتف غير صالحة",
+    "date_past": "يجب أن يكون التاريخ في الماضي",
+    "date_future": "يجب أن يكون التاريخ في المستقبل"
+  }
+}

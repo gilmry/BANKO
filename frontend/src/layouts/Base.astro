@@ -1,4 +1,7 @@
 ---
+import "../styles/global.css";
+import "../styles/rtl.css";
+
 interface Props {
   title: string;
   dir?: "ltr" | "rtl";
@@ -18,6 +21,12 @@ const { title, dir = "ltr", lang = "fr" } = Astro.props;
     <title>{title} | BANKO</title>
   </head>
   <body class="min-h-screen bg-gray-50 text-gray-900 antialiased">
+    <a
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-blue-700 focus:px-4 focus:py-2 focus:text-white"
+    >
+      Aller au contenu principal
+    </a>
     <slot />
   </body>
 </html>
