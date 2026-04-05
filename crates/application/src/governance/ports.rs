@@ -1,0 +1,59 @@
+use async_trait::async_trait;
+use chrono::{DateTime, Utc};
+use uuid::Uuid;
+
+use banko_domain::governance::{
+    AuditEntryId, AuditTrailEntry, Committee, CommitteeDecision, ControlCheck, ControlStatus,
+};
+
+use super::dto::AuditFilter;
+
+// --- Audit Repository ---
+
+#[async_trait]
+pub trait IAuditRepository: Send + Sync {
+    async fn append(&self, entry: &AuditTrailEntry) -> Result<(), String>;
+    async fn find_by_id(&self, id: &AuditEntryId) -> Result<Option<AuditTrailEntry>, String>;
+    async fn find_latest(&self) -> Result<Option<AuditTrailEntry>, String>;
+    async fn find_all(
+        &self,
+        filters: &AuditFilter,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<AuditTrailEntry>, String>;
+    async fn count_all(&self, filters: &AuditFilter) -> Result<i64, String>;
+    async fn find_chain(
+        &self,
+        from: DateTime<Utc>,
+        to: DateTime<Utc>,
+    ) -> Result<Vec<AuditTrailEntry>, String>;
+}
+
+// --- Committee Repository ---
+
+#[async_trait]
+pub trait ICommitteeRepository: Send + Sync {
+    async fn save_committee(&self, committee: &Committee) -> Result<(), String>;
+    async fn find_committee_by_id(&self, id: Uuid) -> Result<Option<Committee>, String>;
+    async fn find_all_committees(&self) -> Result<Vec<Committee>, String>;
+    async fn save_decision(&self, decision: &CommitteeDecision) -> Result<(), String>;
+    async fn find_decisions_by_committee(
+        &self,
+        committee_id: Uuid,
+    ) -> Result<Vec<CommitteeDecision>, String>;
+}
+
+// --- Control Check Repository ---
+
+#[async_trait]
+pub trait IControlCheckRepository: Send + Sync {
+    async fn save(&self, check: &ControlCheck) -> Result<(), String>;
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<ControlCheck>, String>;
+    async fn find_all(
+        &self,
+        status: Option<ControlStatus>,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<ControlCheck>, String>;
+    async fn count_all(&self, status: Option<ControlStatus>) -> Result<i64, String>;
+}

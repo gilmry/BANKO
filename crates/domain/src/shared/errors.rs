@@ -189,4 +189,35 @@ pub enum DomainError {
 
     #[error("Invalid journal entry: {0}")]
     InvalidJournalEntry(String),
+
+    // --- Governance errors ---
+
+    #[error("Invalid audit entry: {0}")]
+    InvalidAuditEntry(String),
+
+    #[error("Hash chain integrity violation at entry {entry_id}")]
+    HashChainViolation { entry_id: String },
+
+    #[error("Audit entry immutable — cannot modify")]
+    AuditEntryImmutable,
+
+    #[error("Invalid committee: {0}")]
+    InvalidCommittee(String),
+
+    #[error("Invalid control check: {0}")]
+    InvalidControlCheck(String),
+
+    // --- Reporting errors ---
+
+    #[error("Invalid report: {0}")]
+    InvalidReport(String),
+
+    #[error("Report not found")]
+    ReportNotFound,
+
+    #[error("Report already submitted")]
+    ReportAlreadySubmitted,
+
+    #[error("Invalid report template: {0}")]
+    InvalidReportTemplate(String),
 }

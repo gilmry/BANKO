@@ -2,8 +2,8 @@ use actix_web::web;
 
 use super::handlers::{
     account_handlers, accounting_handlers, aml_handlers, auth_handlers, credit_handlers,
-    customer_handlers, profile_handlers, prudential_handlers, sanctions_handlers,
-    two_factor_handlers, user_handlers,
+    customer_handlers, governance_handlers, profile_handlers, prudential_handlers,
+    reporting_handlers, sanctions_handlers, two_factor_handlers, user_handlers,
 };
 
 pub fn configure_auth_routes(cfg: &mut web::ServiceConfig) {
@@ -301,6 +301,48 @@ pub fn configure_accounting_routes(cfg: &mut web::ServiceConfig) {
             .route(
                 "/ecl-staging",
                 web::get().to(accounting_handlers::get_ecl_staging_handler),
+            ),
+    );
+}
+
+pub fn configure_governance_routes(cfg: &mut web::ServiceConfig) {
+    governance_handlers::configure_governance_routes(cfg);
+}
+
+pub fn configure_reporting_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/reporting")
+            .route(
+                "/forms",
+                web::get().to(reporting_handlers::list_reports_handler),
+            )
+            .route(
+                "/forms/{id}",
+                web::get().to(reporting_handlers::get_report_handler),
+            )
+            .route(
+                "/generate",
+                web::post().to(reporting_handlers::generate_report_handler),
+            )
+            .route(
+                "/forms/{id}/validate",
+                web::post().to(reporting_handlers::validate_report_handler),
+            )
+            .route(
+                "/forms/{id}/submit",
+                web::post().to(reporting_handlers::submit_report_handler),
+            )
+            .route(
+                "/forms/{id}/acknowledge",
+                web::post().to(reporting_handlers::acknowledge_report_handler),
+            )
+            .route(
+                "/templates",
+                web::get().to(reporting_handlers::list_templates_handler),
+            )
+            .route(
+                "/ifrs9",
+                web::get().to(reporting_handlers::ifrs9_handler),
             ),
     );
 }

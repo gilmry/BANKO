@@ -1,22 +1,31 @@
 {
   "permissions": {
     "allow": [
-      "Bash(sphinx-build -M html . _build)",
-      "Bash(du -sh /sessions/trusting-beautiful-euler/mnt/BANKO/*/)",
-      "Bash(git -C /sessions/trusting-beautiful-euler/mnt/BANKO log --oneline main..)",
-      "Bash(git -C /sessions/trusting-beautiful-euler/mnt/BANKO log --oneline -10)",
-      "Bash(git -C /sessions/trusting-beautiful-euler/mnt/BANKO show:*)",
-      "Bash(git revert:*)",
-      "Bash(python3 -c:*)",
+      "Bash(cargo *)",
+      "Bash(cd * && cargo *)",
+      "Bash(cd * && SQLX_OFFLINE=true cargo *)",
+      "Bash(SQLX_OFFLINE=true cargo *)",
+      "Bash(git *)",
+      "Bash(mkdir *)",
+      "Bash(ls *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(cat *)",
+      "Bash(make *)",
+      "Bash(sphinx-build *)",
+      "Bash(du *)",
+      "Bash(wc *)",
+      "Bash(python3 *)",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
       "WebFetch(domain:bcbs.org)",
       "WebFetch(domain:bis.org)",
       "WebFetch(domain:eba.europa.eu)",
       "WebFetch(domain:gdpr-info.eu)",
-      "WebFetch(domain:en.wikipedia.org)",
-      "Bash(cd /sessions/trusting-beautiful-euler/mnt/BANKO && SQLX_OFFLINE=true cargo clippy --lib -- -D warnings)",
-      "Bash(cd /sessions/trusting-beautiful-euler/mnt/BANKO && SQLX_OFFLINE=true cargo test --lib)",
-      "Bash(cd /sessions/trusting-beautiful-euler/mnt/BANKO/backend && cargo fmt)",
-      "Bash(cd /sessions/trusting-beautiful-euler/mnt/BANKO && make test)"
+      "WebFetch(domain:en.wikipedia.org)"
     ]
   }
 }
