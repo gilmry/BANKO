@@ -99,4 +99,53 @@ pub enum DomainError {
 
     #[error("Insufficient provision: {0}")]
     InsufficientProvision(String),
+
+    // --- AML errors ---
+
+    #[error("Invalid transaction: {0}")]
+    InvalidTransaction(String),
+
+    #[error("Invalid alert: {0}")]
+    InvalidAlert(String),
+
+    #[error("Invalid investigation: {0}")]
+    InvalidInvestigation(String),
+
+    #[error("Invalid investigation transition: {0}")]
+    InvalidInvestigationTransition(String),
+
+    #[error("AML threshold exceeded")]
+    AmlThresholdExceeded,
+
+    #[error("Asset freeze is irrevocable without CTAF authorization")]
+    FreezeIrrevocable,
+
+    #[error("Account is frozen")]
+    AccountFrozen,
+
+    #[error("Invalid suspicion report: {0}")]
+    InvalidSuspicionReport(String),
+
+    // --- Sanctions errors ---
+
+    #[error("Invalid sanction entry: {0}")]
+    InvalidSanctionEntry(String),
+
+    #[error("Invalid sanction list: {0}")]
+    InvalidSanctionList(String),
+
+    #[error("Invalid screening result: {0}")]
+    InvalidScreeningResult(String),
+
+    #[error("Sanctions hit detected: {0}")]
+    SanctionsHitDetected(String),
+
+    #[error("Screening required before payment")]
+    ScreeningRequired,
+
+    #[error("Sanction entry not found")]
+    SanctionEntryNotFound,
+
+    #[error("Sanction list not found")]
+    SanctionListNotFound,
 }
