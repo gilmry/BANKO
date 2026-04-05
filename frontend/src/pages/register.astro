@@ -1,0 +1,10 @@
+---
+import Base from "../layouts/Base.astro";
+import RegisterForm from "../components/auth/RegisterForm.svelte";
+---
+
+<Base title="Inscription">
+  <div class="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+    <RegisterForm client:load />
+  </div>
+</Base>

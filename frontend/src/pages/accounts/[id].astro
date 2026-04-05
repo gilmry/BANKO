@@ -1,0 +1,10 @@
+---
+import AppLayout from "../../layouts/AppLayout.astro";
+import AccountDetailPage from "../../components/account/AccountDetailPage.svelte";
+
+const { id } = Astro.params;
+---
+
+<AppLayout title="Details du compte">
+  <AccountDetailPage accountId={id!} client:load />
+</AppLayout>

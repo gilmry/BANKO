@@ -1,0 +1,8 @@
+---
+import AppLayout from "../../layouts/AppLayout.astro";
+import AccountListPage from "../../components/account/AccountListPage.svelte";
+---
+
+<AppLayout title="Mes comptes">
+  <AccountListPage client:load />
+</AppLayout>

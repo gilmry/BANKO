@@ -1,0 +1,8 @@
+---
+import AppLayout from "../../layouts/AppLayout.astro";
+import AuditLogPage from "../../components/audit/AuditLogPage.svelte";
+---
+
+<AppLayout title="Journal d'audit">
+  <AuditLogPage client:load />
+</AppLayout>

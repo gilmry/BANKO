@@ -1,0 +1,81 @@
+---
+import Base from "./Base.astro";
+import Header from "../components/Header.svelte";
+
+interface Props {
+  title: string;
+  dir?: "ltr" | "rtl";
+  lang?: string;
+}
+
+const { title, dir = "ltr", lang = "fr" } = Astro.props;
+---
+
+<Base title={title} dir={dir} lang={lang}>
+  <div class="flex min-h-screen">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar hidden w-64 flex-shrink-0 border-e border-gray-200 bg-white lg:block" role="navigation" aria-label="Navigation principale">
+      <div class="flex h-16 items-center border-b border-gray-200 px-6">
+        <a href="/" class="text-xl font-bold text-gray-900" aria-label="BANKO - Accueil">BANKO</a>
+      </div>
+      <nav class="mt-4 space-y-1 px-3">
+        <a href="/accounts" class="nav-item flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+          <!-- TODO: use t('nav.accounts') -->
+          Comptes
+        </a>
+        <a href="/customer/onboarding" class="nav-item flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          <!-- TODO: use t('nav.customers') -->
+          Clients
+        </a>
+        <a href="/dashboards/risk" class="nav-item flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+          <!-- TODO: use t('nav.risk') -->
+          Risques
+        </a>
+        <a href="/audit/log" class="nav-item flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+          <!-- TODO: use t('nav.audit') -->
+          Audit
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main content area -->
+    <div class="flex flex-1 flex-col">
+      <!-- Top header -->
+      <header class="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 sm:px-6 lg:px-8">
+        <!-- Mobile menu button -->
+        <button
+          type="button"
+          class="lg:hidden rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+          aria-label="Ouvrir le menu de navigation"
+          id="mobile-menu-btn"
+        >
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+        <div class="hidden lg:block">
+          <h1 class="text-lg font-semibold text-gray-900">{title}</h1>
+        </div>
+        <div class="flex items-center gap-4">
+          <!-- TODO: Add LanguageSwitcher component when available -->
+          <a
+            href="/login"
+            class="text-sm font-medium text-gray-600 hover:text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+          >
+            <!-- TODO: use t('auth.logout') -->
+            Connexion
+          </a>
+        </div>
+      </header>
+
+      <!-- Page content -->
+      <main id="main-content" class="flex-1 overflow-auto px-4 py-6 sm:px-6 lg:px-8" role="main">
+        <slot />
+      </main>
+    </div>
+  </div>
+</Base>
