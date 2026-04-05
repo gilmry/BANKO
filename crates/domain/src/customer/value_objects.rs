@@ -48,6 +48,8 @@ pub enum CustomerStatus {
     Approved,
     Rejected,
     Suspended,
+    Closed,
+    Anonymized,
 }
 
 impl CustomerStatus {
@@ -57,6 +59,8 @@ impl CustomerStatus {
             "approved" => Ok(CustomerStatus::Approved),
             "rejected" => Ok(CustomerStatus::Rejected),
             "suspended" => Ok(CustomerStatus::Suspended),
+            "closed" => Ok(CustomerStatus::Closed),
+            "anonymized" => Ok(CustomerStatus::Anonymized),
             _ => Err(DomainError::InvalidCustomerStatus(format!(
                 "Unknown customer status: {s}"
             ))),
@@ -69,6 +73,8 @@ impl CustomerStatus {
             CustomerStatus::Approved => "Approved",
             CustomerStatus::Rejected => "Rejected",
             CustomerStatus::Suspended => "Suspended",
+            CustomerStatus::Closed => "Closed",
+            CustomerStatus::Anonymized => "Anonymized",
         }
     }
 }
@@ -266,6 +272,16 @@ impl Address {
             postal_code,
             country,
         })
+    }
+
+    /// Create an Address without validation (for anonymization/reconstitution).
+    pub fn new_unchecked(street: &str, city: &str, postal_code: &str, country: &str) -> Self {
+        Address {
+            street: street.to_string(),
+            city: city.to_string(),
+            postal_code: postal_code.to_string(),
+            country: country.to_string(),
+        }
     }
 
     pub fn street(&self) -> &str {
@@ -605,6 +621,25 @@ impl KycProfile {
     pub fn set_pep_status(&mut self, status: PepStatus) {
         self.pep_status = status;
     }
+
+    /// Replace all personal data with "[ANONYMIZED]" for data retention compliance.
+    pub fn anonymize(&mut self) {
+        self.full_name = "[ANONYMIZED]".to_string();
+        self.cin_or_rcs = "[ANONYMIZED]".to_string();
+        self.birth_date = None;
+        self.nationality = "[ANONYMIZED]".to_string();
+        self.profession = "[ANONYMIZED]".to_string();
+        self.address = Address::new_unchecked("[ANONYMIZED]", "[ANONYMIZED]", "[ANONYMIZED]", "[ANONYMIZED]");
+        self.phone = PhoneNumber::unchecked("[ANONYMIZED]");
+        self.email = EmailAddress::unchecked("[ANONYMIZED]");
+        self.sector = None;
+        self.rejection_reason = None;
+    }
+
+    /// Check if this KYC profile has been anonymized.
+    pub fn is_anonymized(&self) -> bool {
+        self.full_name == "[ANONYMIZED]"
+    }
 }
 
 // ==================== TESTS ====================
@@ -802,6 +837,14 @@ mod tests {
         assert_eq!(
             CustomerStatus::from_str_status("Suspended").unwrap(),
             CustomerStatus::Suspended
+        );
+        assert_eq!(
+            CustomerStatus::from_str_status("closed").unwrap(),
+            CustomerStatus::Closed
+        );
+        assert_eq!(
+            CustomerStatus::from_str_status("anonymized").unwrap(),
+            CustomerStatus::Anonymized
         );
     }
 

@@ -20,6 +20,7 @@ pub struct Customer {
     consent: ConsentStatus,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
+    closed_at: Option<DateTime<Utc>>,
 }
 
 impl Customer {
@@ -61,6 +62,7 @@ impl Customer {
             consent,
             created_at: now,
             updated_at: now,
+            closed_at: None,
         })
     }
 
@@ -76,6 +78,7 @@ impl Customer {
         consent: ConsentStatus,
         created_at: DateTime<Utc>,
         updated_at: DateTime<Utc>,
+        closed_at: Option<DateTime<Utc>>,
     ) -> Self {
         Customer {
             id,
@@ -87,6 +90,7 @@ impl Customer {
             consent,
             created_at,
             updated_at,
+            closed_at,
         }
     }
 
@@ -126,6 +130,10 @@ impl Customer {
 
     pub fn updated_at(&self) -> DateTime<Utc> {
         self.updated_at
+    }
+
+    pub fn closed_at(&self) -> Option<DateTime<Utc>> {
+        self.closed_at
     }
 
     // --- Domain behavior ---
@@ -171,6 +179,56 @@ impl Customer {
     /// Check if PEP.
     pub fn is_pep(&self) -> bool {
         self.kyc_profile.pep_status() == PepStatus::Yes
+    }
+
+    /// Close the customer relationship. Sets status to Closed and records the closure timestamp.
+    pub fn close(&mut self) -> Result<(), DomainError> {
+        if self.status == CustomerStatus::Closed {
+            return Err(DomainError::ValidationError(
+                "Customer is already closed".to_string(),
+            ));
+        }
+        if self.status == CustomerStatus::Anonymized {
+            return Err(DomainError::CustomerAlreadyAnonymized);
+        }
+        let now = Utc::now();
+        self.status = CustomerStatus::Closed;
+        self.closed_at = Some(now);
+        self.updated_at = now;
+        Ok(())
+    }
+
+    /// INV-10: Anonymize personal data after 10-year retention period.
+    /// Replaces KYC personal data with "[ANONYMIZED]".
+    /// Only allowed if customer is Closed and closed_at is > 10 years ago.
+    pub fn anonymize(&mut self, now: DateTime<Utc>) -> Result<(), DomainError> {
+        if self.status == CustomerStatus::Anonymized {
+            return Err(DomainError::CustomerAlreadyAnonymized);
+        }
+        if self.status != CustomerStatus::Closed {
+            return Err(DomainError::CustomerNotClosed);
+        }
+        let closed_at = self.closed_at.ok_or(DomainError::CustomerNotClosed)?;
+
+        const RETENTION_YEARS: u32 = 10;
+        let years_since_closure = (now - closed_at).num_days() as f64 / 365.25;
+        if years_since_closure < RETENTION_YEARS as f64 {
+            return Err(DomainError::RetentionPeriodNotMet {
+                closed_at: closed_at.to_rfc3339(),
+                minimum_years: RETENTION_YEARS,
+            });
+        }
+
+        self.kyc_profile.anonymize();
+        self.beneficiaries.clear();
+        self.status = CustomerStatus::Anonymized;
+        self.updated_at = now;
+        Ok(())
+    }
+
+    /// Check if this customer has been anonymized.
+    pub fn is_anonymized(&self) -> bool {
+        self.status == CustomerStatus::Anonymized
     }
 }
 
@@ -452,9 +510,149 @@ mod tests {
             ConsentStatus::Given,
             now,
             now,
+            None,
         );
         assert_eq!(customer.id(), &id);
         assert!(customer.is_kyc_validated());
         assert_eq!(customer.risk_score().value(), 30);
+    }
+
+    // --- Close and Anonymize tests (STORY-RET-01, INV-10) ---
+
+    #[test]
+    fn test_customer_close_sets_status_and_closed_at() {
+        let mut customer = Customer::new(
+            CustomerType::Individual,
+            valid_individual_kyc(),
+            vec![],
+            ConsentStatus::Given,
+        )
+        .unwrap();
+        customer.approve_kyc();
+
+        assert!(customer.closed_at().is_none());
+        customer.close().unwrap();
+        assert_eq!(customer.status(), CustomerStatus::Closed);
+        assert!(customer.closed_at().is_some());
+    }
+
+    #[test]
+    fn test_customer_close_already_closed_fails() {
+        let mut customer = Customer::new(
+            CustomerType::Individual,
+            valid_individual_kyc(),
+            vec![],
+            ConsentStatus::Given,
+        )
+        .unwrap();
+        customer.close().unwrap();
+        let result = customer.close();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_customer_anonymize_succeeds_after_10_years() {
+        let closed_at = Utc::now() - chrono::Duration::days(3660); // ~10.02 years
+        let customer_id = CustomerId::new();
+        let mut customer = Customer::reconstitute(
+            customer_id,
+            CustomerType::Individual,
+            valid_individual_kyc(),
+            vec![],
+            RiskScore::new(10).unwrap(),
+            CustomerStatus::Closed,
+            ConsentStatus::Given,
+            closed_at - chrono::Duration::days(365),
+            closed_at,
+            Some(closed_at),
+        );
+
+        let now = Utc::now();
+        customer.anonymize(now).unwrap();
+        assert!(customer.is_anonymized());
+        assert_eq!(customer.status(), CustomerStatus::Anonymized);
+        assert_eq!(customer.kyc_profile().full_name(), "[ANONYMIZED]");
+        assert_eq!(customer.kyc_profile().cin_or_rcs(), "[ANONYMIZED]");
+        assert!(customer.kyc_profile().is_anonymized());
+        assert!(customer.beneficiaries().is_empty());
+    }
+
+    #[test]
+    fn test_customer_anonymize_fails_before_10_years() {
+        let closed_at = Utc::now() - chrono::Duration::days(365 * 5); // only 5 years
+        let customer_id = CustomerId::new();
+        let mut customer = Customer::reconstitute(
+            customer_id,
+            CustomerType::Individual,
+            valid_individual_kyc(),
+            vec![],
+            RiskScore::new(10).unwrap(),
+            CustomerStatus::Closed,
+            ConsentStatus::Given,
+            closed_at - chrono::Duration::days(365),
+            closed_at,
+            Some(closed_at),
+        );
+
+        let now = Utc::now();
+        let result = customer.anonymize(now);
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            DomainError::RetentionPeriodNotMet { minimum_years, .. } => {
+                assert_eq!(minimum_years, 10);
+            }
+            e => panic!("Expected RetentionPeriodNotMet, got {:?}", e),
+        }
+    }
+
+    #[test]
+    fn test_customer_anonymize_fails_if_already_anonymized() {
+        let closed_at = Utc::now() - chrono::Duration::days(3660);
+        let customer_id = CustomerId::new();
+        let mut customer = Customer::reconstitute(
+            customer_id,
+            CustomerType::Individual,
+            valid_individual_kyc(),
+            vec![],
+            RiskScore::new(10).unwrap(),
+            CustomerStatus::Closed,
+            ConsentStatus::Given,
+            closed_at - chrono::Duration::days(365),
+            closed_at,
+            Some(closed_at),
+        );
+
+        let now = Utc::now();
+        customer.anonymize(now).unwrap();
+        let result = customer.anonymize(now);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), DomainError::CustomerAlreadyAnonymized);
+    }
+
+    #[test]
+    fn test_customer_anonymize_fails_if_not_closed() {
+        let mut customer = Customer::new(
+            CustomerType::Individual,
+            valid_individual_kyc(),
+            vec![],
+            ConsentStatus::Given,
+        )
+        .unwrap();
+
+        let result = customer.anonymize(Utc::now());
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), DomainError::CustomerNotClosed);
+    }
+
+    #[test]
+    fn test_is_anonymized_false_for_active_customer() {
+        let customer = Customer::new(
+            CustomerType::Individual,
+            valid_individual_kyc(),
+            vec![],
+            ConsentStatus::Given,
+        )
+        .unwrap();
+        assert!(!customer.is_anonymized());
     }
 }

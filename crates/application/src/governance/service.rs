@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use chrono::{Duration, Utc};
+use serde_json;
 use uuid::Uuid;
 
 use banko_domain::governance::*;
@@ -438,6 +439,313 @@ impl ControlService {
             page,
             limit,
         })
+    }
+}
+
+// ============================================================
+// BctAuditService (AUD-01)
+// ============================================================
+
+pub struct BctAuditService {
+    audit_repo: Arc<dyn IAuditRepository>,
+}
+
+impl BctAuditService {
+    pub fn new(audit_repo: Arc<dyn IAuditRepository>) -> Self {
+        BctAuditService { audit_repo }
+    }
+
+    /// Enhanced paginated audit entries with total_pages.
+    pub async fn get_audit_entries(
+        &self,
+        filter: &BctAuditFilter,
+        page: i64,
+        limit: i64,
+    ) -> Result<BctAuditResponse, GovernanceServiceError> {
+        let limit = limit.clamp(1, 500);
+        let page = page.max(1);
+        let offset = (page - 1) * limit;
+
+        // Map BctAuditFilter to AuditFilter for the repo
+        let repo_filter = AuditFilter {
+            user_id: filter.user_id,
+            action: filter.action.clone(),
+            resource_type: filter.resource_type.clone(),
+            resource_id: filter.resource_id,
+            from: filter.from,
+            to: filter.to,
+        };
+
+        let entries = self
+            .audit_repo
+            .find_all(&repo_filter, limit, offset)
+            .await
+            .map_err(GovernanceServiceError::Internal)?;
+
+        let total = self
+            .audit_repo
+            .count_all(&repo_filter)
+            .await
+            .map_err(GovernanceServiceError::Internal)?;
+
+        let total_pages = if total == 0 { 0 } else { (total + limit - 1) / limit };
+
+        let data = entries.iter().map(to_audit_response).collect();
+
+        Ok(BctAuditResponse {
+            data,
+            total,
+            page,
+            total_pages,
+            limit,
+        })
+    }
+
+    /// Export audit entries as CSV string.
+    pub async fn export_csv(
+        &self,
+        filter: &BctAuditFilter,
+    ) -> Result<AuditExportResponse, GovernanceServiceError> {
+        let repo_filter = AuditFilter {
+            user_id: filter.user_id,
+            action: filter.action.clone(),
+            resource_type: filter.resource_type.clone(),
+            resource_id: filter.resource_id,
+            from: filter.from,
+            to: filter.to,
+        };
+
+        let entries = self
+            .audit_repo
+            .find_all(&repo_filter, 10_000, 0)
+            .await
+            .map_err(GovernanceServiceError::Internal)?;
+
+        let count = entries.len() as i64;
+        let mut csv = String::from("id,timestamp,user_id,action,resource_type,resource_id,changes,ip_address,previous_hash,hash\n");
+        for e in &entries {
+            csv.push_str(&format!(
+                "{},{},{},{},{},{},{},{},{},{}\n",
+                e.entry_id(),
+                e.timestamp().to_rfc3339(),
+                e.user_id(),
+                e.action().as_str(),
+                e.resource_type().as_str(),
+                e.resource_id(),
+                e.changes().unwrap_or(""),
+                e.ip_address().unwrap_or(""),
+                e.previous_hash(),
+                e.hash(),
+            ));
+        }
+
+        Ok(AuditExportResponse {
+            format: "csv".to_string(),
+            data: csv,
+            count,
+        })
+    }
+
+    /// Export audit entries as JSON string.
+    pub async fn export_json(
+        &self,
+        filter: &BctAuditFilter,
+    ) -> Result<AuditExportResponse, GovernanceServiceError> {
+        let repo_filter = AuditFilter {
+            user_id: filter.user_id,
+            action: filter.action.clone(),
+            resource_type: filter.resource_type.clone(),
+            resource_id: filter.resource_id,
+            from: filter.from,
+            to: filter.to,
+        };
+
+        let entries = self
+            .audit_repo
+            .find_all(&repo_filter, 10_000, 0)
+            .await
+            .map_err(GovernanceServiceError::Internal)?;
+
+        let count = entries.len() as i64;
+        let data: Vec<AuditEntryResponse> = entries.iter().map(to_audit_response).collect();
+        let json = serde_json::to_string_pretty(&data)
+            .map_err(|e| GovernanceServiceError::Internal(e.to_string()))?;
+
+        Ok(AuditExportResponse {
+            format: "json".to_string(),
+            data: json,
+            count,
+        })
+    }
+
+    /// Detailed chain integrity report.
+    pub async fn verify_chain_integrity(
+        &self,
+        from: chrono::DateTime<chrono::Utc>,
+        to: chrono::DateTime<chrono::Utc>,
+    ) -> Result<BctIntegrityReport, GovernanceServiceError> {
+        let entries = self
+            .audit_repo
+            .find_chain(from, to)
+            .await
+            .map_err(GovernanceServiceError::Internal)?;
+
+        let count = entries.len();
+        let first_entry_id = entries.first().map(|e| e.entry_id().to_string());
+        let last_entry_id = entries.last().map(|e| e.entry_id().to_string());
+
+        let mut errors = Vec::new();
+        for (i, entry) in entries.iter().enumerate() {
+            if !entry.verify_hash() {
+                errors.push(format!(
+                    "Entry {} has invalid hash",
+                    entry.entry_id()
+                ));
+            }
+            if i > 0 {
+                let prev = &entries[i - 1];
+                if entry.previous_hash() != prev.hash() {
+                    errors.push(format!(
+                        "Chain break at entry {} (expected prev_hash={}, got={})",
+                        entry.entry_id(),
+                        prev.hash(),
+                        entry.previous_hash()
+                    ));
+                }
+            }
+        }
+
+        Ok(BctIntegrityReport {
+            valid: errors.is_empty(),
+            entries_checked: count,
+            first_entry_id,
+            last_entry_id,
+            errors,
+            checked_from: from,
+            checked_to: to,
+        })
+    }
+}
+
+// ============================================================
+// AuditDashboardService (AUD-02)
+// ============================================================
+
+pub struct AuditDashboardService {
+    audit_repo: Arc<dyn IAuditRepository>,
+}
+
+impl AuditDashboardService {
+    pub fn new(audit_repo: Arc<dyn IAuditRepository>) -> Self {
+        AuditDashboardService { audit_repo }
+    }
+
+    /// Dashboard statistics: totals, top actors, action breakdown.
+    pub async fn get_dashboard_stats(
+        &self,
+    ) -> Result<DashboardStatsResponse, GovernanceServiceError> {
+        let now = Utc::now();
+        let start_of_today = now.date_naive().and_hms_opt(0, 0, 0).unwrap();
+        let start_of_today_utc = start_of_today.and_utc();
+        let start_of_week = now - Duration::days(7);
+
+        let total_entries = self
+            .audit_repo
+            .count_all(&AuditFilter::default())
+            .await
+            .map_err(GovernanceServiceError::Internal)?;
+
+        let entries_today = self
+            .audit_repo
+            .count_by_date_range(start_of_today_utc, now)
+            .await
+            .map_err(GovernanceServiceError::Internal)?;
+
+        let entries_this_week = self
+            .audit_repo
+            .count_by_date_range(start_of_week, now)
+            .await
+            .map_err(GovernanceServiceError::Internal)?;
+
+        let top_actors_raw = self
+            .audit_repo
+            .count_by_actor(start_of_week, now, 10)
+            .await
+            .map_err(GovernanceServiceError::Internal)?;
+
+        let top_actors = top_actors_raw
+            .into_iter()
+            .map(|(uid, count)| ActorCount {
+                user_id: uid.to_string(),
+                count,
+            })
+            .collect();
+
+        let actions_raw = self
+            .audit_repo
+            .count_by_action(start_of_week, now)
+            .await
+            .map_err(GovernanceServiceError::Internal)?;
+
+        let actions_breakdown = actions_raw
+            .into_iter()
+            .map(|(action, count)| ActionCount { action, count })
+            .collect();
+
+        Ok(DashboardStatsResponse {
+            total_entries,
+            entries_today,
+            entries_this_week,
+            top_actors,
+            actions_breakdown,
+        })
+    }
+
+    /// Entries per day for the last N days.
+    pub async fn get_entries_per_day(
+        &self,
+        days: u32,
+    ) -> Result<Vec<DailyCountResponse>, GovernanceServiceError> {
+        let raw = self
+            .audit_repo
+            .count_per_day(days)
+            .await
+            .map_err(GovernanceServiceError::Internal)?;
+
+        Ok(raw
+            .into_iter()
+            .map(|(date, count)| DailyCountResponse {
+                date: date.to_string(),
+                count,
+            })
+            .collect())
+    }
+
+    /// Recent suspicious activities (DELETE, failed logins, etc.).
+    pub async fn get_recent_suspicious(
+        &self,
+    ) -> Result<Vec<SuspiciousActivityResponse>, GovernanceServiceError> {
+        let now = Utc::now();
+        let from = now - Duration::days(30);
+
+        let entries = self
+            .audit_repo
+            .find_suspicious(from, 50)
+            .await
+            .map_err(GovernanceServiceError::Internal)?;
+
+        Ok(entries
+            .iter()
+            .map(|e| SuspiciousActivityResponse {
+                entry_id: e.entry_id().to_string(),
+                timestamp: *e.timestamp(),
+                user_id: e.user_id().to_string(),
+                action: e.action().as_str().to_string(),
+                resource_type: e.resource_type().as_str().to_string(),
+                resource_id: e.resource_id().to_string(),
+                details: e.changes().map(|s| s.to_string()),
+            })
+            .collect())
     }
 }
 

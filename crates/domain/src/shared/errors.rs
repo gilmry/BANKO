@@ -240,4 +240,32 @@ pub enum DomainError {
 
     #[error("Insufficient funds for payment")]
     InsufficientFundsForPayment,
+
+    // --- Retention errors ---
+
+    #[error("Retention period not met: closed at {closed_at}, minimum {minimum_years} years required")]
+    RetentionPeriodNotMet {
+        closed_at: String,
+        minimum_years: u32,
+    },
+
+    #[error("Customer already anonymized")]
+    CustomerAlreadyAnonymized,
+
+    #[error("Customer not closed — cannot anonymize")]
+    CustomerNotClosed,
+
+    // --- Consent errors ---
+
+    #[error("Consent already active for this purpose")]
+    ConsentAlreadyActive,
+
+    #[error("Consent not found")]
+    ConsentNotFound,
+
+    #[error("Invalid data request: {0}")]
+    InvalidDataRequest(String),
+
+    #[error("Data request already completed")]
+    DataRequestAlreadyCompleted,
 }

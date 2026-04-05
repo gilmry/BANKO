@@ -29,6 +29,7 @@ struct CustomerRow {
     consent: String,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
+    closed_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, sqlx::FromRow)]
@@ -72,18 +73,39 @@ fn row_to_domain(
     let consent =
         ConsentStatus::from_str_consent(&row.consent).map_err(|e| e.to_string())?;
 
-    let address = Address::new(
-        kyc_row.street.as_deref().unwrap_or(""),
-        kyc_row.city.as_deref().unwrap_or(""),
-        kyc_row.postal_code.as_deref().unwrap_or(""),
-        kyc_row.country.as_deref().unwrap_or("Tunisia"),
-    )
-    .map_err(|e| e.to_string())?;
+    // For anonymized customers, bypass validation since "[ANONYMIZED]" won't pass
+    let is_anonymized = status == CustomerStatus::Anonymized;
 
-    let phone = PhoneNumber::new(kyc_row.phone.as_deref().unwrap_or("+21600000000"))
-        .map_err(|e| e.to_string())?;
-    let email = EmailAddress::new(kyc_row.email.as_deref().unwrap_or("unknown@unknown.com"))
-        .map_err(|e| e.to_string())?;
+    let address = if is_anonymized {
+        Address::new_unchecked(
+            kyc_row.street.as_deref().unwrap_or("[ANONYMIZED]"),
+            kyc_row.city.as_deref().unwrap_or("[ANONYMIZED]"),
+            kyc_row.postal_code.as_deref().unwrap_or("[ANONYMIZED]"),
+            kyc_row.country.as_deref().unwrap_or("[ANONYMIZED]"),
+        )
+    } else {
+        Address::new(
+            kyc_row.street.as_deref().unwrap_or(""),
+            kyc_row.city.as_deref().unwrap_or(""),
+            kyc_row.postal_code.as_deref().unwrap_or(""),
+            kyc_row.country.as_deref().unwrap_or("Tunisia"),
+        )
+        .map_err(|e| e.to_string())?
+    };
+
+    let phone = if is_anonymized {
+        PhoneNumber::unchecked(kyc_row.phone.as_deref().unwrap_or("[ANONYMIZED]"))
+    } else {
+        PhoneNumber::new(kyc_row.phone.as_deref().unwrap_or("+21600000000"))
+            .map_err(|e| e.to_string())?
+    };
+
+    let email = if is_anonymized {
+        EmailAddress::unchecked(kyc_row.email.as_deref().unwrap_or("[ANONYMIZED]"))
+    } else {
+        EmailAddress::new(kyc_row.email.as_deref().unwrap_or("unknown@unknown.com"))
+            .map_err(|e| e.to_string())?
+    };
 
     let pep_status = kyc_row
         .pep_status
@@ -136,6 +158,7 @@ fn row_to_domain(
         consent,
         row.created_at,
         row.updated_at,
+        row.closed_at,
     ))
 }
 
@@ -151,14 +174,15 @@ impl ICustomerRepository for PgCustomerRepository {
         // Upsert customer
         sqlx::query(
             r#"
-            INSERT INTO customer.customers (id, customer_type, status, risk_score, consent, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            INSERT INTO customer.customers (id, customer_type, status, risk_score, consent, created_at, updated_at, closed_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             ON CONFLICT (id) DO UPDATE SET
                 customer_type = EXCLUDED.customer_type,
                 status = EXCLUDED.status,
                 risk_score = EXCLUDED.risk_score,
                 consent = EXCLUDED.consent,
-                updated_at = EXCLUDED.updated_at
+                updated_at = EXCLUDED.updated_at,
+                closed_at = EXCLUDED.closed_at
             "#,
         )
         .bind(customer.id().as_uuid())
@@ -168,6 +192,7 @@ impl ICustomerRepository for PgCustomerRepository {
         .bind(customer.consent().as_str())
         .bind(customer.created_at())
         .bind(customer.updated_at())
+        .bind(customer.closed_at())
         .execute(&mut *tx)
         .await
         .map_err(|e| format!("DB save customer error: {e}"))?;
@@ -252,7 +277,7 @@ impl ICustomerRepository for PgCustomerRepository {
 
     async fn find_by_id(&self, id: &CustomerId) -> Result<Option<Customer>, String> {
         let row: Option<CustomerRow> = sqlx::query_as(
-            "SELECT id, customer_type, status, risk_score, consent, created_at, updated_at FROM customer.customers WHERE id = $1",
+            "SELECT id, customer_type, status, risk_score, consent, created_at, updated_at, closed_at FROM customer.customers WHERE id = $1",
         )
         .bind(id.as_uuid())
         .fetch_optional(&self.pool)
@@ -286,7 +311,7 @@ impl ICustomerRepository for PgCustomerRepository {
     async fn find_by_email(&self, email: &EmailAddress) -> Result<Option<Customer>, String> {
         let row: Option<CustomerRow> = sqlx::query_as(
             r#"
-            SELECT c.id, c.customer_type, c.status, c.risk_score, c.consent, c.created_at, c.updated_at
+            SELECT c.id, c.customer_type, c.status, c.risk_score, c.consent, c.created_at, c.updated_at, c.closed_at
             FROM customer.customers c
             JOIN customer.kyc_profiles k ON k.customer_id = c.id
             WHERE k.email = $1
@@ -324,7 +349,7 @@ impl ICustomerRepository for PgCustomerRepository {
 
     async fn list_all(&self) -> Result<Vec<Customer>, String> {
         let rows: Vec<CustomerRow> = sqlx::query_as(
-            "SELECT id, customer_type, status, risk_score, consent, created_at, updated_at FROM customer.customers ORDER BY created_at DESC",
+            "SELECT id, customer_type, status, risk_score, consent, created_at, updated_at, closed_at FROM customer.customers ORDER BY created_at DESC",
         )
         .fetch_all(&self.pool)
         .await
@@ -357,7 +382,7 @@ impl ICustomerRepository for PgCustomerRepository {
 
     async fn list_by_status(&self, status: &str) -> Result<Vec<Customer>, String> {
         let rows: Vec<CustomerRow> = sqlx::query_as(
-            "SELECT id, customer_type, status, risk_score, consent, created_at, updated_at FROM customer.customers WHERE status = $1 ORDER BY created_at DESC",
+            "SELECT id, customer_type, status, risk_score, consent, created_at, updated_at, closed_at FROM customer.customers WHERE status = $1 ORDER BY created_at DESC",
         )
         .bind(status)
         .fetch_all(&self.pool)
@@ -397,5 +422,39 @@ impl ICustomerRepository for PgCustomerRepository {
             .map_err(|e| format!("DB delete error: {e}"))?;
 
         Ok(())
+    }
+
+    async fn find_closed_before(&self, before: DateTime<Utc>) -> Result<Vec<Customer>, String> {
+        let rows: Vec<CustomerRow> = sqlx::query_as(
+            "SELECT id, customer_type, status, risk_score, consent, created_at, updated_at, closed_at FROM customer.customers WHERE status = 'Closed' AND closed_at IS NOT NULL AND closed_at < $1 ORDER BY closed_at ASC",
+        )
+        .bind(before)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| format!("DB find_closed_before error: {e}"))?;
+
+        let mut customers = Vec::with_capacity(rows.len());
+        for customer_row in rows {
+            let cid = customer_row.id;
+            let kyc_row: KycProfileRow = sqlx::query_as(
+                "SELECT full_name, cin_or_rcs, birth_date, nationality, profession, street, city, postal_code, country, phone, email, pep_status, source_of_funds, sector, submission_date, approval_date, rejection_reason FROM customer.kyc_profiles WHERE customer_id = $1",
+            )
+            .bind(cid)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| format!("DB find kyc_profile error: {e}"))?;
+
+            let beneficiary_rows: Vec<BeneficiaryRow> = sqlx::query_as(
+                "SELECT id, full_name, share_percentage FROM customer.beneficiaries WHERE customer_id = $1",
+            )
+            .bind(cid)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| format!("DB find beneficiaries error: {e}"))?;
+
+            customers.push(row_to_domain(customer_row, kyc_row, beneficiary_rows)?);
+        }
+
+        Ok(customers)
     }
 }

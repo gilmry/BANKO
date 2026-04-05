@@ -314,6 +314,11 @@ impl EmailAddress {
         Ok(EmailAddress { value: trimmed })
     }
 
+    /// Create an EmailAddress without validation (for anonymization/reconstitution).
+    pub fn unchecked(value: &str) -> Self {
+        EmailAddress { value: value.to_string() }
+    }
+
     pub fn as_str(&self) -> &str {
         &self.value
     }
@@ -354,6 +359,11 @@ impl PhoneNumber {
             )));
         }
         Ok(PhoneNumber { value: cleaned })
+    }
+
+    /// Create a PhoneNumber without validation (for anonymization/reconstitution).
+    pub fn unchecked(value: &str) -> Self {
+        PhoneNumber { value: value.to_string() }
     }
 
     pub fn as_str(&self) -> &str {

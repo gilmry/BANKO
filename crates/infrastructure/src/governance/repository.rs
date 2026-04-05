@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -149,6 +149,116 @@ impl IAuditRepository for AuditRepository {
         )
         .bind(from)
         .bind(to)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        rows.into_iter().map(|r| r.into_entity()).collect()
+    }
+
+    // --- Dashboard methods (AUD-02) ---
+
+    async fn count_by_date_range(
+        &self,
+        from: DateTime<Utc>,
+        to: DateTime<Utc>,
+    ) -> Result<i64, String> {
+        let row: (i64,) = sqlx::query_as(
+            r#"
+            SELECT COUNT(*)
+            FROM governance.audit_trail
+            WHERE timestamp >= $1 AND timestamp <= $2
+            "#,
+        )
+        .bind(from)
+        .bind(to)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+        Ok(row.0)
+    }
+
+    async fn count_by_action(
+        &self,
+        from: DateTime<Utc>,
+        to: DateTime<Utc>,
+    ) -> Result<Vec<(String, i64)>, String> {
+        let rows: Vec<(String, i64)> = sqlx::query_as(
+            r#"
+            SELECT action, COUNT(*) as cnt
+            FROM governance.audit_trail
+            WHERE timestamp >= $1 AND timestamp <= $2
+            GROUP BY action
+            ORDER BY cnt DESC
+            "#,
+        )
+        .bind(from)
+        .bind(to)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+        Ok(rows)
+    }
+
+    async fn count_by_actor(
+        &self,
+        from: DateTime<Utc>,
+        to: DateTime<Utc>,
+        limit: i64,
+    ) -> Result<Vec<(Uuid, i64)>, String> {
+        let rows: Vec<(Uuid, i64)> = sqlx::query_as(
+            r#"
+            SELECT user_id, COUNT(*) as cnt
+            FROM governance.audit_trail
+            WHERE timestamp >= $1 AND timestamp <= $2
+            GROUP BY user_id
+            ORDER BY cnt DESC
+            LIMIT $3
+            "#,
+        )
+        .bind(from)
+        .bind(to)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+        Ok(rows)
+    }
+
+    async fn count_per_day(&self, days: u32) -> Result<Vec<(NaiveDate, i64)>, String> {
+        let rows: Vec<(NaiveDate, i64)> = sqlx::query_as(
+            r#"
+            SELECT DATE(timestamp) as day, COUNT(*) as cnt
+            FROM governance.audit_trail
+            WHERE timestamp >= NOW() - ($1 || ' days')::interval
+            GROUP BY day
+            ORDER BY day ASC
+            "#,
+        )
+        .bind(days as i32)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+        Ok(rows)
+    }
+
+    async fn find_suspicious(
+        &self,
+        from: DateTime<Utc>,
+        limit: i64,
+    ) -> Result<Vec<AuditTrailEntry>, String> {
+        let rows = sqlx::query_as::<_, AuditRow>(
+            r#"
+            SELECT id, timestamp, user_id, action, resource_type, resource_id, changes::text, ip_address, previous_hash, hash
+            FROM governance.audit_trail
+            WHERE timestamp >= $1
+              AND action IN ('Delete', 'Reject', 'Export')
+            ORDER BY timestamp DESC
+            LIMIT $2
+            "#,
+        )
+        .bind(from)
+        .bind(limit)
         .fetch_all(&self.pool)
         .await
         .map_err(|e| e.to_string())?;

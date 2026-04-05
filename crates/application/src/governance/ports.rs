@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use uuid::Uuid;
 
 use banko_domain::governance::{
@@ -26,6 +26,30 @@ pub trait IAuditRepository: Send + Sync {
         &self,
         from: DateTime<Utc>,
         to: DateTime<Utc>,
+    ) -> Result<Vec<AuditTrailEntry>, String>;
+
+    // --- Dashboard methods (AUD-02) ---
+    async fn count_by_date_range(
+        &self,
+        from: DateTime<Utc>,
+        to: DateTime<Utc>,
+    ) -> Result<i64, String>;
+    async fn count_by_action(
+        &self,
+        from: DateTime<Utc>,
+        to: DateTime<Utc>,
+    ) -> Result<Vec<(String, i64)>, String>;
+    async fn count_by_actor(
+        &self,
+        from: DateTime<Utc>,
+        to: DateTime<Utc>,
+        limit: i64,
+    ) -> Result<Vec<(Uuid, i64)>, String>;
+    async fn count_per_day(&self, days: u32) -> Result<Vec<(NaiveDate, i64)>, String>;
+    async fn find_suspicious(
+        &self,
+        from: DateTime<Utc>,
+        limit: i64,
     ) -> Result<Vec<AuditTrailEntry>, String>;
 }
 

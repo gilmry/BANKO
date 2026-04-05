@@ -102,6 +102,92 @@ pub struct ControlCheckListResponse {
 }
 
 // ============================================================
+// BCT Audit DTOs (AUD-01)
+// ============================================================
+
+#[derive(Debug, Default, Deserialize)]
+pub struct BctAuditFilter {
+    pub user_id: Option<Uuid>,
+    pub action: Option<String>,
+    pub resource_type: Option<String>,
+    pub resource_id: Option<Uuid>,
+    pub from: Option<DateTime<Utc>>,
+    pub to: Option<DateTime<Utc>>,
+    pub ip_address: Option<String>,
+    pub sort_by: Option<String>,
+    pub sort_order: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct BctAuditResponse {
+    pub data: Vec<AuditEntryResponse>,
+    pub total: i64,
+    pub page: i64,
+    pub total_pages: i64,
+    pub limit: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AuditExportResponse {
+    pub format: String,
+    pub data: String,
+    pub count: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct BctIntegrityReport {
+    pub valid: bool,
+    pub entries_checked: usize,
+    pub first_entry_id: Option<String>,
+    pub last_entry_id: Option<String>,
+    pub errors: Vec<String>,
+    pub checked_from: DateTime<Utc>,
+    pub checked_to: DateTime<Utc>,
+}
+
+// ============================================================
+// Dashboard DTOs (AUD-02)
+// ============================================================
+
+#[derive(Debug, Serialize)]
+pub struct DashboardStatsResponse {
+    pub total_entries: i64,
+    pub entries_today: i64,
+    pub entries_this_week: i64,
+    pub top_actors: Vec<ActorCount>,
+    pub actions_breakdown: Vec<ActionCount>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ActorCount {
+    pub user_id: String,
+    pub count: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ActionCount {
+    pub action: String,
+    pub count: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DailyCountResponse {
+    pub date: String,
+    pub count: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SuspiciousActivityResponse {
+    pub entry_id: String,
+    pub timestamp: DateTime<Utc>,
+    pub user_id: String,
+    pub action: String,
+    pub resource_type: String,
+    pub resource_id: String,
+    pub details: Option<String>,
+}
+
+// ============================================================
 // Compliance Report DTO (GOV-06)
 // ============================================================
 

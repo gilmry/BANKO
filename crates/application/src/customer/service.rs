@@ -390,6 +390,18 @@ mod tests {
             customers.retain(|c| c.id() != id);
             Ok(())
         }
+
+        async fn find_closed_before(&self, before: chrono::DateTime<chrono::Utc>) -> Result<Vec<Customer>, String> {
+            let customers = self.customers.lock().unwrap();
+            Ok(customers
+                .iter()
+                .filter(|c| {
+                    c.status() == CustomerStatus::Closed
+                        && c.closed_at().map_or(false, |ca| ca < before)
+                })
+                .cloned()
+                .collect())
+        }
     }
 
     // --- Mock PEP Checker ---

@@ -1,11 +1,13 @@
 use actix_web::web;
 
 use super::handlers::{
-    account_handlers, accounting_handlers, aml_handlers, auth_handlers, credit_handlers,
-    customer_handlers, governance_handlers, payment_handlers, profile_handlers,
-    prudential_handlers, reporting_handlers, sanctions_handlers, two_factor_handlers,
-    user_handlers,
+    account_handlers, accounting_handlers, aml_handlers, auth_handlers, consent_handlers,
+    credit_handlers, customer_handlers, data_rights_handlers, governance_handlers,
+    payment_handlers, profile_handlers, prudential_handlers, reporting_handlers,
+    retention_handlers, sanctions_handlers, two_factor_handlers, user_handlers,
 };
+
+use crate::governance::bct_audit_handlers;
 
 pub fn configure_auth_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -67,6 +69,36 @@ pub fn configure_customer_routes(cfg: &mut web::ServiceConfig) {
             .route(
                 "/{id}/reject",
                 web::post().to(customer_handlers::reject_kyc_handler),
+            )
+            // Consent routes (STORY-CONS-01)
+            .route(
+                "/{id}/consent",
+                web::post().to(consent_handlers::grant_consent_handler),
+            )
+            .route(
+                "/{id}/consent",
+                web::delete().to(consent_handlers::revoke_consent_handler),
+            )
+            .route(
+                "/{id}/consents",
+                web::get().to(consent_handlers::list_consents_handler),
+            )
+            // Data rights routes (STORY-CONS-02)
+            .route(
+                "/{id}/data-export",
+                web::get().to(data_rights_handlers::data_export_handler),
+            )
+            .route(
+                "/{id}/data-rectification",
+                web::put().to(data_rights_handlers::data_rectification_handler),
+            )
+            .route(
+                "/{id}/data-opposition",
+                web::post().to(data_rights_handlers::data_opposition_handler),
+            )
+            .route(
+                "/{id}/data-requests",
+                web::get().to(data_rights_handlers::list_data_requests_handler),
             ),
     );
 }
@@ -382,6 +414,53 @@ pub fn configure_payment_routes(cfg: &mut web::ServiceConfig) {
             .route(
                 "/clearing",
                 web::post().to(payment_handlers::run_clearing_handler),
+            ),
+    );
+}
+
+pub fn configure_retention_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/admin/retention")
+            .route(
+                "/run",
+                web::post().to(retention_handlers::run_anonymization_handler),
+            )
+            .route(
+                "/status/{customer_id}",
+                web::get().to(retention_handlers::check_retention_handler),
+            ),
+    );
+}
+
+pub fn configure_bct_audit_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/bct/audit")
+            .route(
+                "/entries",
+                web::get().to(bct_audit_handlers::list_bct_entries_handler),
+            )
+            .route(
+                "/entries/export",
+                web::get().to(bct_audit_handlers::export_entries_handler),
+            )
+            .route(
+                "/integrity",
+                web::get().to(bct_audit_handlers::integrity_check_handler),
+            ),
+    );
+    cfg.service(
+        web::scope("/api/v1/bct/dashboard")
+            .route(
+                "/stats",
+                web::get().to(bct_audit_handlers::dashboard_stats_handler),
+            )
+            .route(
+                "/daily-trend",
+                web::get().to(bct_audit_handlers::daily_trend_handler),
+            )
+            .route(
+                "/suspicious",
+                web::get().to(bct_audit_handlers::suspicious_handler),
             ),
     );
 }

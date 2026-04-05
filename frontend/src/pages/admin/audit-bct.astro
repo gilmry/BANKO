@@ -1,0 +1,12 @@
+---
+import Base from '../../layouts/Base.astro';
+import Header from '../../components/Header.svelte';
+import AuditDashboard from '../../components/AuditDashboard.svelte';
+---
+
+<Base title="BCT Audit Dashboard">
+  <Header />
+  <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <AuditDashboard client:load />
+  </main>
+</Base>
