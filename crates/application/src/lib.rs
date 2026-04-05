@@ -6,6 +6,7 @@ pub mod customer;
 pub mod dto;
 pub mod governance;
 pub mod identity;
+pub mod payment;
 pub mod ports;
 pub mod prudential;
 pub mod reporting;

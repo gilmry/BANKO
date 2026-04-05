@@ -220,4 +220,24 @@ pub enum DomainError {
 
     #[error("Invalid report template: {0}")]
     InvalidReportTemplate(String),
+
+    // --- Payment errors ---
+
+    #[error("Invalid payment order: {0}")]
+    InvalidPaymentOrder(String),
+
+    #[error("Payment order not found")]
+    PaymentOrderNotFound,
+
+    #[error("Invalid payment status transition: {0}")]
+    InvalidPaymentTransition(String),
+
+    #[error("Sanctions screening required before payment execution")]
+    SanctionsScreeningRequired,
+
+    #[error("Payment blocked by sanctions screening: {0}")]
+    PaymentBlockedBySanctions(String),
+
+    #[error("Insufficient funds for payment")]
+    InsufficientFundsForPayment,
 }

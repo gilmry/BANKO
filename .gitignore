@@ -41,3 +41,4 @@ tarpaulin-report.html
 
 # Build artifacts
 Maury/
+.claude/worktrees/

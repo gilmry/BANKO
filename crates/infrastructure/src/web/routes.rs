@@ -2,8 +2,9 @@ use actix_web::web;
 
 use super::handlers::{
     account_handlers, accounting_handlers, aml_handlers, auth_handlers, credit_handlers,
-    customer_handlers, governance_handlers, profile_handlers, prudential_handlers,
-    reporting_handlers, sanctions_handlers, two_factor_handlers, user_handlers,
+    customer_handlers, governance_handlers, payment_handlers, profile_handlers,
+    prudential_handlers, reporting_handlers, sanctions_handlers, two_factor_handlers,
+    user_handlers,
 };
 
 pub fn configure_auth_routes(cfg: &mut web::ServiceConfig) {
@@ -343,6 +344,44 @@ pub fn configure_reporting_routes(cfg: &mut web::ServiceConfig) {
             .route(
                 "/ifrs9",
                 web::get().to(reporting_handlers::ifrs9_handler),
+            ),
+    );
+}
+
+pub fn configure_payment_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/payments")
+            .route(
+                "/transfers",
+                web::post().to(payment_handlers::create_payment_handler),
+            )
+            .route(
+                "",
+                web::get().to(payment_handlers::list_payments_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(payment_handlers::get_payment_handler),
+            )
+            .route(
+                "/{id}/status",
+                web::get().to(payment_handlers::get_payment_status_handler),
+            )
+            .route(
+                "/{id}/screen",
+                web::post().to(payment_handlers::screen_payment_handler),
+            )
+            .route(
+                "/{id}/submit",
+                web::post().to(payment_handlers::submit_payment_handler),
+            )
+            .route(
+                "/{id}/execute",
+                web::post().to(payment_handlers::execute_payment_handler),
+            )
+            .route(
+                "/clearing",
+                web::post().to(payment_handlers::run_clearing_handler),
             ),
     );
 }

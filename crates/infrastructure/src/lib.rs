@@ -7,6 +7,7 @@ pub mod customer;
 pub mod database;
 pub mod governance;
 pub mod identity;
+pub mod payment;
 pub mod prudential;
 pub mod reporting;
 pub mod sanctions;
