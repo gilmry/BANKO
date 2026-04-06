@@ -201,6 +201,19 @@ pub enum DomainError {
     #[error("Invalid control check: {0}")]
     InvalidControlCheck(String),
 
+    // --- Compliance errors ---
+    #[error("Invalid compliance data: {0}")]
+    InvalidComplianceData(String),
+
+    #[error("Compliance control not found")]
+    ComplianceControlNotFound,
+
+    #[error("Token vault not found")]
+    TokenVaultNotFound,
+
+    #[error("Risk entry not found")]
+    RiskEntryNotFound,
+
     // --- Reporting errors ---
     #[error("Invalid report: {0}")]
     InvalidReport(String),
@@ -279,4 +292,35 @@ pub enum DomainError {
 
     #[error("Invalid FX status transition: {0}")]
     InvalidFxTransition(String),
+
+    // --- Notification errors ---
+    #[error("Invalid notification channel: {0}")]
+    InvalidNotificationChannel(String),
+
+    #[error("Invalid notification status: {0}")]
+    InvalidNotificationStatus(String),
+
+    #[error("Invalid notification type: {0}")]
+    InvalidNotificationType(String),
+
+    #[error("Invalid notification recipient: {0}")]
+    InvalidNotificationRecipient(String),
+
+    #[error("Invalid notification template: {0}")]
+    InvalidNotificationTemplate(String),
+
+    #[error("Invalid notification subject: {0}")]
+    InvalidNotificationSubject(String),
+
+    #[error("Invalid notification body: {0}")]
+    InvalidNotificationBody(String),
+
+    #[error("Notification not found")]
+    NotificationNotFound,
+
+    #[error("Template not found: {0}")]
+    TemplateNotFound(String),
+
+    #[error("Recipient opted out")]
+    RecipientOptedOut,
 }

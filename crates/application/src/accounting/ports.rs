@@ -1,7 +1,9 @@
 use async_trait::async_trait;
-use chrono::NaiveDate;
+use chrono::{DateTime, NaiveDate, Utc};
+use rust_decimal::Decimal;
+use uuid::Uuid;
 
-use banko_domain::accounting::{AccountCode, EntryId, JournalEntry, LedgerAccount};
+use banko_domain::accounting::{AccountCode, EntryId, ExpectedCreditLoss, JournalEntry, LedgerAccount, FeeDefinition, FeeCharge, FeeGrid};
 
 #[async_trait]
 pub trait IJournalRepository: Send + Sync {
@@ -53,4 +55,49 @@ pub trait IPeriodRepository: Send + Sync {
     async fn close_period(&self, period: &str) -> Result<(), String>;
     async fn is_closed(&self, period: &str) -> Result<bool, String>;
     async fn find_closed_periods(&self) -> Result<Vec<String>, String>;
+}
+
+#[async_trait]
+pub trait IEclRepository: Send + Sync {
+    /// Save an ECL calculation record
+    async fn save(&self, ecl: &ExpectedCreditLoss) -> Result<(), String>;
+
+    /// Find ECL by loan ID
+    async fn find_by_loan_id(&self, loan_id: Uuid) -> Result<Option<ExpectedCreditLoss>, String>;
+
+    /// Find all ECL calculations for a period
+    async fn find_all(&self, offset: i64, limit: i64) -> Result<Vec<ExpectedCreditLoss>, String>;
+
+    /// Count total ECL records
+    async fn count_all(&self) -> Result<i64, String>;
+}
+
+// ==================== Fee Ports ====================
+
+#[async_trait]
+pub trait IFeeDefinitionRepository: Send + Sync {
+    async fn save(&self, definition: &FeeDefinition) -> Result<(), String>;
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<FeeDefinition>, String>;
+    async fn list_by_product(&self, product_id: Uuid) -> Result<Vec<FeeDefinition>, String>;
+    async fn list_all(&self) -> Result<Vec<FeeDefinition>, String>;
+}
+
+#[async_trait]
+pub trait IFeeChargeRepository: Send + Sync {
+    async fn save(&self, charge: &FeeCharge) -> Result<(), String>;
+    async fn find_by_account(&self, account_id: Uuid) -> Result<Vec<FeeCharge>, String>;
+    async fn find_pending(&self, account_id: Uuid) -> Result<Vec<FeeCharge>, String>;
+    async fn update_status(&self, charge: &FeeCharge) -> Result<(), String>;
+}
+
+#[async_trait]
+pub trait IFeeGridRepository: Send + Sync {
+    async fn save(&self, grid: &FeeGrid) -> Result<(), String>;
+    async fn find_by_segment(&self, segment: &str) -> Result<Option<FeeGrid>, String>;
+    async fn find_active_for_segment(
+        &self,
+        segment: &str,
+        date: DateTime<Utc>,
+    ) -> Result<Option<FeeGrid>, String>;
+    async fn list_all(&self) -> Result<Vec<FeeGrid>, String>;
 }

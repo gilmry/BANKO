@@ -313,6 +313,79 @@ impl CommitteeService {
 
         Ok(to_decision_response(&decision_entity))
     }
+
+    pub async fn schedule_meeting(
+        &self,
+        committee_id: Uuid,
+        scheduled_date: chrono::DateTime<chrono::Utc>,
+        attendees: Vec<Uuid>,
+        agenda: Vec<String>,
+    ) -> Result<CommitteeMeetingResponse, GovernanceServiceError> {
+        // Verify committee exists
+        let _committee = self
+            .committee_repo
+            .find_committee_by_id(committee_id)
+            .await
+            .map_err(GovernanceServiceError::Internal)?
+            .ok_or(GovernanceServiceError::CommitteeNotFound)?;
+
+        let meeting = CommitteeMeeting::new(committee_id, scheduled_date, attendees, agenda)
+            .map_err(|e| GovernanceServiceError::DomainError(e.to_string()))?;
+
+        self.committee_repo
+            .save_meeting(&meeting)
+            .await
+            .map_err(GovernanceServiceError::Internal)?;
+
+        Ok(to_meeting_response(&meeting))
+    }
+
+    pub async fn start_meeting(
+        &self,
+        meeting_id: Uuid,
+    ) -> Result<CommitteeMeetingResponse, GovernanceServiceError> {
+        let mut meeting = self
+            .committee_repo
+            .find_meeting_by_id(meeting_id)
+            .await
+            .map_err(GovernanceServiceError::Internal)?
+            .ok_or(GovernanceServiceError::CommitteeNotFound)?;
+
+        meeting
+            .start()
+            .map_err(|e| GovernanceServiceError::DomainError(e.to_string()))?;
+
+        self.committee_repo
+            .save_meeting(&meeting)
+            .await
+            .map_err(GovernanceServiceError::Internal)?;
+
+        Ok(to_meeting_response(&meeting))
+    }
+
+    pub async fn close_meeting(
+        &self,
+        meeting_id: Uuid,
+        minutes: String,
+    ) -> Result<CommitteeMeetingResponse, GovernanceServiceError> {
+        let mut meeting = self
+            .committee_repo
+            .find_meeting_by_id(meeting_id)
+            .await
+            .map_err(GovernanceServiceError::Internal)?
+            .ok_or(GovernanceServiceError::CommitteeNotFound)?;
+
+        meeting
+            .close(minutes)
+            .map_err(|e| GovernanceServiceError::DomainError(e.to_string()))?;
+
+        self.committee_repo
+            .save_meeting(&meeting)
+            .await
+            .map_err(GovernanceServiceError::Internal)?;
+
+        Ok(to_meeting_response(&meeting))
+    }
 }
 
 // ============================================================
@@ -426,6 +499,82 @@ impl ControlService {
         let data = checks.iter().map(to_control_response).collect();
 
         Ok(ControlCheckListResponse {
+            data,
+            total,
+            page,
+            limit,
+        })
+    }
+
+    pub async fn perform_control_check(
+        &self,
+        control_check_id: Uuid,
+        control_ref: String,
+        checker_id: Uuid,
+        result: String,
+    ) -> Result<ControlCheckSignOffResponse, GovernanceServiceError> {
+        let check_result = CheckResult::from_str_type(&result)
+            .map_err(|e| GovernanceServiceError::InvalidInput(e.to_string()))?;
+
+        let signoff = ControlCheckSignOff::new(control_check_id, control_ref, checker_id, check_result)
+            .map_err(|e| GovernanceServiceError::DomainError(e.to_string()))?;
+
+        self.control_repo
+            .save_signoff(&signoff)
+            .await
+            .map_err(GovernanceServiceError::Internal)?;
+
+        Ok(to_signoff_response(&signoff))
+    }
+
+    pub async fn sign_off_control(
+        &self,
+        signoff_id: Uuid,
+        signatory_id: Uuid,
+    ) -> Result<ControlCheckSignOffResponse, GovernanceServiceError> {
+        let mut signoff = self
+            .control_repo
+            .find_signoff_by_id(signoff_id)
+            .await
+            .map_err(GovernanceServiceError::Internal)?
+            .ok_or(GovernanceServiceError::ControlCheckNotFound)?;
+
+        signoff
+            .sign_off(signatory_id)
+            .map_err(|e| GovernanceServiceError::DomainError(e.to_string()))?;
+
+        self.control_repo
+            .save_signoff(&signoff)
+            .await
+            .map_err(GovernanceServiceError::Internal)?;
+
+        Ok(to_signoff_response(&signoff))
+    }
+
+    pub async fn list_pending_signoffs(
+        &self,
+        page: i64,
+        limit: i64,
+    ) -> Result<ControlCheckSignOffListResponse, GovernanceServiceError> {
+        let limit = limit.clamp(1, 100);
+        let page = page.max(1);
+        let offset = (page - 1) * limit;
+
+        let signoffs = self
+            .control_repo
+            .find_pending_signoffs(limit, offset)
+            .await
+            .map_err(GovernanceServiceError::Internal)?;
+
+        let total = self
+            .control_repo
+            .count_pending_signoffs()
+            .await
+            .map_err(GovernanceServiceError::Internal)?;
+
+        let data = signoffs.iter().map(to_signoff_response).collect();
+
+        Ok(ControlCheckSignOffListResponse {
             data,
             total,
             page,
@@ -800,5 +949,34 @@ fn to_control_response(c: &ControlCheck) -> ControlCheckResponse {
         comments: c.comments().map(|s| s.to_string()),
         checked_at: c.checked_at().copied(),
         created_at: *c.created_at(),
+    }
+}
+
+fn to_meeting_response(m: &CommitteeMeeting) -> CommitteeMeetingResponse {
+    CommitteeMeetingResponse {
+        id: m.id().to_string(),
+        committee_id: m.committee_id().to_string(),
+        scheduled_date: *m.scheduled_date(),
+        attendees: m.attendees().iter().map(|a| a.to_string()).collect(),
+        agenda: m.agenda().to_vec(),
+        decisions: m.decisions().iter().map(|d| d.to_string()).collect(),
+        status: m.status().as_str().to_string(),
+        minutes: m.minutes().map(|s| s.to_string()),
+        created_at: *m.created_at(),
+    }
+}
+
+fn to_signoff_response(s: &ControlCheckSignOff) -> ControlCheckSignOffResponse {
+    ControlCheckSignOffResponse {
+        id: s.id().to_string(),
+        control_check_id: s.control_check_id().to_string(),
+        control_ref: s.control_ref().to_string(),
+        checker_id: s.checker_id().to_string(),
+        check_date: *s.check_date(),
+        result: s.result().as_str().to_string(),
+        findings: s.findings().map(|f| f.to_string()),
+        signed_off_by: s.signed_off_by().map(|u| u.to_string()),
+        signed_off_at: s.signed_off_at().copied(),
+        created_at: *s.created_at(),
     }
 }

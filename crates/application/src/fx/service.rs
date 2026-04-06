@@ -7,7 +7,7 @@ use banko_domain::fx::*;
 
 use super::dto::*;
 use super::errors::FxServiceError;
-use super::ports::*;
+use super::ports::{DailyLimitRecord, IDailyLimitsRepository, IExchangeRateRepository, IFxRepository};
 
 // ============================================================
 // FxService (FX-01 to FX-04)
@@ -418,11 +418,18 @@ impl Default for FxComplianceService {
 
 pub struct FxLimitsService {
     fx_repo: Arc<dyn IFxRepository>,
+    limits_repo: Arc<dyn IDailyLimitsRepository>,
 }
 
 impl FxLimitsService {
-    pub fn new(fx_repo: Arc<dyn IFxRepository>) -> Self {
-        FxLimitsService { fx_repo }
+    pub fn new(
+        fx_repo: Arc<dyn IFxRepository>,
+        limits_repo: Arc<dyn IDailyLimitsRepository>,
+    ) -> Self {
+        FxLimitsService {
+            fx_repo,
+            limits_repo,
+        }
     }
 
     /// Check if a daily limit would be exceeded
@@ -443,6 +450,95 @@ impl FxLimitsService {
         Ok(limit.can_execute(amount))
     }
 
+    /// Set a custom daily limit for an account and currency (FX-08)
+    pub async fn set_custom_daily_limit(
+        &self,
+        account_id: Uuid,
+        currency: String,
+        daily_limit_amount: i64,
+    ) -> Result<(), FxServiceError> {
+        let today = Utc::now().date_naive();
+        let limit_record = DailyLimitRecord {
+            account_id,
+            currency,
+            daily_limit_amount,
+            date: today,
+        };
+
+        self.limits_repo
+            .save(&limit_record)
+            .await
+            .map_err(FxServiceError::Internal)
+    }
+
+    /// Get current day usage for an account and currency (FX-08)
+    pub async fn get_daily_usage(
+        &self,
+        account_id: Uuid,
+        currency: &str,
+    ) -> Result<DailyUsageResponse, FxServiceError> {
+        let today = Utc::now().date_naive();
+        let used_today = self
+            .fx_repo
+            .get_daily_total(account_id, currency, today)
+            .await
+            .map_err(FxServiceError::Internal)?;
+
+        // Get custom limit if set, otherwise use default
+        let custom_limit = self
+            .limits_repo
+            .find(account_id, currency)
+            .await
+            .map_err(FxServiceError::Internal)?;
+
+        let daily_limit = match custom_limit {
+            Some(record) => record.daily_limit_amount,
+            None => 100_000_000, // Default limit
+        };
+
+        let remaining = (daily_limit - used_today).max(0);
+
+        Ok(DailyUsageResponse {
+            account_id: account_id.to_string(),
+            currency: currency.to_string(),
+            daily_limit,
+            used_today,
+            remaining,
+        })
+    }
+
+    /// Alert when usage exceeds 80% of limit (FX-08)
+    pub async fn alert_near_limit(
+        &self,
+        account_id: Uuid,
+        currency: &str,
+    ) -> Result<Option<NearLimitAlert>, FxServiceError> {
+        let usage = self.get_daily_usage(account_id, currency).await?;
+
+        let percentage_used = if usage.daily_limit > 0 {
+            (usage.used_today as f64 / usage.daily_limit as f64) * 100.0
+        } else {
+            0.0
+        };
+
+        // Alert when usage > 80%
+        if percentage_used > 80.0 {
+            Ok(Some(NearLimitAlert {
+                account_id: account_id.to_string(),
+                currency: currency.to_string(),
+                daily_limit: usage.daily_limit,
+                used_today: usage.used_today,
+                percentage_used,
+                message: format!(
+                    "Daily limit for {} is {}% utilized ({} of {} used)",
+                    currency, percentage_used as i32, usage.used_today, usage.daily_limit
+                ),
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
     /// Get remaining daily limits for an account across all currencies
     pub async fn get_remaining_limits(
         &self,
@@ -459,7 +555,18 @@ impl FxLimitsService {
                 .await
                 .map_err(FxServiceError::Internal)?;
 
-            let daily_limit_val: i64 = 100_000_000;
+            // Get custom limit if set
+            let custom_limit = self
+                .limits_repo
+                .find(account_id, currency)
+                .await
+                .map_err(FxServiceError::Internal)?;
+
+            let daily_limit_val = match custom_limit {
+                Some(record) => record.daily_limit_amount,
+                None => 100_000_000, // Default
+            };
+
             let limit = DailyLimit::new(
                 account_id,
                 currency.to_string(),

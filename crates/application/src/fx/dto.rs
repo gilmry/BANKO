@@ -102,6 +102,27 @@ pub struct DailyLimitsResponse {
     pub limits: Vec<DailyLimitResponse>,
 }
 
+// --- Daily Usage and Alerts (FX-08) ---
+
+#[derive(Debug, Serialize)]
+pub struct DailyUsageResponse {
+    pub account_id: String,
+    pub currency: String,
+    pub daily_limit: i64,
+    pub used_today: i64,
+    pub remaining: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct NearLimitAlert {
+    pub account_id: String,
+    pub currency: String,
+    pub daily_limit: i64,
+    pub used_today: i64,
+    pub percentage_used: f64,
+    pub message: String,
+}
+
 // --- Reject DTO ---
 
 #[derive(Debug, Deserialize)]

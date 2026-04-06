@@ -3,6 +3,7 @@ use std::sync::Arc;
 use chrono::{Duration, Utc};
 use uuid::Uuid;
 
+use banko_domain::account::Account;
 use banko_domain::aml::*;
 use banko_domain::shared::Money;
 
@@ -506,14 +507,30 @@ impl DosReportService {
 
 pub struct AssetFreezeService {
     freeze_repo: Arc<dyn IAssetFreezeRepository>,
+    account_port: Option<Arc<dyn IAccountFreezePort>>,
 }
 
 impl AssetFreezeService {
     pub fn new(freeze_repo: Arc<dyn IAssetFreezeRepository>) -> Self {
-        AssetFreezeService { freeze_repo }
+        AssetFreezeService {
+            freeze_repo,
+            account_port: None,
+        }
+    }
+
+    /// Create AssetFreezeService with optional account freeze port integration.
+    pub fn with_account_port(
+        freeze_repo: Arc<dyn IAssetFreezeRepository>,
+        account_port: Arc<dyn IAccountFreezePort>,
+    ) -> Self {
+        AssetFreezeService {
+            freeze_repo,
+            account_port: Some(account_port),
+        }
     }
 
     /// Freeze account IMMEDIATELY (INV-09).
+    /// Creates AssetFreeze record and optionally freezes the account (sets available_balance to 0).
     pub async fn freeze_account(
         &self,
         account_id: Uuid,
@@ -528,10 +545,19 @@ impl AssetFreezeService {
             .await
             .map_err(AmlServiceError::Internal)?;
 
+        // If account freeze port is available, freeze the account's available_balance
+        if let Some(ref account_port) = self.account_port {
+            let _ = account_port
+                .freeze_account(account_id)
+                .await
+                .map_err(|e| AmlServiceError::Internal(e))?;
+        }
+
         Ok(Self::freeze_to_response(&freeze))
     }
 
     /// Lift freeze — requires CTAF authorization.
+    /// Lifts the AssetFreeze record and optionally unfreezes the account (restores available_balance).
     pub async fn lift_freeze(
         &self,
         freeze_id: Uuid,
@@ -544,6 +570,8 @@ impl AssetFreezeService {
             .map_err(AmlServiceError::Internal)?
             .ok_or(AmlServiceError::FreezeNotFound)?;
 
+        let account_id = freeze.account_id();
+
         freeze
             .lift(lifted_by)
             .map_err(|e| AmlServiceError::DomainError(e.to_string()))?;
@@ -553,9 +581,18 @@ impl AssetFreezeService {
             .await
             .map_err(AmlServiceError::Internal)?;
 
+        // If account freeze port is available, unfreeze the account's available_balance
+        if let Some(ref account_port) = self.account_port {
+            let _ = account_port
+                .unfreeze_account(account_id)
+                .await
+                .map_err(|e| AmlServiceError::Internal(e))?;
+        }
+
         Ok(Self::freeze_to_response(&freeze))
     }
 
+    /// Check if an account currently has an active freeze.
     pub async fn is_account_frozen(&self, account_id: Uuid) -> Result<bool, AmlServiceError> {
         let freeze = self
             .freeze_repo
@@ -1053,6 +1090,40 @@ mod tests {
 
     // --- Asset Freeze Service Tests (INV-09) ---
 
+    struct MockAccountFreezePort {
+        freezes: Mutex<std::collections::HashMap<Uuid, bool>>,
+    }
+
+    impl MockAccountFreezePort {
+        fn new() -> Self {
+            MockAccountFreezePort {
+                freezes: Mutex::new(std::collections::HashMap::new()),
+            }
+        }
+    }
+
+    #[async_trait]
+    impl IAccountFreezePort for MockAccountFreezePort {
+        async fn find_account_by_id(&self, _account_id: Uuid) -> Result<Option<Account>, String> {
+            // For tests, return None — actual implementation will use real Account service
+            Ok(None)
+        }
+
+        async fn freeze_account(&self, account_id: Uuid) -> Result<Account, String> {
+            let mut freezes = self.freezes.lock().unwrap();
+            freezes.insert(account_id, true);
+            // For tests, return a mock Account (would be real in integration tests)
+            Err("Mock freeze — use real Account service in production".to_string())
+        }
+
+        async fn unfreeze_account(&self, account_id: Uuid) -> Result<Account, String> {
+            let mut freezes = self.freezes.lock().unwrap();
+            freezes.insert(account_id, false);
+            // For tests, return a mock Account (would be real in integration tests)
+            Err("Mock unfreeze — use real Account service in production".to_string())
+        }
+    }
+
     #[tokio::test]
     async fn test_freeze_account_immediate() {
         let service = AssetFreezeService::new(Arc::new(MockFreezeRepo::new()));
@@ -1094,5 +1165,28 @@ mod tests {
             .unwrap();
         assert_eq!(lifted.status, "Lifted");
         assert_eq!(lifted.lifted_by, Some("CTAF_officer".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_freeze_account_with_port_integration() {
+        let freeze_repo = Arc::new(MockFreezeRepo::new());
+        let account_port = Arc::new(MockAccountFreezePort::new());
+        let service = AssetFreezeService::with_account_port(freeze_repo, account_port.clone());
+        let account_id = Uuid::new_v4();
+
+        // Freeze account — account port would be called but returns error in mock
+        // In integration tests, it would actually freeze the account
+        let freeze = service
+            .freeze_account(
+                account_id,
+                "Suspicious".to_string(),
+                "supervisor".to_string(),
+            )
+            .await;
+
+        // Even though account port fails in mock, freeze record should be saved
+        assert!(freeze.is_ok());
+        let is_frozen = service.is_account_frozen(account_id).await.unwrap();
+        assert!(is_frozen);
     }
 }

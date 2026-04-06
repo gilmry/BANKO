@@ -221,3 +221,46 @@ pub struct ThirdLineDefense {
     pub total_committees: usize,
     pub total_decisions: usize,
 }
+
+// ============================================================
+// Committee Meeting DTOs (GOV-07 extended)
+// ============================================================
+
+#[derive(Debug, Serialize)]
+pub struct CommitteeMeetingResponse {
+    pub id: String,
+    pub committee_id: String,
+    pub scheduled_date: DateTime<Utc>,
+    pub attendees: Vec<String>,
+    pub agenda: Vec<String>,
+    pub decisions: Vec<String>,
+    pub status: String,
+    pub minutes: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+// ============================================================
+// Control Check Sign-Off DTOs (GOV-08 extended)
+// ============================================================
+
+#[derive(Debug, Serialize)]
+pub struct ControlCheckSignOffResponse {
+    pub id: String,
+    pub control_check_id: String,
+    pub control_ref: String,
+    pub checker_id: String,
+    pub check_date: DateTime<Utc>,
+    pub result: String,
+    pub findings: Option<String>,
+    pub signed_off_by: Option<String>,
+    pub signed_off_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ControlCheckSignOffListResponse {
+    pub data: Vec<ControlCheckSignOffResponse>,
+    pub total: i64,
+    pub page: i64,
+    pub limit: i64,
+}

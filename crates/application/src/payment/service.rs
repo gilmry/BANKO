@@ -244,6 +244,54 @@ impl PaymentService {
         })
     }
 
+    /// Batch screen all pending payments (PAY-08)
+    pub async fn screen_all_pending_payments(
+        &self,
+    ) -> Result<ScreeningBatchResponse, PaymentServiceError> {
+        // Fetch all pending screening payments
+        let orders = self
+            .payment_repo
+            .find_all(Some(PaymentStatus::PendingScreening), 1000, 0)
+            .await
+            .map_err(PaymentServiceError::Internal)?;
+
+        let mut screened = 0;
+        let mut cleared = 0;
+        let mut hits = 0;
+
+        for mut order in orders {
+            screened += 1;
+            let bic = order.beneficiary_bic().map(|s| s.to_string());
+            let result = match self
+                .screener
+                .screen_beneficiary(order.beneficiary_name(), bic.as_deref())
+                .await
+            {
+                Ok(res) => res,
+                Err(_) => continue,
+            };
+
+            if result.is_hit {
+                let reason = result
+                    .match_details
+                    .unwrap_or_else(|| "Sanctions hit detected".to_string());
+                order.mark_screening_hit(reason);
+                hits += 1;
+            } else {
+                order.mark_screening_cleared();
+                cleared += 1;
+            }
+
+            let _ = self.payment_repo.save(&order).await;
+        }
+
+        Ok(ScreeningBatchResponse {
+            screened,
+            cleared,
+            hits,
+        })
+    }
+
     // --- Helpers ---
 
     fn parse_order_id(&self, order_id: &str) -> Result<OrderId, PaymentServiceError> {

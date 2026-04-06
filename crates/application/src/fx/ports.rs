@@ -45,3 +45,29 @@ pub trait IExchangeRateRepository: Send + Sync {
         to: NaiveDate,
     ) -> Result<Vec<ExchangeRate>, String>;
 }
+
+// --- Daily Limits Repository (FX-08) ---
+
+#[derive(Debug, Clone)]
+pub struct DailyLimitRecord {
+    pub account_id: Uuid,
+    pub currency: String,
+    pub daily_limit_amount: i64,
+    pub date: NaiveDate,
+}
+
+#[async_trait]
+pub trait IDailyLimitsRepository: Send + Sync {
+    /// Save or update a custom daily limit for an account
+    async fn save(&self, limit: &DailyLimitRecord) -> Result<(), String>;
+
+    /// Get the custom daily limit for an account and currency
+    async fn find(
+        &self,
+        account_id: Uuid,
+        currency: &str,
+    ) -> Result<Option<DailyLimitRecord>, String>;
+
+    /// Get all daily limits for an account
+    async fn find_by_account(&self, account_id: Uuid) -> Result<Vec<DailyLimitRecord>, String>;
+}

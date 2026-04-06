@@ -3,9 +3,11 @@ use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 
+use banko_application::governance::{AuditService, GovernanceServiceError};
 use banko_application::identity::{
     IPasswordHasher, ISessionRepository, IUserRepository, SessionService, UserService,
 };
+use banko_domain::governance::AuditTrailEntry;
 use banko_domain::identity::{PasswordHash, Session, SessionId, User, UserId};
 use banko_domain::shared::EmailAddress;
 
@@ -151,4 +153,105 @@ pub fn make_test_user_service_with_user(user: User) -> Arc<UserService> {
         Arc::new(repo),
         Arc::new(MockPasswordHasher),
     ))
+}
+
+// --- Mock Audit Repository (for STORY-ID-08) ---
+
+pub struct MockAuditRepository {
+    entries: Mutex<Vec<AuditTrailEntry>>,
+}
+
+impl MockAuditRepository {
+    pub fn new() -> Self {
+        MockAuditRepository {
+            entries: Mutex::new(Vec::new()),
+        }
+    }
+}
+
+#[async_trait]
+impl banko_application::governance::IAuditRepository for MockAuditRepository {
+    async fn append(&self, entry: &AuditTrailEntry) -> Result<(), String> {
+        let mut entries = self.entries.lock().unwrap();
+        entries.push(entry.clone());
+        Ok(())
+    }
+
+    async fn find_by_id(
+        &self,
+        id: &banko_domain::governance::AuditEntryId,
+    ) -> Result<Option<AuditTrailEntry>, String> {
+        let entries = self.entries.lock().unwrap();
+        Ok(entries.iter().find(|e| e.entry_id() == id).cloned())
+    }
+
+    async fn find_latest(&self) -> Result<Option<AuditTrailEntry>, String> {
+        let entries = self.entries.lock().unwrap();
+        Ok(entries.last().cloned())
+    }
+
+    async fn find_all(
+        &self,
+        _filters: &banko_application::governance::AuditFilter,
+        _limit: i64,
+        _offset: i64,
+    ) -> Result<Vec<AuditTrailEntry>, String> {
+        let entries = self.entries.lock().unwrap();
+        Ok(entries.clone())
+    }
+
+    async fn count_all(&self, _filters: &banko_application::governance::AuditFilter) -> Result<i64, String> {
+        let entries = self.entries.lock().unwrap();
+        Ok(entries.len() as i64)
+    }
+
+    async fn find_chain(
+        &self,
+        _from: chrono::DateTime<chrono::Utc>,
+        _to: chrono::DateTime<chrono::Utc>,
+    ) -> Result<Vec<AuditTrailEntry>, String> {
+        let entries = self.entries.lock().unwrap();
+        Ok(entries.clone())
+    }
+
+    async fn count_by_date_range(
+        &self,
+        _from: chrono::DateTime<chrono::Utc>,
+        _to: chrono::DateTime<chrono::Utc>,
+    ) -> Result<i64, String> {
+        Ok(0)
+    }
+
+    async fn count_by_action(
+        &self,
+        _from: chrono::DateTime<chrono::Utc>,
+        _to: chrono::DateTime<chrono::Utc>,
+    ) -> Result<Vec<(String, i64)>, String> {
+        Ok(Vec::new())
+    }
+
+    async fn count_by_actor(
+        &self,
+        _from: chrono::DateTime<chrono::Utc>,
+        _to: chrono::DateTime<chrono::Utc>,
+        _limit: i64,
+    ) -> Result<Vec<(uuid::Uuid, i64)>, String> {
+        Ok(Vec::new())
+    }
+
+    async fn count_per_day(&self, _days: u32) -> Result<Vec<(chrono::NaiveDate, i64)>, String> {
+        Ok(Vec::new())
+    }
+
+    async fn find_suspicious(
+        &self,
+        _from: chrono::DateTime<chrono::Utc>,
+        _limit: i64,
+    ) -> Result<Vec<AuditTrailEntry>, String> {
+        Ok(Vec::new())
+    }
+}
+
+pub fn make_test_audit_service() -> Arc<AuditService> {
+    Arc::new(AuditService::new(Arc::new(MockAuditRepository::new())))
 }

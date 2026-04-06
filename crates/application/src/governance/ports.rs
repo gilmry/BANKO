@@ -3,7 +3,8 @@ use chrono::{DateTime, NaiveDate, Utc};
 use uuid::Uuid;
 
 use banko_domain::governance::{
-    AuditEntryId, AuditTrailEntry, Committee, CommitteeDecision, ControlCheck, ControlStatus,
+    AuditEntryId, AuditTrailEntry, Committee, CommitteeDecision, CommitteeMeeting, ControlCheck,
+    ControlCheckSignOff, ControlStatus,
 };
 
 use super::dto::AuditFilter;
@@ -65,6 +66,8 @@ pub trait ICommitteeRepository: Send + Sync {
         &self,
         committee_id: Uuid,
     ) -> Result<Vec<CommitteeDecision>, String>;
+    async fn save_meeting(&self, meeting: &CommitteeMeeting) -> Result<(), String>;
+    async fn find_meeting_by_id(&self, id: Uuid) -> Result<Option<CommitteeMeeting>, String>;
 }
 
 // --- Control Check Repository ---
@@ -80,4 +83,12 @@ pub trait IControlCheckRepository: Send + Sync {
         offset: i64,
     ) -> Result<Vec<ControlCheck>, String>;
     async fn count_all(&self, status: Option<ControlStatus>) -> Result<i64, String>;
+    async fn save_signoff(&self, signoff: &ControlCheckSignOff) -> Result<(), String>;
+    async fn find_signoff_by_id(&self, id: Uuid) -> Result<Option<ControlCheckSignOff>, String>;
+    async fn find_pending_signoffs(
+        &self,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<ControlCheckSignOff>, String>;
+    async fn count_pending_signoffs(&self) -> Result<i64, String>;
 }

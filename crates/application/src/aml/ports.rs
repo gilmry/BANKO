@@ -100,3 +100,21 @@ pub trait IAssetFreezeRepository: Send + Sync {
         account_id: Uuid,
     ) -> Result<Option<AssetFreeze>, String>;
 }
+
+// --- Account Freeze Port (decouples AML from Account service) ---
+
+use banko_domain::account::Account;
+
+/// Port for managing account freezes as part of AML enforcement.
+/// Implemented by the Account service at the application layer.
+#[async_trait]
+pub trait IAccountFreezePort: Send + Sync {
+    /// Find an account by ID.
+    async fn find_account_by_id(&self, account_id: Uuid) -> Result<Option<Account>, String>;
+
+    /// Freeze an account (set status to Suspended, available_balance to 0).
+    async fn freeze_account(&self, account_id: Uuid) -> Result<Account, String>;
+
+    /// Unfreeze an account (restore status to Active, restore available_balance).
+    async fn unfreeze_account(&self, account_id: Uuid) -> Result<Account, String>;
+}

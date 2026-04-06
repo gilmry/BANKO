@@ -88,3 +88,14 @@ pub struct UpdateKycRequest {
     pub registration_number: Option<String>,
     pub sector: Option<String>,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DataExportPackage {
+    pub customer_id: String,
+    pub customer_type: String,
+    pub profile: serde_json::Value,
+    pub accounts: serde_json::Value,
+    pub transactions: serde_json::Value,
+    pub consents: serde_json::Value,
+    pub export_date: String,
+}

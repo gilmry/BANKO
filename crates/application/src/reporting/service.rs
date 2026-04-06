@@ -240,32 +240,73 @@ impl ReportingService {
 // Ifrs9ReportService (REP-07/REP-08 — GOV-08 prep)
 // ============================================================
 
-pub struct Ifrs9ReportService;
+pub struct Ifrs9ReportService {
+    ecl_provider: Arc<dyn IEclDataProvider>,
+}
 
 impl Ifrs9ReportService {
-    pub fn new() -> Self {
-        Ifrs9ReportService
+    pub fn new(ecl_provider: Arc<dyn IEclDataProvider>) -> Self {
+        Ifrs9ReportService { ecl_provider }
     }
 
-    /// Generate IFRS 9 ECL staging summary. Stub — will integrate with Credit BC.
-    pub fn generate_ifrs9_report(&self, as_of: NaiveDate) -> Ifrs9Response {
-        // Stub data — in production, query credit/accounting BCs
-        Ifrs9Response {
-            as_of,
-            stage1_count: 0,
-            stage1_ecl: 0.0,
-            stage2_count: 0,
-            stage2_ecl: 0.0,
-            stage3_count: 0,
-            stage3_ecl: 0.0,
-            total_ecl: 0.0,
+    /// Generate IFRS 9 ECL staging summary with real data aggregation (REP-08)
+    pub async fn generate_ifrs9_report(
+        &self,
+        as_of: NaiveDate,
+    ) -> Result<Ifrs9Response, ReportingServiceError> {
+        // Get ECL data from accounting/credit BC grouped by stage
+        let ecl_data = self
+            .ecl_provider
+            .get_ecl_by_stage(as_of)
+            .await
+            .map_err(ReportingServiceError::Internal)?;
+
+        let mut stage1_count = 0i64;
+        let mut stage1_ecl = 0.0f64;
+        let mut stage2_count = 0i64;
+        let mut stage2_ecl = 0.0f64;
+        let mut stage3_count = 0i64;
+        let mut stage3_ecl = 0.0f64;
+
+        // Aggregate by stage
+        for point in ecl_data {
+            match point.stage {
+                1 => {
+                    stage1_count += point.count;
+                    stage1_ecl += point.ecl_amount;
+                }
+                2 => {
+                    stage2_count += point.count;
+                    stage2_ecl += point.ecl_amount;
+                }
+                3 => {
+                    stage3_count += point.count;
+                    stage3_ecl += point.ecl_amount;
+                }
+                _ => {} // Ignore invalid stages
+            }
         }
+
+        let total_ecl = stage1_ecl + stage2_ecl + stage3_ecl;
+
+        Ok(Ifrs9Response {
+            as_of,
+            stage1_count,
+            stage1_ecl,
+            stage2_count,
+            stage2_ecl,
+            stage3_count,
+            stage3_ecl,
+            total_ecl,
+        })
     }
 }
 
 impl Default for Ifrs9ReportService {
     fn default() -> Self {
-        Self::new()
+        // Default constructor requires an ECL provider — should be injected via DI
+        // This is a fallback for tests only
+        panic!("Ifrs9ReportService requires an IEclDataProvider")
     }
 }
 

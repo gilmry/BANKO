@@ -47,3 +47,20 @@ pub trait IReportTemplateRepository: Send + Sync {
     ) -> Result<Option<ReportTemplate>, String>;
     async fn find_all(&self) -> Result<Vec<ReportTemplate>, String>;
 }
+
+// --- ECL Data Provider Port (REP-08) ---
+/// Provides ECL (Expected Credit Loss) data aggregated by IFRS 9 stage
+pub struct EclDataPoint {
+    pub stage: i32,                // 1, 2, or 3
+    pub count: i64,                // Number of loans in this stage
+    pub ecl_amount: f64,           // Expected credit loss in currency units
+}
+
+#[async_trait]
+pub trait IEclDataProvider: Send + Sync {
+    /// Get ECL data aggregated by stage as of a specific date
+    async fn get_ecl_by_stage(
+        &self,
+        as_of: NaiveDate,
+    ) -> Result<Vec<EclDataPoint>, String>;
+}

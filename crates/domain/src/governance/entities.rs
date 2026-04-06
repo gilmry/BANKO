@@ -737,6 +737,355 @@ impl ControlCheck {
 }
 
 // ============================================================
+// CommitteeMeeting (GOV-07 extended)
+// ============================================================
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum MeetingStatus {
+    Scheduled,
+    InProgress,
+    Completed,
+    Cancelled,
+}
+
+impl MeetingStatus {
+    pub fn as_str(&self) -> &str {
+        match self {
+            MeetingStatus::Scheduled => "Scheduled",
+            MeetingStatus::InProgress => "InProgress",
+            MeetingStatus::Completed => "Completed",
+            MeetingStatus::Cancelled => "Cancelled",
+        }
+    }
+
+    pub fn from_str_type(s: &str) -> Result<Self, DomainError> {
+        match s {
+            "Scheduled" => Ok(MeetingStatus::Scheduled),
+            "InProgress" => Ok(MeetingStatus::InProgress),
+            "Completed" => Ok(MeetingStatus::Completed),
+            "Cancelled" => Ok(MeetingStatus::Cancelled),
+            _ => Err(DomainError::InvalidCommittee(format!(
+                "Unknown meeting status: {s}"
+            ))),
+        }
+    }
+}
+
+impl fmt::Display for MeetingStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CommitteeMeeting {
+    id: Uuid,
+    committee_id: Uuid,
+    scheduled_date: DateTime<Utc>,
+    attendees: Vec<Uuid>,
+    agenda: Vec<String>,
+    decisions: Vec<Uuid>, // References to CommitteeDecision IDs
+    status: MeetingStatus,
+    minutes: Option<String>,
+    created_at: DateTime<Utc>,
+}
+
+impl CommitteeMeeting {
+    pub fn new(
+        committee_id: Uuid,
+        scheduled_date: DateTime<Utc>,
+        attendees: Vec<Uuid>,
+        agenda: Vec<String>,
+    ) -> Result<Self, DomainError> {
+        if attendees.is_empty() {
+            return Err(DomainError::InvalidCommittee(
+                "Meeting must have at least one attendee".to_string(),
+            ));
+        }
+        if agenda.is_empty() {
+            return Err(DomainError::InvalidCommittee(
+                "Meeting must have at least one agenda item".to_string(),
+            ));
+        }
+        Ok(CommitteeMeeting {
+            id: Uuid::new_v4(),
+            committee_id,
+            scheduled_date,
+            attendees,
+            agenda,
+            decisions: Vec::new(),
+            status: MeetingStatus::Scheduled,
+            minutes: None,
+            created_at: Utc::now(),
+        })
+    }
+
+    pub fn from_raw(
+        id: Uuid,
+        committee_id: Uuid,
+        scheduled_date: DateTime<Utc>,
+        attendees: Vec<Uuid>,
+        agenda: Vec<String>,
+        decisions: Vec<Uuid>,
+        status: MeetingStatus,
+        minutes: Option<String>,
+        created_at: DateTime<Utc>,
+    ) -> Self {
+        CommitteeMeeting {
+            id,
+            committee_id,
+            scheduled_date,
+            attendees,
+            agenda,
+            decisions,
+            status,
+            minutes,
+            created_at,
+        }
+    }
+
+    pub fn start(&mut self) -> Result<(), DomainError> {
+        if self.status != MeetingStatus::Scheduled {
+            return Err(DomainError::InvalidCommittee(
+                "Can only start a scheduled meeting".to_string(),
+            ));
+        }
+        self.status = MeetingStatus::InProgress;
+        Ok(())
+    }
+
+    pub fn record_decision(&mut self, decision_id: Uuid) -> Result<(), DomainError> {
+        if self.status != MeetingStatus::InProgress {
+            return Err(DomainError::InvalidCommittee(
+                "Can only record decisions in an in-progress meeting".to_string(),
+            ));
+        }
+        self.decisions.push(decision_id);
+        Ok(())
+    }
+
+    pub fn close(&mut self, minutes: String) -> Result<(), DomainError> {
+        if self.status != MeetingStatus::InProgress {
+            return Err(DomainError::InvalidCommittee(
+                "Can only close an in-progress meeting".to_string(),
+            ));
+        }
+        if minutes.trim().is_empty() {
+            return Err(DomainError::InvalidCommittee(
+                "Meeting minutes cannot be empty".to_string(),
+            ));
+        }
+        self.status = MeetingStatus::Completed;
+        self.minutes = Some(minutes);
+        Ok(())
+    }
+
+    pub fn cancel(&mut self) -> Result<(), DomainError> {
+        if self.status == MeetingStatus::Completed || self.status == MeetingStatus::Cancelled {
+            return Err(DomainError::InvalidCommittee(
+                "Cannot cancel a completed or already cancelled meeting".to_string(),
+            ));
+        }
+        self.status = MeetingStatus::Cancelled;
+        Ok(())
+    }
+
+    // Getters
+    pub fn id(&self) -> &Uuid {
+        &self.id
+    }
+    pub fn committee_id(&self) -> &Uuid {
+        &self.committee_id
+    }
+    pub fn scheduled_date(&self) -> &DateTime<Utc> {
+        &self.scheduled_date
+    }
+    pub fn attendees(&self) -> &[Uuid] {
+        &self.attendees
+    }
+    pub fn agenda(&self) -> &[String] {
+        &self.agenda
+    }
+    pub fn decisions(&self) -> &[Uuid] {
+        &self.decisions
+    }
+    pub fn status(&self) -> &MeetingStatus {
+        &self.status
+    }
+    pub fn minutes(&self) -> Option<&str> {
+        self.minutes.as_deref()
+    }
+    pub fn created_at(&self) -> &DateTime<Utc> {
+        &self.created_at
+    }
+}
+
+// ============================================================
+// ControlCheckSignOff (GOV-08 extended)
+// ============================================================
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum CheckResult {
+    Pass,
+    Fail,
+    PartialPass,
+    NotApplicable,
+}
+
+impl CheckResult {
+    pub fn as_str(&self) -> &str {
+        match self {
+            CheckResult::Pass => "Pass",
+            CheckResult::Fail => "Fail",
+            CheckResult::PartialPass => "PartialPass",
+            CheckResult::NotApplicable => "NotApplicable",
+        }
+    }
+
+    pub fn from_str_type(s: &str) -> Result<Self, DomainError> {
+        match s {
+            "Pass" => Ok(CheckResult::Pass),
+            "Fail" => Ok(CheckResult::Fail),
+            "PartialPass" => Ok(CheckResult::PartialPass),
+            "NotApplicable" => Ok(CheckResult::NotApplicable),
+            _ => Err(DomainError::InvalidControlCheck(format!(
+                "Unknown check result: {s}"
+            ))),
+        }
+    }
+}
+
+impl fmt::Display for CheckResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ControlCheckSignOff {
+    id: Uuid,
+    control_check_id: Uuid,
+    control_ref: String,
+    checker_id: Uuid,
+    check_date: DateTime<Utc>,
+    result: CheckResult,
+    findings: Option<String>,
+    signed_off_by: Option<Uuid>,
+    signed_off_at: Option<DateTime<Utc>>,
+    created_at: DateTime<Utc>,
+}
+
+impl ControlCheckSignOff {
+    pub fn new(
+        control_check_id: Uuid,
+        control_ref: String,
+        checker_id: Uuid,
+        result: CheckResult,
+    ) -> Result<Self, DomainError> {
+        if control_ref.trim().is_empty() {
+            return Err(DomainError::InvalidControlCheck(
+                "Control reference cannot be empty".to_string(),
+            ));
+        }
+        Ok(ControlCheckSignOff {
+            id: Uuid::new_v4(),
+            control_check_id,
+            control_ref,
+            checker_id,
+            check_date: Utc::now(),
+            result,
+            findings: None,
+            signed_off_by: None,
+            signed_off_at: None,
+            created_at: Utc::now(),
+        })
+    }
+
+    pub fn from_raw(
+        id: Uuid,
+        control_check_id: Uuid,
+        control_ref: String,
+        checker_id: Uuid,
+        check_date: DateTime<Utc>,
+        result: CheckResult,
+        findings: Option<String>,
+        signed_off_by: Option<Uuid>,
+        signed_off_at: Option<DateTime<Utc>>,
+        created_at: DateTime<Utc>,
+    ) -> Self {
+        ControlCheckSignOff {
+            id,
+            control_check_id,
+            control_ref,
+            checker_id,
+            check_date,
+            result,
+            findings,
+            signed_off_by,
+            signed_off_at,
+            created_at,
+        }
+    }
+
+    pub fn add_findings(&mut self, findings: String) -> Result<(), DomainError> {
+        if findings.trim().is_empty() {
+            return Err(DomainError::InvalidControlCheck(
+                "Findings cannot be empty".to_string(),
+            ));
+        }
+        self.findings = Some(findings);
+        Ok(())
+    }
+
+    pub fn sign_off(&mut self, signatory_id: Uuid) -> Result<(), DomainError> {
+        if self.signed_off_by.is_some() {
+            return Err(DomainError::InvalidControlCheck(
+                "Control check already signed off".to_string(),
+            ));
+        }
+        self.signed_off_by = Some(signatory_id);
+        self.signed_off_at = Some(Utc::now());
+        Ok(())
+    }
+
+    pub fn is_signed_off(&self) -> bool {
+        self.signed_off_by.is_some() && self.signed_off_at.is_some()
+    }
+
+    // Getters
+    pub fn id(&self) -> &Uuid {
+        &self.id
+    }
+    pub fn control_check_id(&self) -> &Uuid {
+        &self.control_check_id
+    }
+    pub fn control_ref(&self) -> &str {
+        &self.control_ref
+    }
+    pub fn checker_id(&self) -> &Uuid {
+        &self.checker_id
+    }
+    pub fn check_date(&self) -> &DateTime<Utc> {
+        &self.check_date
+    }
+    pub fn result(&self) -> &CheckResult {
+        &self.result
+    }
+    pub fn findings(&self) -> Option<&str> {
+        self.findings.as_deref()
+    }
+    pub fn signed_off_by(&self) -> Option<&Uuid> {
+        self.signed_off_by.as_ref()
+    }
+    pub fn signed_off_at(&self) -> Option<&DateTime<Utc>> {
+        self.signed_off_at.as_ref()
+    }
+    pub fn created_at(&self) -> &DateTime<Utc> {
+        &self.created_at
+    }
+}
+
+// ============================================================
 // Tests
 // ============================================================
 
@@ -1001,6 +1350,188 @@ mod tests {
             let s = rt.as_str();
             let parsed = ResourceType::from_str_type(s).unwrap();
             assert_eq!(rt, parsed);
+        }
+    }
+
+    #[test]
+    fn test_committee_meeting_creation() {
+        let committee_id = Uuid::new_v4();
+        let attendees = vec![Uuid::new_v4(), Uuid::new_v4()];
+        let agenda = vec!["Review compliance".to_string(), "Approve decisions".to_string()];
+        let scheduled_date = Utc::now();
+
+        let meeting = CommitteeMeeting::new(committee_id, scheduled_date, attendees.clone(), agenda.clone());
+        assert!(meeting.is_ok());
+        let m = meeting.unwrap();
+        assert_eq!(*m.committee_id(), committee_id);
+        assert_eq!(m.attendees().len(), 2);
+        assert_eq!(m.agenda().len(), 2);
+        assert_eq!(*m.status(), MeetingStatus::Scheduled);
+        assert!(m.minutes().is_none());
+    }
+
+    #[test]
+    fn test_committee_meeting_no_attendees_rejected() {
+        let result = CommitteeMeeting::new(
+            Uuid::new_v4(),
+            Utc::now(),
+            vec![],
+            vec!["Item 1".to_string()],
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_committee_meeting_no_agenda_rejected() {
+        let result = CommitteeMeeting::new(
+            Uuid::new_v4(),
+            Utc::now(),
+            vec![Uuid::new_v4()],
+            vec![],
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_committee_meeting_workflow() {
+        let committee_id = Uuid::new_v4();
+        let attendees = vec![Uuid::new_v4()];
+        let agenda = vec!["Review".to_string()];
+        let mut meeting = CommitteeMeeting::new(committee_id, Utc::now(), attendees, agenda).unwrap();
+
+        // Start meeting
+        assert!(meeting.start().is_ok());
+        assert_eq!(*meeting.status(), MeetingStatus::InProgress);
+
+        // Record a decision
+        let decision_id = Uuid::new_v4();
+        assert!(meeting.record_decision(decision_id).is_ok());
+        assert_eq!(meeting.decisions().len(), 1);
+
+        // Close meeting with minutes
+        assert!(meeting.close("Meeting concluded successfully".to_string()).is_ok());
+        assert_eq!(*meeting.status(), MeetingStatus::Completed);
+        assert_eq!(meeting.minutes().unwrap(), "Meeting concluded successfully");
+    }
+
+    #[test]
+    fn test_committee_meeting_cannot_start_twice() {
+        let mut meeting = CommitteeMeeting::new(
+            Uuid::new_v4(),
+            Utc::now(),
+            vec![Uuid::new_v4()],
+            vec!["Item".to_string()],
+        ).unwrap();
+        assert!(meeting.start().is_ok());
+        let result = meeting.start();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_committee_meeting_can_cancel_scheduled() {
+        let mut meeting = CommitteeMeeting::new(
+            Uuid::new_v4(),
+            Utc::now(),
+            vec![Uuid::new_v4()],
+            vec!["Item".to_string()],
+        ).unwrap();
+        assert!(meeting.cancel().is_ok());
+        assert_eq!(*meeting.status(), MeetingStatus::Cancelled);
+    }
+
+    #[test]
+    fn test_meeting_status_enum_roundtrip() {
+        for status in [
+            MeetingStatus::Scheduled,
+            MeetingStatus::InProgress,
+            MeetingStatus::Completed,
+            MeetingStatus::Cancelled,
+        ] {
+            let s = status.as_str();
+            let parsed = MeetingStatus::from_str_type(s).unwrap();
+            assert_eq!(status, parsed);
+        }
+    }
+
+    #[test]
+    fn test_control_check_signoff_creation() {
+        let control_check_id = Uuid::new_v4();
+        let checker_id = Uuid::new_v4();
+
+        let signoff = ControlCheckSignOff::new(
+            control_check_id,
+            "CTRL-001".to_string(),
+            checker_id,
+            CheckResult::Pass,
+        );
+        assert!(signoff.is_ok());
+        let s = signoff.unwrap();
+        assert_eq!(*s.control_check_id(), control_check_id);
+        assert_eq!(s.control_ref(), "CTRL-001");
+        assert_eq!(*s.result(), CheckResult::Pass);
+        assert!(!s.is_signed_off());
+    }
+
+    #[test]
+    fn test_control_check_signoff_add_findings() {
+        let mut signoff = ControlCheckSignOff::new(
+            Uuid::new_v4(),
+            "CTRL-002".to_string(),
+            Uuid::new_v4(),
+            CheckResult::Fail,
+        ).unwrap();
+
+        assert!(signoff.findings().is_none());
+        assert!(signoff.add_findings("Issues found in documentation".to_string()).is_ok());
+        assert_eq!(signoff.findings().unwrap(), "Issues found in documentation");
+    }
+
+    #[test]
+    fn test_control_check_signoff_workflow() {
+        let mut signoff = ControlCheckSignOff::new(
+            Uuid::new_v4(),
+            "CTRL-003".to_string(),
+            Uuid::new_v4(),
+            CheckResult::PartialPass,
+        ).unwrap();
+
+        let signatory_id = Uuid::new_v4();
+        assert!(!signoff.is_signed_off());
+
+        assert!(signoff.sign_off(signatory_id).is_ok());
+        assert!(signoff.is_signed_off());
+        assert_eq!(*signoff.signed_off_by().unwrap(), signatory_id);
+        assert!(signoff.signed_off_at().is_some());
+    }
+
+    #[test]
+    fn test_control_check_signoff_cannot_sign_twice() {
+        let mut signoff = ControlCheckSignOff::new(
+            Uuid::new_v4(),
+            "CTRL-004".to_string(),
+            Uuid::new_v4(),
+            CheckResult::Pass,
+        ).unwrap();
+
+        let signatory1 = Uuid::new_v4();
+        let signatory2 = Uuid::new_v4();
+
+        assert!(signoff.sign_off(signatory1).is_ok());
+        let result = signoff.sign_off(signatory2);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_check_result_enum_roundtrip() {
+        for result in [
+            CheckResult::Pass,
+            CheckResult::Fail,
+            CheckResult::PartialPass,
+            CheckResult::NotApplicable,
+        ] {
+            let s = result.as_str();
+            let parsed = CheckResult::from_str_type(s).unwrap();
+            assert_eq!(result, parsed);
         }
     }
 }

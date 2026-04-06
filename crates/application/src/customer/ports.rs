@@ -47,3 +47,16 @@ pub trait IDataRightsRepository: Send + Sync {
     async fn find_by_id(&self, id: &DataRequestId) -> Result<Option<DataRightsRequest>, String>;
     async fn find_by_customer(&self, customer_id: Uuid) -> Result<Vec<DataRightsRequest>, String>;
 }
+
+/// Port for accessing account data (for data portability) — implemented by account infrastructure.
+#[async_trait]
+pub trait IAccountDataProvider: Send + Sync {
+    async fn find_accounts_by_customer(
+        &self,
+        customer_id: &CustomerId,
+    ) -> Result<Vec<serde_json::Value>, String>;
+    async fn find_transactions_by_customer(
+        &self,
+        customer_id: &CustomerId,
+    ) -> Result<Vec<serde_json::Value>, String>;
+}

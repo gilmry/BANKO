@@ -1,23 +1,38 @@
 use std::sync::Arc;
 
+use chrono::Utc;
+use serde_json::json;
 use uuid::Uuid;
 
 use banko_domain::customer::{DataRequestId, DataRequestType, DataRightsRequest};
+use banko_domain::shared::CustomerId;
 
+use super::dto::DataExportPackage;
 use super::errors::CustomerServiceError;
-use super::ports::{IConsentRepository, IDataRightsRepository};
+use super::ports::{
+    IAccountDataProvider, IConsentRepository, ICustomerRepository, IDataRightsRepository,
+};
 
 pub struct DataRightsService {
     repo: Arc<dyn IDataRightsRepository>,
     consent_repo: Arc<dyn IConsentRepository>,
+    customer_repo: Arc<dyn ICustomerRepository>,
+    account_provider: Arc<dyn IAccountDataProvider>,
 }
 
 impl DataRightsService {
     pub fn new(
         repo: Arc<dyn IDataRightsRepository>,
         consent_repo: Arc<dyn IConsentRepository>,
+        customer_repo: Arc<dyn ICustomerRepository>,
+        account_provider: Arc<dyn IAccountDataProvider>,
     ) -> Self {
-        DataRightsService { repo, consent_repo }
+        DataRightsService {
+            repo,
+            consent_repo,
+            customer_repo,
+            account_provider,
+        }
     }
 
     /// Request a data export (Access right).
@@ -140,6 +155,133 @@ impl DataRightsService {
             .map_err(CustomerServiceError::Internal)?;
         Ok(request)
     }
+
+    /// Compile all customer data for export (GDPR data portability).
+    /// Collects profile, KYC, accounts, transactions, and consents into a single package.
+    pub async fn compile_customer_data_export(
+        &self,
+        customer_id: &CustomerId,
+    ) -> Result<DataExportPackage, CustomerServiceError> {
+        // Fetch customer profile
+        let customer = self
+            .customer_repo
+            .find_by_id(customer_id)
+            .await
+            .map_err(CustomerServiceError::Internal)?
+            .ok_or(CustomerServiceError::CustomerNotFound)?;
+
+        // Fetch accounts
+        let accounts = self
+            .account_provider
+            .find_accounts_by_customer(customer_id)
+            .await
+            .map_err(CustomerServiceError::Internal)?;
+
+        // Fetch transactions
+        let transactions = self
+            .account_provider
+            .find_transactions_by_customer(customer_id)
+            .await
+            .map_err(CustomerServiceError::Internal)?;
+
+        // Fetch consents
+        let consents = self
+            .consent_repo
+            .find_by_customer(customer_id.to_uuid())
+            .await
+            .map_err(CustomerServiceError::Internal)?;
+
+        let consents_json = serde_json::to_value(&consents)
+            .map_err(|e| CustomerServiceError::Internal(format!("JSON serialization error: {}", e)))?;
+
+        // Build profile JSON
+        let kyc_address = customer.kyc_profile().address();
+        let profile_json = json!({
+            "customer_id": customer.id().to_string(),
+            "customer_type": customer.customer_type().as_str(),
+            "status": customer.status().as_str(),
+            "kyc_profile": {
+                "full_name": customer.kyc_profile().full_name(),
+                "cin_or_rcs": customer.kyc_profile().cin_or_rcs(),
+                "birth_date": customer.kyc_profile().birth_date().map(|d| d.to_string()),
+                "nationality": customer.kyc_profile().nationality(),
+                "profession": customer.kyc_profile().profession(),
+                "address": {
+                    "street": kyc_address.street(),
+                    "city": kyc_address.city(),
+                    "postal_code": kyc_address.postal_code(),
+                    "country": kyc_address.country(),
+                },
+                "phone": customer.kyc_profile().phone().to_string(),
+                "email": customer.kyc_profile().email().to_string(),
+                "pep_status": customer.kyc_profile().pep_status().as_str(),
+                "source_of_funds": customer.kyc_profile().source_of_funds().as_str(),
+            },
+            "risk_score": customer.risk_score().score(),
+            "consent": customer.consent().as_str(),
+            "created_at": customer.created_at().to_rfc3339(),
+            "updated_at": customer.updated_at().to_rfc3339(),
+            "closed_at": customer.closed_at().map(|d| d.to_rfc3339()),
+        });
+
+        // Build export package
+        let export = DataExportPackage {
+            customer_id: customer.id().to_string(),
+            customer_type: customer.customer_type().as_str().to_string(),
+            profile: profile_json,
+            accounts: json!(accounts),
+            transactions: json!(transactions),
+            consents: consents_json,
+            export_date: Utc::now().to_rfc3339(),
+        };
+
+        Ok(export)
+    }
+
+    /// Anonymize customer data by replacing PII fields with placeholder text.
+    /// Keeps structural data intact for regulatory retention purposes.
+    pub async fn anonymize_customer_data(
+        &self,
+        customer_id: &CustomerId,
+    ) -> Result<serde_json::Value, CustomerServiceError> {
+        let customer = self
+            .customer_repo
+            .find_by_id(customer_id)
+            .await
+            .map_err(CustomerServiceError::Internal)?
+            .ok_or(CustomerServiceError::CustomerNotFound)?;
+
+        let anonymized = json!({
+            "customer_id": customer.id().to_string(),
+            "customer_type": customer.customer_type().as_str(),
+            "status": customer.status().as_str(),
+            "kyc_profile": {
+                "full_name": "[ANONYMIZED]",
+                "cin_or_rcs": "[ANONYMIZED]",
+                "birth_date": "[ANONYMIZED]",
+                "nationality": customer.kyc_profile().nationality(), // Keep for regulatory purposes
+                "profession": "[ANONYMIZED]",
+                "address": {
+                    "street": "[ANONYMIZED]",
+                    "city": "[ANONYMIZED]",
+                    "postal_code": "[ANONYMIZED]",
+                    "country": customer.kyc_profile().nationality(), // Keep country for regulatory
+                },
+                "phone": "[ANONYMIZED]",
+                "email": "[ANONYMIZED]",
+                "pep_status": customer.kyc_profile().pep_status().as_str(), // Keep for AML/regulatory
+                "source_of_funds": customer.kyc_profile().source_of_funds().as_str(), // Keep for regulatory
+            },
+            "risk_score": customer.risk_score().score(),
+            "consent": "[ANONYMIZED]",
+            "created_at": customer.created_at().to_rfc3339(),
+            "updated_at": customer.updated_at().to_rfc3339(),
+            "closed_at": customer.closed_at().map(|d| d.to_rfc3339()),
+            "anonymized_at": Utc::now().to_rfc3339(),
+        });
+
+        Ok(anonymized)
+    }
 }
 
 #[cfg(test)]
@@ -256,15 +398,124 @@ mod tests {
         }
     }
 
+    // --- Mock Customer Repository ---
+
+    struct MockCustomerRepository {
+        customers: Mutex<Vec<banko_domain::customer::Customer>>,
+    }
+
+    impl MockCustomerRepository {
+        fn new() -> Self {
+            MockCustomerRepository {
+                customers: Mutex::new(Vec::new()),
+            }
+        }
+    }
+
+    #[async_trait]
+    impl ICustomerRepository for MockCustomerRepository {
+        async fn save(
+            &self,
+            customer: &banko_domain::customer::Customer,
+        ) -> Result<(), String> {
+            let mut customers = self.customers.lock().unwrap();
+            customers.retain(|c| c.id() != customer.id());
+            customers.push(customer.clone());
+            Ok(())
+        }
+
+        async fn find_by_id(
+            &self,
+            id: &CustomerId,
+        ) -> Result<Option<banko_domain::customer::Customer>, String> {
+            let customers = self.customers.lock().unwrap();
+            Ok(customers.iter().find(|c| c.id() == id).cloned())
+        }
+
+        async fn find_by_email(
+            &self,
+            _email: &banko_domain::shared::value_objects::EmailAddress,
+        ) -> Result<Option<banko_domain::customer::Customer>, String> {
+            Ok(None)
+        }
+
+        async fn list_all(&self) -> Result<Vec<banko_domain::customer::Customer>, String> {
+            let customers = self.customers.lock().unwrap();
+            Ok(customers.clone())
+        }
+
+        async fn list_by_status(
+            &self,
+            _status: &str,
+        ) -> Result<Vec<banko_domain::customer::Customer>, String> {
+            Ok(Vec::new())
+        }
+
+        async fn delete(&self, id: &CustomerId) -> Result<(), String> {
+            let mut customers = self.customers.lock().unwrap();
+            customers.retain(|c| c.id() != id);
+            Ok(())
+        }
+
+        async fn find_closed_before(
+            &self,
+            _before: chrono::DateTime<Utc>,
+        ) -> Result<Vec<banko_domain::customer::Customer>, String> {
+            Ok(Vec::new())
+        }
+    }
+
+    // --- Mock Account Data Provider ---
+
+    struct MockAccountDataProvider {
+        accounts: Mutex<Vec<serde_json::Value>>,
+        transactions: Mutex<Vec<serde_json::Value>>,
+    }
+
+    impl MockAccountDataProvider {
+        fn new() -> Self {
+            MockAccountDataProvider {
+                accounts: Mutex::new(Vec::new()),
+                transactions: Mutex::new(Vec::new()),
+            }
+        }
+    }
+
+    #[async_trait]
+    impl IAccountDataProvider for MockAccountDataProvider {
+        async fn find_accounts_by_customer(
+            &self,
+            _customer_id: &CustomerId,
+        ) -> Result<Vec<serde_json::Value>, String> {
+            let accounts = self.accounts.lock().unwrap();
+            Ok(accounts.clone())
+        }
+
+        async fn find_transactions_by_customer(
+            &self,
+            _customer_id: &CustomerId,
+        ) -> Result<Vec<serde_json::Value>, String> {
+            let transactions = self.transactions.lock().unwrap();
+            Ok(transactions.clone())
+        }
+    }
+
     fn make_service() -> DataRightsService {
         DataRightsService::new(
             Arc::new(MockDataRightsRepository::new()),
             Arc::new(MockConsentRepository::new()),
+            Arc::new(MockCustomerRepository::new()),
+            Arc::new(MockAccountDataProvider::new()),
         )
     }
 
     fn make_service_with_consent(consent_repo: Arc<dyn IConsentRepository>) -> DataRightsService {
-        DataRightsService::new(Arc::new(MockDataRightsRepository::new()), consent_repo)
+        DataRightsService::new(
+            Arc::new(MockDataRightsRepository::new()),
+            consent_repo,
+            Arc::new(MockCustomerRepository::new()),
+            Arc::new(MockAccountDataProvider::new()),
+        )
     }
 
     #[tokio::test]

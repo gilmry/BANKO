@@ -287,6 +287,76 @@ impl RatioCalculationService {
 
         Ok(BreachAlertListResponse { data, total })
     }
+
+    /// Batch check all concentrations and return violations (PRU-08)
+    pub async fn check_all_concentrations(
+        &self,
+        institution_id: Uuid,
+    ) -> Result<Vec<ConcentrationCheckResponse>, PrudentialServiceError> {
+        let ratio = self
+            .ratio_repo
+            .find_latest(institution_id)
+            .await
+            .map_err(PrudentialServiceError::Internal)?
+            .ok_or(PrudentialServiceError::RatioNotFound)?;
+
+        let mut violations = Vec::new();
+        let fpn = ratio.fonds_propres_nets();
+
+        // Iterate all beneficiaries and check concentration for each
+        for exposure in ratio.exposures() {
+            let beneficiary_id = exposure.beneficiary_id();
+            let total_exposure: i64 = ratio
+                .exposures()
+                .iter()
+                .filter(|e| e.beneficiary_id() == beneficiary_id)
+                .map(|e| e.amount())
+                .sum();
+
+            let concentration = if fpn > 0 {
+                (total_exposure as f64 / fpn as f64) * 100.0
+            } else {
+                0.0
+            };
+
+            // Check if concentration exceeds limit (25%)
+            if concentration > CONCENTRATION_MAXIMUM {
+                violations.push(ConcentrationCheckResponse {
+                    beneficiary_id: beneficiary_id.to_string(),
+                    ratio: concentration,
+                    maximum: CONCENTRATION_MAXIMUM,
+                    compliant: false,
+                    status: "Breach".into(),
+                });
+            }
+        }
+
+        Ok(violations)
+    }
+
+    /// Create regulatory alert when concentration ratio exceeds threshold (PRU-08)
+    pub async fn alert_concentration_breach(
+        &self,
+        institution_id: Uuid,
+        beneficiary_id: Uuid,
+        ratio: f64,
+    ) -> Result<(), PrudentialServiceError> {
+        let alert = BreachAlert::new(
+            InstitutionId::from_uuid(institution_id),
+            "Concentration".into(),
+            ratio,
+            CONCENTRATION_MAXIMUM,
+            "High".into(),
+        )
+        .map_err(|e| PrudentialServiceError::DomainError(e.to_string()))?;
+
+        self.alert_repo
+            .save(&alert)
+            .await
+            .map_err(PrudentialServiceError::Internal)?;
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]

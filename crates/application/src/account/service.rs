@@ -292,6 +292,78 @@ impl AccountService {
             created_at: movement.created_at(),
         }
     }
+
+    /// Export statement as CSV format.
+    /// Returns a CSV string with header and one row per movement, plus opening/closing balance rows.
+    /// Format: "Date,Type,Description,Debit,Credit,Balance"
+    pub async fn export_statement_csv(
+        &self,
+        account_id: &AccountId,
+        from: Option<DateTime<Utc>>,
+        to: Option<DateTime<Utc>>,
+    ) -> Result<String, AccountServiceError> {
+        let statement = self.get_statement(account_id, from, to).await?;
+
+        let mut csv = String::from("Date,Type,Description,Debit,Credit,Balance\n");
+
+        // Opening balance row
+        csv.push_str(&format!(
+            "{},{},{},{},{:.2},{:.2}\n",
+            from.map(|d| d.to_rfc3339())
+                .unwrap_or_else(|| "Start".to_string()),
+            "Opening",
+            "Opening Balance",
+            "",
+            "",
+            statement.opening_balance
+        ));
+
+        // Movement rows
+        for movement in &statement.movements {
+            let (debit, credit) = if movement.movement_type == "Withdrawal" {
+                (format!("{:.2}", movement.amount), String::new())
+            } else {
+                (String::new(), format!("{:.2}", movement.amount))
+            };
+
+            csv.push_str(&format!(
+                "{},{},{},{},{},{:.2}\n",
+                movement.created_at.to_rfc3339(),
+                movement.movement_type,
+                movement.description,
+                debit,
+                credit,
+                movement.balance_after
+            ));
+        }
+
+        // Closing balance row
+        csv.push_str(&format!(
+            "{},{},{},{},{:.2},{:.2}\n",
+            to.map(|d| d.to_rfc3339())
+                .unwrap_or_else(|| "End".to_string()),
+            "Closing",
+            "Closing Balance",
+            "",
+            "",
+            statement.closing_balance
+        ));
+
+        Ok(csv)
+    }
+
+    /// Export statement as JSON format.
+    /// Returns the complete statement serialized as a JSON string.
+    pub async fn export_statement_json(
+        &self,
+        account_id: &AccountId,
+        from: Option<DateTime<Utc>>,
+        to: Option<DateTime<Utc>>,
+    ) -> Result<String, AccountServiceError> {
+        let statement = self.get_statement(account_id, from, to).await?;
+        serde_json::to_string(&statement)
+            .map_err(|e| AccountServiceError::Internal(format!("JSON serialization error: {}", e)))
+    }
 }
 
 #[cfg(test)]
@@ -665,5 +737,67 @@ mod tests {
 
         let movements = service.list_movements(account.id(), 10).await.unwrap();
         assert_eq!(movements.len(), 2);
+    }
+
+    // --- CSV Export ---
+
+    #[tokio::test]
+    async fn test_export_statement_csv() {
+        let service = make_service(true);
+        let account = service
+            .open_account(CustomerId::new(), AccountType::Current)
+            .await
+            .unwrap();
+        service
+            .deposit(account.id(), tnd(1000.0), "Deposit 1")
+            .await
+            .unwrap();
+        service
+            .withdraw(account.id(), tnd(200.0), "Withdrawal 1")
+            .await
+            .unwrap();
+
+        let csv = service
+            .export_statement_csv(account.id(), None, None)
+            .await
+            .unwrap();
+
+        assert!(csv.contains("Date,Type,Description,Debit,Credit,Balance"));
+        assert!(csv.contains("Opening"));
+        assert!(csv.contains("Closing"));
+        assert!(csv.contains("Deposit 1"));
+        assert!(csv.contains("Withdrawal 1"));
+        assert!(csv.contains("1000.00"));
+        assert!(csv.contains("200.00"));
+    }
+
+    // --- JSON Export ---
+
+    #[tokio::test]
+    async fn test_export_statement_json() {
+        let service = make_service(true);
+        let account = service
+            .open_account(CustomerId::new(), AccountType::Current)
+            .await
+            .unwrap();
+        service
+            .deposit(account.id(), tnd(500.0), "Deposit")
+            .await
+            .unwrap();
+
+        let json = service
+            .export_statement_json(account.id(), None, None)
+            .await
+            .unwrap();
+
+        assert!(json.contains("account_id"));
+        assert!(json.contains("opening_balance"));
+        assert!(json.contains("closing_balance"));
+        assert!(json.contains("movements"));
+
+        // Parse JSON to verify it's valid
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert!(parsed["account_id"].is_string());
+        assert!(parsed["movements"].is_array());
     }
 }

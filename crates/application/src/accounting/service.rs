@@ -7,7 +7,7 @@ use banko_domain::accounting::*;
 
 use super::dto::*;
 use super::errors::AccountingServiceError;
-use super::ports::{IJournalRepository, ILedgerRepository, IPeriodRepository};
+use super::ports::{IEclRepository, IJournalRepository, ILedgerRepository, IPeriodRepository};
 
 // --- AccountingService (STORY-ACC-02) ---
 
@@ -412,14 +412,83 @@ impl PeriodService {
 
 // --- EclService (STORY-ACC-08) ---
 
-pub struct EclService;
+pub struct EclService {
+    ecl_repo: Arc<dyn IEclRepository>,
+}
 
 impl EclService {
-    pub fn new() -> Self {
-        EclService
+    pub fn new(ecl_repo: Arc<dyn IEclRepository>) -> Self {
+        EclService { ecl_repo }
     }
 
-    /// Classify a loan into ECL stages based on days past due
+    /// Map asset class (0-4) to ECL stage per IFRS 9
+    /// Class 0 → Stage1 (12-month ECL)
+    /// Class 1 → Stage2 (Lifetime ECL, significant increase in credit risk)
+    /// Class 2-3 → Stage3 (Credit-impaired)
+    /// Class 4 → Stage3 (Write-off)
+    pub fn stage_from_asset_class(asset_class: u8) -> Result<EclStage, AccountingServiceError> {
+        match asset_class {
+            0 => Ok(EclStage::Stage1),
+            1 => Ok(EclStage::Stage2),
+            2 | 3 => Ok(EclStage::Stage3),
+            4 => Ok(EclStage::Stage3),
+            _ => Err(AccountingServiceError::InvalidEntry(format!(
+                "Invalid asset class: {}. Must be 0-4",
+                asset_class
+            ))),
+        }
+    }
+
+    /// Calculate ECL for a single loan based on asset class
+    /// - Stage1: PD=1%, LGD=45%
+    /// - Stage2: PD=5%, LGD=45%
+    /// - Stage3: PD=100%, LGD=45%
+    pub async fn calculate_ecl_for_loan(
+        &self,
+        loan_id: Uuid,
+        asset_class: u8,
+        exposure_amount: i64,
+    ) -> Result<ExpectedCreditLoss, AccountingServiceError> {
+        let stage = Self::stage_from_asset_class(asset_class)?;
+
+        if exposure_amount <= 0 {
+            return Err(AccountingServiceError::InvalidEntry(
+                "Exposure amount must be positive".into(),
+            ));
+        }
+
+        let (pd, lgd) = match stage {
+            EclStage::Stage1 => (0.01, 0.45),
+            EclStage::Stage2 => (0.05, 0.45),
+            EclStage::Stage3 => (1.00, 0.45),
+        };
+
+        let ecl = ExpectedCreditLoss::new(loan_id, stage, pd, lgd, exposure_amount);
+
+        // Persist the ECL calculation
+        self.ecl_repo
+            .save(&ecl)
+            .await
+            .map_err(AccountingServiceError::Internal)?;
+
+        Ok(ecl)
+    }
+
+    /// Batch calculate ECL for all loans (integration point with Credit BC)
+    /// This processes all loans and returns their ECL calculations
+    pub async fn batch_calculate_all_ecl(
+        &self,
+    ) -> Result<Vec<ExpectedCreditLoss>, AccountingServiceError> {
+        let ecl_list = self
+            .ecl_repo
+            .find_all(0, 1_000_000) // Large limit to fetch all
+            .await
+            .map_err(AccountingServiceError::Internal)?;
+
+        Ok(ecl_list)
+    }
+
+    /// Classify a loan into ECL stages based on days past due (legacy method)
     pub fn classify_stage(days_past_due: i64) -> EclStage {
         if days_past_due <= 30 {
             EclStage::Stage1
@@ -430,7 +499,7 @@ impl EclService {
         }
     }
 
-    /// Calculate ECL for a loan
+    /// Calculate ECL for a loan based on days past due (legacy method)
     pub fn calculate_ecl(
         loan_id: Uuid,
         days_past_due: i64,
@@ -443,12 +512,6 @@ impl EclService {
             EclStage::Stage3 => (0.50, 0.70),
         };
         ExpectedCreditLoss::new(loan_id, stage, pd, lgd, exposure_at_default)
-    }
-}
-
-impl Default for EclService {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -575,6 +638,49 @@ mod tests {
         }
         async fn find_closed_periods(&self) -> Result<Vec<String>, String> {
             Ok(self.closed.lock().unwrap().clone())
+        }
+    }
+
+    struct MockEclRepository {
+        ecls: Mutex<Vec<ExpectedCreditLoss>>,
+    }
+
+    impl MockEclRepository {
+        fn new() -> Self {
+            MockEclRepository {
+                ecls: Mutex::new(Vec::new()),
+            }
+        }
+    }
+
+    #[async_trait]
+    impl IEclRepository for MockEclRepository {
+        async fn save(&self, ecl: &ExpectedCreditLoss) -> Result<(), String> {
+            let mut ecls = self.ecls.lock().unwrap();
+            ecls.retain(|e| e.loan_id() != ecl.loan_id());
+            ecls.push(ecl.clone());
+            Ok(())
+        }
+        async fn find_by_loan_id(&self, loan_id: Uuid) -> Result<Option<ExpectedCreditLoss>, String> {
+            Ok(self
+                .ecls
+                .lock()
+                .unwrap()
+                .iter()
+                .find(|e| e.loan_id() == loan_id)
+                .cloned())
+        }
+        async fn find_all(&self, offset: i64, limit: i64) -> Result<Vec<ExpectedCreditLoss>, String> {
+            let ecls = self.ecls.lock().unwrap();
+            Ok(ecls
+                .iter()
+                .skip(offset as usize)
+                .take(limit as usize)
+                .cloned()
+                .collect())
+        }
+        async fn count_all(&self) -> Result<i64, String> {
+            Ok(self.ecls.lock().unwrap().len() as i64)
         }
     }
 
@@ -744,5 +850,136 @@ mod tests {
         let ecl = EclService::calculate_ecl(Uuid::new_v4(), 15, 1_000_000);
         assert_eq!(ecl.stage(), EclStage::Stage1);
         assert_eq!(ecl.ecl_amount(), 9000); // 0.02 * 0.45 * 1M = 9000
+    }
+
+    #[test]
+    fn test_stage_from_asset_class_stage1() {
+        assert_eq!(
+            EclService::stage_from_asset_class(0).unwrap(),
+            EclStage::Stage1
+        );
+    }
+
+    #[test]
+    fn test_stage_from_asset_class_stage2() {
+        assert_eq!(
+            EclService::stage_from_asset_class(1).unwrap(),
+            EclStage::Stage2
+        );
+    }
+
+    #[test]
+    fn test_stage_from_asset_class_stage3() {
+        assert_eq!(
+            EclService::stage_from_asset_class(2).unwrap(),
+            EclStage::Stage3
+        );
+        assert_eq!(
+            EclService::stage_from_asset_class(3).unwrap(),
+            EclStage::Stage3
+        );
+        assert_eq!(
+            EclService::stage_from_asset_class(4).unwrap(),
+            EclStage::Stage3
+        );
+    }
+
+    #[test]
+    fn test_stage_from_asset_class_invalid() {
+        assert!(EclService::stage_from_asset_class(5).is_err());
+        assert!(EclService::stage_from_asset_class(255).is_err());
+    }
+
+    #[tokio::test]
+    async fn test_calculate_ecl_for_loan_stage1() {
+        let repo = Arc::new(MockEclRepository::new());
+        let service = EclService::new(repo.clone());
+        let loan_id = Uuid::new_v4();
+
+        let ecl = service
+            .calculate_ecl_for_loan(loan_id, 0, 1_000_000)
+            .await
+            .unwrap();
+
+        assert_eq!(ecl.stage(), EclStage::Stage1);
+        assert_eq!(ecl.probability_of_default(), 0.01);
+        assert_eq!(ecl.loss_given_default(), 0.45);
+        // ECL = 0.01 * 0.45 * 1_000_000 = 4500
+        assert_eq!(ecl.ecl_amount(), 4500);
+    }
+
+    #[tokio::test]
+    async fn test_calculate_ecl_for_loan_stage2() {
+        let repo = Arc::new(MockEclRepository::new());
+        let service = EclService::new(repo.clone());
+        let loan_id = Uuid::new_v4();
+
+        let ecl = service
+            .calculate_ecl_for_loan(loan_id, 1, 1_000_000)
+            .await
+            .unwrap();
+
+        assert_eq!(ecl.stage(), EclStage::Stage2);
+        assert_eq!(ecl.probability_of_default(), 0.05);
+        assert_eq!(ecl.loss_given_default(), 0.45);
+        // ECL = 0.05 * 0.45 * 1_000_000 = 22500
+        assert_eq!(ecl.ecl_amount(), 22500);
+    }
+
+    #[tokio::test]
+    async fn test_calculate_ecl_for_loan_stage3() {
+        let repo = Arc::new(MockEclRepository::new());
+        let service = EclService::new(repo.clone());
+        let loan_id = Uuid::new_v4();
+
+        let ecl = service
+            .calculate_ecl_for_loan(loan_id, 3, 1_000_000)
+            .await
+            .unwrap();
+
+        assert_eq!(ecl.stage(), EclStage::Stage3);
+        assert_eq!(ecl.probability_of_default(), 1.00);
+        assert_eq!(ecl.loss_given_default(), 0.45);
+        // ECL = 1.00 * 0.45 * 1_000_000 = 450000
+        assert_eq!(ecl.ecl_amount(), 450000);
+    }
+
+    #[tokio::test]
+    async fn test_calculate_ecl_for_loan_zero_exposure() {
+        let repo = Arc::new(MockEclRepository::new());
+        let service = EclService::new(repo.clone());
+        let loan_id = Uuid::new_v4();
+
+        let result = service
+            .calculate_ecl_for_loan(loan_id, 0, 0)
+            .await;
+
+        assert!(matches!(result, Err(AccountingServiceError::InvalidEntry(_))));
+    }
+
+    #[tokio::test]
+    async fn test_batch_calculate_all_ecl() {
+        let repo = Arc::new(MockEclRepository::new());
+        let service = EclService::new(repo.clone());
+
+        // Create some ECL records
+        let loan1 = Uuid::new_v4();
+        let loan2 = Uuid::new_v4();
+
+        service
+            .calculate_ecl_for_loan(loan1, 0, 500_000)
+            .await
+            .unwrap();
+        service
+            .calculate_ecl_for_loan(loan2, 2, 750_000)
+            .await
+            .unwrap();
+
+        // Batch retrieve all
+        let all_ecls = service.batch_calculate_all_ecl().await.unwrap();
+
+        assert_eq!(all_ecls.len(), 2);
+        assert!(all_ecls.iter().any(|e| e.loan_id() == loan1));
+        assert!(all_ecls.iter().any(|e| e.loan_id() == loan2));
     }
 }

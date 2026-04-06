@@ -1,8 +1,10 @@
 use async_trait::async_trait;
+use chrono::NaiveDate;
 use uuid::Uuid;
 
 use banko_domain::payment::{
     OrderId, PaymentOrder, PaymentStatus, SwiftMessage, Transfer, TransferId,
+    StandingOrder, DirectDebitMandate, DebitExecution,
 };
 
 // --- Payment Order Repository ---
@@ -53,4 +55,86 @@ pub trait ISanctionsScreener: Send + Sync {
         name: &str,
         bic: Option<&str>,
     ) -> Result<ScreeningResult, String>;
+}
+
+// --- Concrete Sanctions Screener Adapter ---
+/// Adapter that implements ISanctionsScreener by delegating to Sanctions BC
+pub struct SanctionsScreenerAdapter {
+    // In production, this would hold references to the Sanctions BC client/service
+    // For now, we provide a basic implementation
+}
+
+impl SanctionsScreenerAdapter {
+    pub fn new() -> Self {
+        SanctionsScreenerAdapter {}
+    }
+
+    /// Match beneficiary against sanctions lists from Sanctions BC
+    fn match_sanctions_list(&self, name: &str, _bic: Option<&str>) -> Option<String> {
+        // Placeholder: In production, this would call the Sanctions BC matching logic
+        // Simplified implementation: check for known patterns
+        let name_lower = name.to_lowercase();
+
+        // Example: Match against known sanctioned entity patterns
+        if name_lower.contains("terrorist") || name_lower.contains("sanctioned") {
+            Some("UN sanctions list match".to_string())
+        } else {
+            None
+        }
+    }
+}
+
+impl Default for SanctionsScreenerAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait]
+impl ISanctionsScreener for SanctionsScreenerAdapter {
+    async fn screen_beneficiary(
+        &self,
+        name: &str,
+        bic: Option<&str>,
+    ) -> Result<ScreeningResult, String> {
+        // Call the matching logic
+        let match_details = self.match_sanctions_list(name, bic);
+
+        Ok(ScreeningResult {
+            is_hit: match_details.is_some(),
+            match_details,
+        })
+    }
+}
+
+// --- Standing Order Repository (STORY-RECUR-01) ---
+
+#[async_trait]
+pub trait IStandingOrderRepository: Send + Sync {
+    async fn save(&self, order: &StandingOrder) -> Result<(), String>;
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<StandingOrder>, String>;
+    async fn find_due_today(&self, today: NaiveDate) -> Result<Vec<StandingOrder>, String>;
+    async fn find_by_account(&self, account_id: Uuid) -> Result<Vec<StandingOrder>, String>;
+    async fn update(&self, order: &StandingOrder) -> Result<(), String>;
+    async fn list_active(&self) -> Result<Vec<StandingOrder>, String>;
+}
+
+// --- Direct Debit Mandate Repository (STORY-RECUR-02) ---
+
+#[async_trait]
+pub trait IMandateRepository: Send + Sync {
+    async fn save(&self, mandate: &DirectDebitMandate) -> Result<(), String>;
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<DirectDebitMandate>, String>;
+    async fn find_by_debtor(&self, account_id: Uuid) -> Result<Vec<DirectDebitMandate>, String>;
+    async fn find_active_by_creditor(&self, creditor_id: &str) -> Result<Vec<DirectDebitMandate>, String>;
+    async fn update(&self, mandate: &DirectDebitMandate) -> Result<(), String>;
+}
+
+// --- Debit Execution Repository (STORY-RECUR-02) ---
+
+#[async_trait]
+pub trait IDebitExecutionRepository: Send + Sync {
+    async fn save(&self, execution: &DebitExecution) -> Result<(), String>;
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<DebitExecution>, String>;
+    async fn find_by_mandate(&self, mandate_id: Uuid) -> Result<Vec<DebitExecution>, String>;
 }
