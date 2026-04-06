@@ -138,3 +138,32 @@ pub trait IDebitExecutionRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DebitExecution>, String>;
     async fn find_by_mandate(&self, mandate_id: Uuid) -> Result<Vec<DebitExecution>, String>;
 }
+
+// --- Card Repository (STORY-CARD-01 through CARD-06) ---
+
+use banko_domain::payment::{Card, CardTransaction};
+
+#[async_trait]
+pub trait ICardRepository: Send + Sync {
+    async fn save(&self, card: &Card) -> Result<(), String>;
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Card>, String>;
+    async fn find_by_account(&self, account_id: Uuid) -> Result<Vec<Card>, String>;
+    async fn find_by_customer(&self, customer_id: Uuid) -> Result<Vec<Card>, String>;
+    async fn update(&self, card: &Card) -> Result<(), String>;
+    async fn list_active(&self) -> Result<Vec<Card>, String>;
+}
+
+// --- Card Transaction Repository (STORY-CARD-01 through CARD-06) ---
+
+#[async_trait]
+pub trait ICardTransactionRepository: Send + Sync {
+    async fn save(&self, transaction: &CardTransaction) -> Result<(), String>;
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<CardTransaction>, String>;
+    async fn find_by_card(&self, card_id: Uuid) -> Result<Vec<CardTransaction>, String>;
+    async fn find_by_card_and_period(
+        &self,
+        card_id: Uuid,
+        from: chrono::NaiveDate,
+        to: chrono::NaiveDate,
+    ) -> Result<Vec<CardTransaction>, String>;
+}

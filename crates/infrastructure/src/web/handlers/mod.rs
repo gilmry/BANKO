@@ -10,6 +10,7 @@ pub mod fx_handlers;
 pub mod governance_handlers;
 pub mod notification_handlers;
 pub mod payment_handlers;
+pub mod cheque_handlers;
 pub mod product_handlers;
 pub mod profile_handlers;
 pub mod prudential_handlers;

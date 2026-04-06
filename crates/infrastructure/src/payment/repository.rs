@@ -445,3 +445,359 @@ impl SwiftMessageRow {
         ))
     }
 }
+
+// ============================================================
+// PostgreSQL Card Repository (STORY-CARD-01 through CARD-06)
+// ============================================================
+
+use banko_application::payment::{ICardRepository, ICardTransactionRepository};
+use chrono::NaiveDate;
+use rust_decimal::Decimal;
+
+pub struct PgCardRepository {
+    pool: PgPool,
+}
+
+impl PgCardRepository {
+    pub fn new(pool: PgPool) -> Self {
+        PgCardRepository { pool }
+    }
+}
+
+#[async_trait]
+impl ICardRepository for PgCardRepository {
+    async fn save(&self, card: &Card) -> Result<(), String> {
+        sqlx::query(
+            r#"
+            INSERT INTO cards (
+                id, account_id, customer_id, card_type, network,
+                pan_hash, masked_pan, cvv_hash, expiry_month, expiry_year,
+                status, activation_code_hash, daily_limit, monthly_limit,
+                daily_spent, monthly_spent, is_contactless_enabled,
+                created_at, activated_at, cancelled_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+            ON CONFLICT (id) DO UPDATE SET
+                status = EXCLUDED.status,
+                activation_code_hash = EXCLUDED.activation_code_hash,
+                daily_limit = EXCLUDED.daily_limit,
+                monthly_limit = EXCLUDED.monthly_limit,
+                daily_spent = EXCLUDED.daily_spent,
+                monthly_spent = EXCLUDED.monthly_spent,
+                is_contactless_enabled = EXCLUDED.is_contactless_enabled,
+                activated_at = EXCLUDED.activated_at,
+                cancelled_at = EXCLUDED.cancelled_at
+            "#,
+        )
+        .bind(card.id())
+        .bind(card.account_id())
+        .bind(card.customer_id())
+        .bind(card.card_type().as_str())
+        .bind(card.network().as_str())
+        .bind(card.pan_hash())
+        .bind(card.masked_pan())
+        .bind("") // cvv_hash (placeholder)
+        .bind(card.expiry_month() as i16)
+        .bind(card.expiry_year() as i16)
+        .bind(card.status().as_str())
+        .bind::<Option<String>>(None) // activation_code_hash
+        .bind(card.daily_limit())
+        .bind(card.monthly_limit())
+        .bind(card.daily_spent())
+        .bind(card.monthly_spent())
+        .bind(card.is_contactless_enabled())
+        .bind(card.created_at())
+        .bind(card.activated_at())
+        .bind(card.cancelled_at())
+        .execute(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        Ok(())
+    }
+
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Card>, String> {
+        let row = sqlx::query_as::<_, CardRow>(
+            r#"
+            SELECT id, account_id, customer_id, card_type, network,
+                   pan_hash, masked_pan, cvv_hash, expiry_month, expiry_year,
+                   status, activation_code_hash, daily_limit, monthly_limit,
+                   daily_spent, monthly_spent, is_contactless_enabled,
+                   created_at, activated_at, cancelled_at
+            FROM cards
+            WHERE id = $1
+            "#,
+        )
+        .bind(id)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        match row {
+            Some(r) => Ok(Some(r.into_domain()?)),
+            None => Ok(None),
+        }
+    }
+
+    async fn find_by_account(&self, account_id: Uuid) -> Result<Vec<Card>, String> {
+        let rows = sqlx::query_as::<_, CardRow>(
+            r#"
+            SELECT id, account_id, customer_id, card_type, network,
+                   pan_hash, masked_pan, cvv_hash, expiry_month, expiry_year,
+                   status, activation_code_hash, daily_limit, monthly_limit,
+                   daily_spent, monthly_spent, is_contactless_enabled,
+                   created_at, activated_at, cancelled_at
+            FROM cards
+            WHERE account_id = $1
+            "#,
+        )
+        .bind(account_id)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        rows.into_iter().map(|r| r.into_domain()).collect()
+    }
+
+    async fn find_by_customer(&self, customer_id: Uuid) -> Result<Vec<Card>, String> {
+        let rows = sqlx::query_as::<_, CardRow>(
+            r#"
+            SELECT id, account_id, customer_id, card_type, network,
+                   pan_hash, masked_pan, cvv_hash, expiry_month, expiry_year,
+                   status, activation_code_hash, daily_limit, monthly_limit,
+                   daily_spent, monthly_spent, is_contactless_enabled,
+                   created_at, activated_at, cancelled_at
+            FROM cards
+            WHERE customer_id = $1
+            "#,
+        )
+        .bind(customer_id)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        rows.into_iter().map(|r| r.into_domain()).collect()
+    }
+
+    async fn update(&self, card: &Card) -> Result<(), String> {
+        self.save(card).await
+    }
+
+    async fn list_active(&self) -> Result<Vec<Card>, String> {
+        let rows = sqlx::query_as::<_, CardRow>(
+            r#"
+            SELECT id, account_id, customer_id, card_type, network,
+                   pan_hash, masked_pan, cvv_hash, expiry_month, expiry_year,
+                   status, activation_code_hash, daily_limit, monthly_limit,
+                   daily_spent, monthly_spent, is_contactless_enabled,
+                   created_at, activated_at, cancelled_at
+            FROM cards
+            WHERE status = 'Active'
+            "#,
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        rows.into_iter().map(|r| r.into_domain()).collect()
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct CardRow {
+    id: Uuid,
+    account_id: Uuid,
+    customer_id: Uuid,
+    card_type: String,
+    network: String,
+    pan_hash: String,
+    masked_pan: String,
+    cvv_hash: String,
+    expiry_month: i16,
+    expiry_year: i16,
+    status: String,
+    activation_code_hash: Option<String>,
+    daily_limit: Decimal,
+    monthly_limit: Decimal,
+    daily_spent: Decimal,
+    monthly_spent: Decimal,
+    is_contactless_enabled: bool,
+    created_at: chrono::DateTime<chrono::Utc>,
+    activated_at: Option<chrono::DateTime<chrono::Utc>>,
+    cancelled_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+impl CardRow {
+    fn into_domain(self) -> Result<Card, String> {
+        let card_type = CardType::from_str_type(&self.card_type).map_err(|e| e.to_string())?;
+        let network = CardNetwork::from_str_type(&self.network).map_err(|e| e.to_string())?;
+        let status = CardStatus::from_str_type(&self.status).map_err(|e| e.to_string())?;
+
+        Ok(Card::from_raw(
+            self.id,
+            self.account_id,
+            self.customer_id,
+            card_type,
+            network,
+            self.pan_hash,
+            self.masked_pan,
+            self.cvv_hash,
+            self.expiry_month as u8,
+            self.expiry_year as u16,
+            status,
+            self.activation_code_hash,
+            self.daily_limit,
+            self.monthly_limit,
+            self.daily_spent,
+            self.monthly_spent,
+            self.is_contactless_enabled,
+            self.created_at,
+            self.activated_at,
+            self.cancelled_at,
+        ))
+    }
+}
+
+// ============================================================
+// PostgreSQL Card Transaction Repository
+// ============================================================
+
+pub struct PgCardTransactionRepository {
+    pool: PgPool,
+}
+
+impl PgCardTransactionRepository {
+    pub fn new(pool: PgPool) -> Self {
+        PgCardTransactionRepository { pool }
+    }
+}
+
+#[async_trait]
+impl ICardTransactionRepository for PgCardTransactionRepository {
+    async fn save(&self, transaction: &CardTransaction) -> Result<(), String> {
+        sqlx::query(
+            r#"
+            INSERT INTO card_transactions (
+                id, card_id, amount, currency, merchant_name, mcc_code,
+                status, auth_code, timestamp, is_contactless, is_online
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            "#,
+        )
+        .bind(transaction.id())
+        .bind(transaction.card_id())
+        .bind(transaction.amount())
+        .bind(transaction.currency())
+        .bind(transaction.merchant_name())
+        .bind(transaction.mcc_code())
+        .bind(transaction.status().as_str())
+        .bind(transaction.auth_code())
+        .bind(transaction.timestamp())
+        .bind(transaction.is_contactless())
+        .bind(transaction.is_online())
+        .execute(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        Ok(())
+    }
+
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<CardTransaction>, String> {
+        let row = sqlx::query_as::<_, CardTransactionRow>(
+            r#"
+            SELECT id, card_id, amount, currency, merchant_name, mcc_code,
+                   status, auth_code, timestamp, is_contactless, is_online
+            FROM card_transactions
+            WHERE id = $1
+            "#,
+        )
+        .bind(id)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        match row {
+            Some(r) => Ok(Some(r.into_domain()?)),
+            None => Ok(None),
+        }
+    }
+
+    async fn find_by_card(&self, card_id: Uuid) -> Result<Vec<CardTransaction>, String> {
+        let rows = sqlx::query_as::<_, CardTransactionRow>(
+            r#"
+            SELECT id, card_id, amount, currency, merchant_name, mcc_code,
+                   status, auth_code, timestamp, is_contactless, is_online
+            FROM card_transactions
+            WHERE card_id = $1
+            ORDER BY timestamp DESC
+            "#,
+        )
+        .bind(card_id)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        rows.into_iter().map(|r| r.into_domain()).collect()
+    }
+
+    async fn find_by_card_and_period(
+        &self,
+        card_id: Uuid,
+        from: NaiveDate,
+        to: NaiveDate,
+    ) -> Result<Vec<CardTransaction>, String> {
+        let rows = sqlx::query_as::<_, CardTransactionRow>(
+            r#"
+            SELECT id, card_id, amount, currency, merchant_name, mcc_code,
+                   status, auth_code, timestamp, is_contactless, is_online
+            FROM card_transactions
+            WHERE card_id = $1
+            AND DATE(timestamp) >= $2
+            AND DATE(timestamp) <= $3
+            ORDER BY timestamp DESC
+            "#,
+        )
+        .bind(card_id)
+        .bind(from)
+        .bind(to)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        rows.into_iter().map(|r| r.into_domain()).collect()
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct CardTransactionRow {
+    id: Uuid,
+    card_id: Uuid,
+    amount: Decimal,
+    currency: String,
+    merchant_name: String,
+    mcc_code: String,
+    status: String,
+    auth_code: String,
+    timestamp: chrono::DateTime<chrono::Utc>,
+    is_contactless: bool,
+    is_online: bool,
+}
+
+impl CardTransactionRow {
+    fn into_domain(self) -> Result<CardTransaction, String> {
+        let status =
+            TransactionStatus::from_str_type(&self.status).map_err(|e| e.to_string())?;
+
+        Ok(CardTransaction::from_raw(
+            self.id,
+            self.card_id,
+            self.amount,
+            self.currency,
+            self.merchant_name,
+            self.mcc_code,
+            status,
+            self.auth_code,
+            self.timestamp,
+            self.is_contactless,
+            self.is_online,
+        ))
+    }
+}

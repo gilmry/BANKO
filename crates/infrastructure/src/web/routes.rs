@@ -4,7 +4,7 @@ use super::metrics;
 use super::handlers::{
     account_handlers, accounting_handlers, aml_handlers, auth_handlers, consent_handlers,
     credit_handlers, customer_handlers, data_rights_handlers, fx_handlers, governance_handlers,
-    notification_handlers, payment_handlers, product_handlers, profile_handlers, prudential_handlers, reporting_handlers,
+    notification_handlers, payment_handlers, cheque_handlers, product_handlers, profile_handlers, prudential_handlers, reporting_handlers,
     retention_handlers, sanctions_handlers, two_factor_handlers, user_handlers,
 };
 use crate::payment::recurring_handlers;
@@ -393,6 +393,55 @@ pub fn configure_payment_routes(cfg: &mut web::ServiceConfig) {
                 web::post().to(payment_handlers::run_clearing_handler),
             ),
     );
+
+    // Configure card management routes (STORY-CARD-01 through CARD-06)
+    configure_card_routes(cfg);
+
+    // Configure cheque management routes (EPIC-19: CHQ-01 through CHQ-03)
+    configure_cheque_routes(cfg);
+}
+
+pub fn configure_card_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/cards")
+            .route(
+                "",
+                web::post().to(payment_handlers::request_card_handler),
+            )
+            .route("", web::get().to(payment_handlers::list_cards_handler))
+            .route(
+                "/{id}",
+                web::get().to(payment_handlers::get_card_handler),
+            )
+            .route(
+                "/{id}/activate",
+                web::post().to(payment_handlers::activate_card_handler),
+            )
+            .route(
+                "/{id}/block",
+                web::post().to(payment_handlers::block_card_handler),
+            )
+            .route(
+                "/{id}/unblock",
+                web::post().to(payment_handlers::unblock_card_handler),
+            )
+            .route(
+                "/{id}",
+                web::delete().to(payment_handlers::cancel_card_handler),
+            )
+            .route(
+                "/{id}/limits",
+                web::put().to(payment_handlers::set_limits_handler),
+            )
+            .route(
+                "/{id}/transactions",
+                web::get().to(payment_handlers::card_transactions_handler),
+            )
+            .route(
+                "/{id}/authorize",
+                web::post().to(payment_handlers::authorize_transaction_handler),
+            ),
+    );
 }
 
 pub fn configure_recurring_payment_routes(cfg: &mut web::ServiceConfig) {
@@ -616,4 +665,8 @@ pub fn configure_admin_pricing_routes(cfg: &mut web::ServiceConfig) {
                 web::post().to(product_handlers::create_pricing_grid_handler),
             ),
     );
+}
+
+pub fn configure_cheque_routes(cfg: &mut web::ServiceConfig) {
+    cheque_handlers::configure_cheque_routes(cfg);
 }

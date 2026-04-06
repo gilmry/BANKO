@@ -173,3 +173,92 @@ pub struct BatchExecutionResult {
     pub failed: usize,
     pub skipped: usize,
 }
+
+// ============================================================
+// Card Management DTOs (STORY-CARD-01 through CARD-06)
+// ============================================================
+
+// --- Request DTOs ---
+
+#[derive(Debug, Deserialize)]
+pub struct RequestCardRequest {
+    pub customer_id: String,
+    pub account_id: String,
+    pub card_type: String,
+    pub network: String,
+    pub validity_years: Option<u8>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ActivateCardRequest {
+    pub card_id: String,
+    pub activation_code: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SetCardLimitRequest {
+    pub card_id: String,
+    pub daily_limit: Option<Decimal>,
+    pub monthly_limit: Option<Decimal>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AuthorizeTransactionRequest {
+    pub card_id: String,
+    pub amount: Decimal,
+    pub currency: Option<String>,
+    pub merchant_name: String,
+    pub mcc_code: String,
+    pub is_contactless: Option<bool>,
+    pub is_online: Option<bool>,
+}
+
+// --- Response DTOs ---
+
+#[derive(Debug, Serialize)]
+pub struct CardResponse {
+    pub id: String,
+    pub account_id: String,
+    pub customer_id: String,
+    pub card_type: String,
+    pub network: String,
+    pub masked_pan: String,
+    pub status: String,
+    pub daily_limit: Decimal,
+    pub monthly_limit: Decimal,
+    pub daily_spent: Decimal,
+    pub monthly_spent: Decimal,
+    pub expiry_month: u8,
+    pub expiry_year: u16,
+    pub is_contactless_enabled: bool,
+    pub created_at: DateTime<Utc>,
+    pub activated_at: Option<DateTime<Utc>>,
+    pub cancelled_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CardListResponse {
+    pub data: Vec<CardResponse>,
+    pub total: usize,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CardTransactionResponse {
+    pub id: String,
+    pub card_id: String,
+    pub amount: Decimal,
+    pub currency: String,
+    pub merchant_name: String,
+    pub mcc_code: String,
+    pub status: String,
+    pub auth_code: String,
+    pub timestamp: DateTime<Utc>,
+    pub is_contactless: bool,
+    pub is_online: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CardTransactionListResponse {
+    pub data: Vec<CardTransactionResponse>,
+    pub total: usize,
+}
