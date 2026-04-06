@@ -241,7 +241,18 @@
     "open": "Ouvrir un compte",
     "close": "Cloturer le compte",
     "rib": "RIB",
-    "iban": "IBAN"
+    "iban": "IBAN",
+    "availableBalance": "Solde disponible",
+    "deposit": "Depot",
+    "withdrawal": "Retrait",
+    "statement": "Releve",
+    "openAccount": "Ouvrir un compte",
+    "errors": {
+      "insufficientFunds": "Fonds insuffisants",
+      "accountFrozen": "Compte gele",
+      "invalidAmount": "Montant invalide",
+      "accountNotFound": "Compte introuvable"
+    }
   },
   "credit": {
     "title": "Gestion des credits",
@@ -260,7 +271,13 @@
     },
     "guarantees": "Garanties",
     "schedule": "Echeancier",
-    "remaining": "Capital restant du"
+    "remaining": "Capital restant du",
+    "errors": {
+      "insufficientIncome": "Revenu insuffisant",
+      "creditLimitExceeded": "Limite de credit depassee",
+      "invalidDuration": "Duree invalide",
+      "riskTooHigh": "Risque trop eleve"
+    }
   },
   "aml": {
     "title": "Lutte anti-blanchiment",
@@ -276,7 +293,12 @@
       "escalated": "Escaladee"
     },
     "scenarios": "Scenarios de detection",
-    "freeze": "Gel des avoirs"
+    "freeze": "Gel des avoirs",
+    "errors": {
+      "thresholdExceeded": "Seuil depasse",
+      "suspiciousActivity": "Activite suspecte detectee",
+      "patternMatch": "Correspondance de schema"
+    }
   },
   "sanctions": {
     "title": "Controle des sanctions",
@@ -348,6 +370,12 @@
       "completed": "Effectue",
       "failed": "Echoue",
       "cancelled": "Annule"
+    },
+    "errors": {
+      "invalidBic": "Code BIC invalide",
+      "invalidIban": "IBAN invalide",
+      "beneficiaryNotFound": "Beneficiaire introuvable",
+      "quotaExceeded": "Quota depasse"
     }
   },
   "forex": {
@@ -411,8 +439,16 @@
   "validation": {
     "required": "Ce champ est obligatoire",
     "email": "Adresse e-mail invalide",
+    "minLength": "Minimum {min} caracteres requis",
+    "maxLength": "Maximum {max} caracteres autorises",
     "min_length": "Minimum {min} caracteres requis",
     "max_length": "Maximum {max} caracteres autorises",
+    "numeric": "Doit etre un nombre",
+    "positive": "Doit etre positif",
+    "phone": "Numero de telephone invalide",
+    "cin": "CIN invalide (8 chiffres)",
+    "rib": "RIB invalide",
+    "passwordStrength": "Le mot de passe doit contenir au moins 12 caracteres",
     "password_uppercase": "Le mot de passe doit contenir au moins une majuscule",
     "password_lowercase": "Le mot de passe doit contenir au moins une minuscule",
     "password_number": "Le mot de passe doit contenir au moins un chiffre",

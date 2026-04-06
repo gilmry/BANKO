@@ -241,7 +241,18 @@
     "open": "فتح حساب",
     "close": "إغلاق الحساب",
     "rib": "المعرف البنكي",
-    "iban": "رقم الحساب البنكي الدولي"
+    "iban": "رقم الحساب البنكي الدولي",
+    "availableBalance": "الرصيد المتاح",
+    "deposit": "إيداع",
+    "withdrawal": "سحب",
+    "statement": "كشف حساب",
+    "openAccount": "فتح حساب",
+    "errors": {
+      "insufficientFunds": "رصيد غير كافٍ",
+      "accountFrozen": "حساب مجمد",
+      "invalidAmount": "مبلغ غير صالح",
+      "accountNotFound": "الحساب غير موجود"
+    }
   },
   "credit": {
     "title": "إدارة القروض",
@@ -260,7 +271,13 @@
     },
     "guarantees": "الضمانات",
     "schedule": "جدول السداد",
-    "remaining": "الأصل المتبقي"
+    "remaining": "الأصل المتبقي",
+    "errors": {
+      "insufficientIncome": "دخل غير كافٍ",
+      "creditLimitExceeded": "تجاوز حد القرض",
+      "invalidDuration": "مدة غير صالحة",
+      "riskTooHigh": "الخطر مرتفع جداً"
+    }
   },
   "aml": {
     "title": "مكافحة غسل الأموال",
@@ -276,7 +293,12 @@
       "escalated": "تم التصعيد"
     },
     "scenarios": "سيناريوهات الكشف",
-    "freeze": "تجميد الأموال"
+    "freeze": "تجميد الأموال",
+    "errors": {
+      "thresholdExceeded": "تجاوز العتبة",
+      "suspiciousActivity": "تم الكشف عن نشاط مشبوه",
+      "patternMatch": "توافق النمط"
+    }
   },
   "sanctions": {
     "title": "مراقبة العقوبات",
@@ -348,6 +370,12 @@
       "completed": "مكتمل",
       "failed": "فشل",
       "cancelled": "ملغى"
+    },
+    "errors": {
+      "invalidBic": "رمز BIC غير صالح",
+      "invalidIban": "IBAN غير صالح",
+      "beneficiaryNotFound": "المستفيد غير موجود",
+      "quotaExceeded": "تجاوز الحصة المسموحة"
     }
   },
   "forex": {
@@ -411,8 +439,16 @@
   "validation": {
     "required": "هذا الحقل مطلوب",
     "email": "عنوان البريد الإلكتروني غير صالح",
+    "minLength": "يجب أن يحتوي على {min} أحرف على الأقل",
+    "maxLength": "الحد الأقصى {max} حرف",
     "min_length": "يجب أن يحتوي على {min} أحرف على الأقل",
     "max_length": "الحد الأقصى {max} حرف",
+    "numeric": "يجب أن يكون رقماً",
+    "positive": "يجب أن يكون موجباً",
+    "phone": "رقم هاتف غير صالح",
+    "cin": "بطاقة تعريف غير صالحة (8 أرقام)",
+    "rib": "معرف بنكي غير صالح",
+    "passwordStrength": "يجب أن تتكون كلمة المرور من 12 حرف على الأقل",
     "password_uppercase": "يجب أن تحتوي كلمة المرور على حرف كبير واحد على الأقل",
     "password_lowercase": "يجب أن تحتوي كلمة المرور على حرف صغير واحد على الأقل",
     "password_number": "يجب أن تحتوي كلمة المرور على رقم واحد على الأقل",

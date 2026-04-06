@@ -241,7 +241,18 @@
     "open": "Open an account",
     "close": "Close account",
     "rib": "RIB",
-    "iban": "IBAN"
+    "iban": "IBAN",
+    "availableBalance": "Available balance",
+    "deposit": "Deposit",
+    "withdrawal": "Withdrawal",
+    "statement": "Statement",
+    "openAccount": "Open account",
+    "errors": {
+      "insufficientFunds": "Insufficient funds",
+      "accountFrozen": "Account frozen",
+      "invalidAmount": "Invalid amount",
+      "accountNotFound": "Account not found"
+    }
   },
   "credit": {
     "title": "Credit management",
@@ -260,7 +271,13 @@
     },
     "guarantees": "Guarantees",
     "schedule": "Payment schedule",
-    "remaining": "Outstanding principal"
+    "remaining": "Outstanding principal",
+    "errors": {
+      "insufficientIncome": "Insufficient income",
+      "creditLimitExceeded": "Credit limit exceeded",
+      "invalidDuration": "Invalid duration",
+      "riskTooHigh": "Risk too high"
+    }
   },
   "aml": {
     "title": "Anti-money laundering",
@@ -276,7 +293,12 @@
       "escalated": "Escalated"
     },
     "scenarios": "Detection scenarios",
-    "freeze": "Asset freeze"
+    "freeze": "Asset freeze",
+    "errors": {
+      "thresholdExceeded": "Threshold exceeded",
+      "suspiciousActivity": "Suspicious activity detected",
+      "patternMatch": "Pattern match"
+    }
   },
   "sanctions": {
     "title": "Sanctions screening",
@@ -348,6 +370,12 @@
       "completed": "Completed",
       "failed": "Failed",
       "cancelled": "Cancelled"
+    },
+    "errors": {
+      "invalidBic": "Invalid BIC code",
+      "invalidIban": "Invalid IBAN",
+      "beneficiaryNotFound": "Beneficiary not found",
+      "quotaExceeded": "Quota exceeded"
     }
   },
   "forex": {
@@ -411,8 +439,16 @@
   "validation": {
     "required": "This field is required",
     "email": "Invalid email address",
+    "minLength": "Minimum {min} characters required",
+    "maxLength": "Maximum {max} characters allowed",
     "min_length": "Minimum {min} characters required",
     "max_length": "Maximum {max} characters allowed",
+    "numeric": "Must be a number",
+    "positive": "Must be positive",
+    "phone": "Invalid phone number",
+    "cin": "Invalid CIN (8 digits)",
+    "rib": "Invalid RIB",
+    "passwordStrength": "Password must be at least 12 characters long",
     "password_uppercase": "Password must contain at least one uppercase letter",
     "password_lowercase": "Password must contain at least one lowercase letter",
     "password_number": "Password must contain at least one number",

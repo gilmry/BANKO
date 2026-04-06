@@ -23,11 +23,33 @@
 [dir='rtl'] select,
 [dir='rtl'] textarea {
   text-align: right;
+  padding-inline-start: 0.75rem;
+  padding-inline-end: 0.5rem;
 }
 
 [dir='rtl'] input[type='number'] {
   text-align: left;
   direction: ltr;
+  padding-inline-start: 0.5rem;
+  padding-inline-end: 0.75rem;
+}
+
+[dir='rtl'] input[type='email'],
+[dir='rtl'] input[type='password'],
+[dir='rtl'] input[type='search'],
+[dir='rtl'] input[type='text'] {
+  text-align: right;
+}
+
+[dir='rtl'] input::placeholder,
+[dir='rtl'] textarea::placeholder {
+  text-align: right;
+}
+
+[dir='rtl'] input:focus,
+[dir='rtl'] select:focus,
+[dir='rtl'] textarea:focus {
+  outline-offset: 2px;
 }
 
 [dir='rtl'] table {
@@ -36,16 +58,57 @@
 
 [dir='rtl'] th,
 [dir='rtl'] td {
-  text-align: right;
+  text-align: end;
+  padding-inline-start: 1rem;
+  padding-inline-end: 0.5rem;
+}
+
+[dir='rtl'] thead th {
+  text-align: end;
+}
+
+[dir='rtl'] tbody td {
+  text-align: end;
+}
+
+[dir='rtl'] table.sortable th {
+  cursor: pointer;
 }
 
 [dir='rtl'] .icon-directional {
   transform: scaleX(-1);
 }
 
+[dir='rtl'] .icon-left,
+[dir='rtl'] .icon-arrow-left,
+[dir='rtl'] .icon-chevron-left {
+  transform: scaleX(-1);
+}
+
+[dir='rtl'] .icon-right,
+[dir='rtl'] .icon-arrow-right,
+[dir='rtl'] .icon-chevron-right {
+  transform: scaleX(-1);
+}
+
 [dir='rtl'] .nav-item {
   padding-inline-start: 1rem;
   padding-inline-end: 0.75rem;
+}
+
+[dir='rtl'] .nav-item svg {
+  margin-inline-start: 0.5rem;
+  margin-inline-end: 0;
+}
+
+[dir='rtl'] .sidebar-nav {
+  border-inline-end: 1px solid var(--border-color, #e5e7eb);
+  border-inline-start: none;
+}
+
+[dir='rtl'] .breadcrumb li::before {
+  margin-inline-start: 0.5rem;
+  margin-inline-end: 0.5rem;
 }
 
 [dir='rtl'] .modal-close {
@@ -55,4 +118,77 @@
 
 [dir='rtl'] :focus-visible {
   outline-offset: 2px;
+}
+
+/* Currency and Number Display in RTL */
+[dir='rtl'] .currency,
+[dir='rtl'] .amount,
+[dir='rtl'] .number {
+  direction: ltr;
+  text-align: end;
+}
+
+[dir='rtl'] .currency-symbol {
+  margin-inline-start: 0.25rem;
+  margin-inline-end: 0;
+}
+
+[dir='rtl'] .currency-value {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* Date Display in RTL */
+[dir='rtl'] .date,
+[dir='rtl'] .date-time {
+  text-align: end;
+}
+
+/* Form Labels */
+[dir='rtl'] label {
+  text-align: right;
+}
+
+[dir='rtl'] .form-group label {
+  margin-inline-start: 0;
+  margin-inline-end: 0;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+/* Button Icons */
+[dir='rtl'] button svg,
+[dir='rtl'] .btn svg {
+  margin-inline-start: 0.5rem;
+  margin-inline-end: 0;
+}
+
+[dir='rtl'] button svg:first-child,
+[dir='rtl'] .btn svg:first-child {
+  margin-inline-start: 0;
+  margin-inline-end: 0.5rem;
+}
+
+/* Lists */
+[dir='rtl'] ul,
+[dir='rtl'] ol {
+  padding-inline-start: 2rem;
+  padding-inline-end: 0;
+}
+
+[dir='rtl'] li {
+  text-align: right;
+}
+
+/* Alert and Notification Messages */
+[dir='rtl'] .alert,
+[dir='rtl'] .notification {
+  text-align: right;
+  padding-inline-start: 1rem;
+  padding-inline-end: 1rem;
+}
+
+[dir='rtl'] .alert-icon {
+  margin-inline-start: 0.5rem;
+  margin-inline-end: 0;
 }
