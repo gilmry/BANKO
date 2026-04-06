@@ -2,6 +2,7 @@ mod session_cleanup;
 mod credit_classification;
 mod recurring_payments;
 mod eod_orchestrator;
+mod backup_service;
 
 pub use session_cleanup::SessionCleanupJob;
 pub use credit_classification::{CreditClassificationJob, ClassificationBatchResult};
@@ -10,4 +11,9 @@ pub use eod_orchestrator::{
     EodOrchestrator, EodScheduler, EodContext, EodReport, EodStep, EodStepResult, EodStepStatus,
     EodOverallStatus, InterestAccrualStep, ReconciliationStep, FeeCalculationStep,
     ChequeCompensationStep, CardSpendingResetStep, ReportingSnapshotStep
+};
+pub use backup_service::{
+    BackupService, BackupType, BackupStatus, BackupRecord, BackupRetentionPolicy,
+    RestoreService, RestoreResult, DisasterRecoveryOrchestrator, DrReport, DrStepResult,
+    BackupScheduler, RetentionResult
 };

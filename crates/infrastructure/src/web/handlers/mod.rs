@@ -19,3 +19,5 @@ pub mod retention_handlers;
 pub mod sanctions_handlers;
 pub mod two_factor_handlers;
 pub mod user_handlers;
+pub mod analytics_handlers;
+pub mod mobile_handlers;
