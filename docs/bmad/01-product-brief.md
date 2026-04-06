@@ -2,7 +2,7 @@
 
 ## Méthode Maury — Phase TOGAF A (Vision)
 
-> **Version** : 1.0.0 — 4 avril 2026
+> **Version** : 3.0.0 — 6 avril 2026
 > **Auteur** : GILMRY / Projet BANKO
 > **Référentiel légal** : [REFERENTIEL_LEGAL_ET_NORMATIF.md](../legal/REFERENTIEL_LEGAL_ET_NORMATIF.md)
 
@@ -29,6 +29,9 @@ BANKO est au secteur bancaire tunisien ce que KoproGo est à la copropriété be
 | **FGDB** (Fonds de Garantie des Dépôts) | Garantie des dépôts, données de résolution | Moyenne |
 | **Ministère des Finances** | Conformité fiscale, déclarations, stabilité | Moyenne |
 | **Communauté open source** | Qualité du code, documentation, contributibilité | Moyenne — contributeurs |
+| **ANCS** (Agence Nationale de la Cybersécurité) | Tests d'intrusion obligatoires pour e-KYC (Circ. 2025-06) | Haute — régulateur cyber |
+| **Évaluateurs GAFI/MENAFATF** | Mission jan-fév 2026, plénière nov 2026. Vérification effectivité LBC/FT. | Très haute — évaluateurs internationaux |
+| **DPO** (Délégué Protection Données) | Rôle obligatoire sous la nouvelle loi 2025. Supervision conformité données personnelles. | Haute — rôle interne obligatoire |
 
 ---
 
@@ -42,6 +45,10 @@ BANKO est au secteur bancaire tunisien ce que KoproGo est à la copropriété be
 | **Transparence et confiance** | L'AGPL-3.0 garantit que le code est auditable. Les régulateurs, auditeurs et le public peuvent vérifier que le système fait ce qu'il dit. |
 | **Coût d'accès** | Les petites banques et établissements financiers n'ont pas les moyens d'un CBS Tier 1. BANKO démocratise l'accès à un système conforme. |
 | **Inclusion financière** | Un CBS open source peut servir de base pour de nouveaux modèles bancaires (microfinance, banques digitales, établissements de paiement). |
+| **Conformité GAFI 2026** | Mission d'inspection GAFI (jan-fév 2026) suivie de la plénière du 1er novembre 2026. Risque de liste grise. BANKO doit démontrer l'effectivité LBC/FT, pas seulement la conformité technique. |
+| **Nouvelle loi données personnelles** | Adoptée juin 2025, application 11 juillet 2026. Obligations RGPD-like (DPO, DPIA, notification 72h, amendes sur CA). BANKO doit être conforme avant la date butoir. |
+| **Sécurité internationale (ISO 27001 + PCI DSS)** | ISO 27001:2022 seule édition valide. PCI DSS v4.0.1 avec exigences obligatoires depuis mars 2025. BANKO vise la certification pour crédibiliser l'offre. |
+| **Open Banking anticipé** | Pas encore réglementé en Tunisie, mais PSD3/PSR (UE, nov 2025), FIDA, et avancées Nigeria/Arabie Saoudite indiquent une tendance inévitable. BANKO conçu open-banking-ready. |
 
 ---
 
@@ -56,7 +63,7 @@ Il n'existe pas de CBS open source conçu spécifiquement pour le cadre régleme
 ## 5. Proposition de valeur
 
 **BANKO** est le premier CBS open source conçu nativement pour le droit bancaire tunisien :
-- **Conformité by-design** : chaque module est traçable vers un texte légal (70 références sourcées)
+- **Conformité by-design** : chaque module est traçable vers un texte légal (95 références sourcées)
 - **Auditabilité totale** : piste d'audit intégrale, horodatage cryptographique, immutabilité
 - **Transparence du code** : AGPL-3.0, auditable par la BCT, les commissaires aux comptes, le public
 - **Souveraineté** : hébergeable en Tunisie, code maîtrisé, pas de dépendance fournisseur
@@ -127,6 +134,13 @@ Il n'existe pas de CBS open source conçu spécifiquement pour le cadre régleme
 | C17 | **Provisionnement IFRS 9** | Modèle ECL (pertes attendues), stages 1/2/3 | P2 |
 | C18 | **Portail d'audit BCT** | Accès direct inspecteurs BCT, dashboards superviseurs, API audit | P2 |
 | C19 | **Portail client (e-banking)** | Consultation comptes, virements, relevés en ligne | P2 |
+| C20 | **Conformité ISO 27001:2022** | SMSI, 93 contrôles Annexe A, gestion risques SI | P1 |
+| C21 | **Conformité PCI DSS v4.0.1** | Tokenisation, chiffrement champ, CDE scope | P1 |
+| C22 | **Préparation Open Banking** | APIs PSD3-ready, consent management, SCA | P2 |
+| C23 | **Conformité nouvelle loi données 2025** | DPO, DPIA, portabilité, effacement, notification 72h | P0 |
+| C24 | **Intégration goAML** | Déclarations CTAF électroniques | P0 |
+| C25 | **TuniCheque API** | Vérification chèques temps réel, Circ. 2025-03 | P1 |
+| C26 | **e-KYC biométrique** | Enrôlement électronique, Circ. 2025-06 | P0 |
 
 ---
 
@@ -158,6 +172,15 @@ Il n'existe pas de CBS open source conçu spécifiquement pour le cadre régleme
 | **RWA** | Risk-Weighted Assets — actifs pondérés par le risque de crédit, marché, opérationnel | RWA = 800 M TND |
 | **PNB** | Produit Net Bancaire — marge d'intermédiation + commissions | PNB = 45 M TND |
 | **NCT** | Norme Comptable Tunisienne | NCT 24 = engagements bancaires |
+| **SMSI** | Système de Management de la Sécurité de l'Information (ISO 27001:2022). Code : `struct Smsi { scope: Vec<BoundedContext>, controls: Vec<AnnexAControl>, risk_register: RiskRegister }` | SMSI couvrant les 12 bounded contexts BANKO |
+| **CDE** | Cardholder Data Environment — périmètre PCI DSS où transitent les données cartes | Serveurs de tokenisation + passerelle paiement |
+| **Tokenisation** | Remplacement du PAN par un jeton irréversible pour réduire le périmètre PCI DSS | PAN 4111-XXXX-XXXX-1234 → token tkn_a8f3... |
+| **SCA** | Strong Customer Authentication — authentification à 2 facteurs minimum (connaissance + possession + inhérence) | Mot de passe + OTP mobile |
+| **Consent** | Consentement granulaire, révocable, conforme loi 2025. Code : `struct Consent { id: ConsentId, customer_id: CustomerId, permissions: Vec<Permission>, granted_at: DateTime, expires_at: DateTime, status: ConsentStatus }` | Consentement partage données avec partenaire fintech |
+| **DPO** | Délégué à la Protection des Données — rôle obligatoire (loi 2025) | DPO supervise traitements données personnelles |
+| **DPIA** | Data Protection Impact Assessment — évaluation d'impact obligatoire pour traitements à haut risque | DPIA avant déploiement module e-KYC biométrique |
+| **goAML** | Plateforme CTAF pour les déclarations de soupçon électroniques | DOS transmise via goAML à la CTAF |
+| **TuniCheque** | Plateforme électronique unifiée des chèques (Circ. 2025-03) | Vérification provision chèque en temps réel |
 
 ---
 
@@ -201,6 +224,11 @@ Ces règles seront codées dans les constructeurs des entités Domain (`::new() 
 | **INV-13** | Le consentement INPDP est requis avant tout traitement de données personnelles | Loi 2004-63 [REF-54] | Customer + Identity |
 | **INV-14** | Un virement international requiert le filtrage sanctions avant exécution | Circ. 2025-17, GAFI R.16 [REF-33][REF-66] | Payment + Sanctions |
 | **INV-15** | La somme des provisions ≥ provisions minimales réglementaires par classe | Circ. 91-24 [REF-14] | Credit + Accounting |
+| **INV-16** | Données cartes (PAN) stockées UNIQUEMENT sous forme tokenisée ou chiffrée niveau champ | PCI DSS v4.0.1 Req 3.5.1.2 [REF-90] | Payment + Identity |
+| **INV-17** | Accès au CDE requiert MFA (2 facteurs minimum) | PCI DSS Req 8.4.2 [REF-90] | Identity + Payment |
+| **INV-18** | Toute violation de données personnelles notifiée à l'INPDP sous 72 heures | Loi données 2025 [REF-79] | Customer + Governance |
+| **INV-19** | Consentement explicite requis avant tout partage de données avec un tiers | Loi données 2025 + PSD3 [REF-79][REF-91] | Customer + Identity |
+| **INV-20** | Transfert international > 1000 EUR/USD inclut données originator ET beneficiary complètes | GAFI R.16 révisée [REF-83] | Payment + AML |
 
 ---
 
@@ -257,7 +285,7 @@ Ces règles seront codées dans les constructeurs des entités Domain (`::new() 
 - **Licence** : AGPL-3.0 (copyleft fort)
 - **Hébergement** : Souverain (Tunisie) — conformité INPDP
 - **Sécurité** : HSM pour signatures cryptographiques, LUKS, Suricata, CrowdSec
-- **Référentiel légal** : 70 références sourcées (docs/legal/REFERENTIEL_LEGAL_ET_NORMATIF.md)
+- **Référentiel légal** : 95 références sourcées (docs/legal/REFERENTIEL_LEGAL_ET_NORMATIF.md)
 - **Auditabilité** : Chaque opération horodatée, signée cryptographiquement, immutable
 
 ---
@@ -272,6 +300,9 @@ Ces règles seront codées dans les constructeurs des entités Domain (`::new() 
 | R4 | Sécurité (cible de valeur) | Haute | Critique | Rust (mémoire sûre), HSM, audit Lynis/Suricata/CrowdSec, pentest, bug bounty. |
 | R5 | Manque d'expertise bancaire | Moyenne | Élevé | Référentiel légal sourcé, collaboration avec des experts bancaires tunisiens, BDD comme documentation vivante. |
 | R6 | Solo-dev en side-project | Haute | Moyen | Roadmap capacitaire (pas de dates), communauté open source, Méthode Maury avec agents IA. |
+| R7 | Liste grise GAFI | Élevée | Critique | Plénière nov 2026. Mitigation : conformité effective LBC/FT, goAML, statistiques mesurables. |
+| R8 | Non-conformité loi données 2025 | Moyenne | Élevé | Application juillet 2026. Mitigation : DPO, DPIA intégrée, notification automatisée. |
+| R9 | Exigences PCI DSS v4.0.1 | Moyenne | Élevé | Obligatoire depuis mars 2025. Mitigation : tokenisation native, chiffrement champ, architecture CDE minimale. |
 
 ---
 
@@ -300,6 +331,9 @@ Ces règles seront codées dans les constructeurs des entités Domain (`::new() 
 | Piste d'audit | 100% des opérations tracées | Audit trail completeness check |
 | Sécurité | 0 vulnérabilité critique non mitigée | cargo audit + Lynis + pentest |
 | Empreinte carbone | < 0.5g CO₂/requête | Green IT metrics |
+| Conformité ISO 27001 | 93 contrôles Annexe A mappés | Dashboard SMSI |
+| Conformité PCI DSS | 12 exigences validées | SAQ/ROC ready |
+| Conformité loi données 2025 | 100% droits INPDP implémentés | DPO dashboard |
 
 ---
 
@@ -323,18 +357,19 @@ Ces règles seront codées dans les constructeurs des entités Domain (`::new() 
 | Infrastructure (IaC + CI/CD + HSM) | ~10 M + 5 L | ~180h |
 | Tests (BDD + E2E Documentation Vivante) | ~30 M + 10 L | ~100h |
 | i18n (AR RTL + FR + EN) / Docs | ~15 M | ~60h |
-| **Sous-total** | | **~970h** |
-| + 20% émergence | | ~194h |
-| + 10% stabilisation CI | | ~97h |
-| **TOTAL HEURES** | | **~1 261h** |
+| Compliance (ISO 27001 + PCI DSS + Open Banking) | ~15 M + 5 L | ~70h |
+| **Sous-total** | | **~1 040h** |
+| + 20% émergence | | ~208h |
+| + 10% stabilisation CI | | ~104h |
+| **TOTAL HEURES** | | **~1 352h** |
 
 ### Estimation durée calendaire
 
 | Rythme | Calcul | Durée |
 |---|---|---|
-| Solo-dev side-project (8h/sem) | 1 261 ÷ 8 | ~158 sem ≈ **36 mois** |
-| Solo-dev temps plein (35h/sem) | 1 261 ÷ 35 | ~36 sem ≈ **8 mois** |
-| Duo (2 × 20h/sem) | 1 261 ÷ 40 | ~32 sem ≈ **7 mois** |
+| Solo-dev side-project (8h/sem) | 1 352 ÷ 8 | ~169 sem ≈ **39 mois** |
+| Solo-dev temps plein (35h/sem) | 1 352 ÷ 35 | ~39 sem ≈ **9 mois** |
+| Duo (2 × 20h/sem) | 1 352 ÷ 40 | ~34 sem ≈ **8 mois** |
 
 > Note : Cette estimation est PRÉLIMINAIRE. Elle sera affinée par le Scrum Master (étape 4) avec des stories détaillées S/M/L.
 

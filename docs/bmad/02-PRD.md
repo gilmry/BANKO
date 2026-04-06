@@ -6,7 +6,7 @@
 **Organisation** : Scrum → Nexus → SAFe → ITIL
 **Dev** : Agents IA supervisés
 
-**Version** : 2.0.0 — 4 avril 2026
+**Version** : 3.0.0 — 6 avril 2026
 **Auteur** : GILMRY / Projet BANKO
 **Consommateur** : Étape 3 (Architecte)
 
@@ -36,6 +36,7 @@ BANKO est un système bancaire open source (AGPL-3.0) conçu pour les banques tu
 | Piste d'audit | Complétude opérations | 100% |
 | Sécurité | Vulnérabilités critiques non mitigées | 0 |
 | Accessibilité i18n | Langues | AR (RTL) + FR + EN |
+| Conformité normes internationales | Couverture ISO 27001:2022, PCI DSS v4.0.1, loi données personnelles 2025 | 100% avant échéances respectives |
 
 ---
 
@@ -53,6 +54,9 @@ BANKO est un système bancaire open source (AGPL-3.0) conçu pour les banques tu
 - C7: Comptabilité bancaire NCT (écritures, balance, GL)
 - C10: Governance — Piste d'audit immutable, 3LoD
 - C12: Authentification sécurisée (2FA, RBAC, sessions)
+- C23: Conformité nouvelle loi données personnelles 2025 (DPO, DPIA, notification 72h, portabilité, effacement)
+- C24: Intégration goAML (CTAF) — déclarations de soupçon électroniques
+- C26: e-KYC biométrique (Circ. 2025-06)
 
 **P1 — Importantes** :
 - C6: Déclarations de soupçon (DOS) workflow
@@ -60,6 +64,9 @@ BANKO est un système bancaire open source (AGPL-3.0) conçu pour les banques tu
 - C9: Reporting réglementaire BCT (états prudentiels)
 - C11: Opérations de paiement nationales simples
 - C16: Protections INPDP (consentement, droits)
+- C20: Module Compliance transversal — SMSI ISO 27001:2022 (93 contrôles Annexe A)
+- C21: Conformité PCI DSS v4.0.1 — Tokenisation, chiffrement champ, CDE scope
+- C25: TuniCheque API — Vérification chèques temps réel (Circ. 2025-03)
 
 **P2 — Secondaires (post-MVP)** :
 - Virements SWIFT / ISO 20022
@@ -69,13 +76,14 @@ BANKO est un système bancaire open source (AGPL-3.0) conçu pour les banques tu
 - E-banking portail client
 - Provisionnement IFRS 9 (modèle ECL)
 - Reporting automatisé avancé
+- C22: Préparation Open Banking — APIs PSD3-ready, consent management TPP, SCA
 
 ### 3.2 Hors scope MVP
 
 - Courtage, assurance
 - Gestion d'actifs (hedge funds, fonds mutuels)
 - Dérivés complexes
-- Intégrations fintech avancées (APIs ouvertes)
+- Intégrations fintech avancées (au-delà d'Open Banking PSD3-ready)
 - Blockchain, stablecoins
 - Monnaies numériques de banque centrale (CBDC)
 
@@ -1461,6 +1469,40 @@ Scenario: Rejet virement si montant > limite quotidienne
 
 ---
 
+### 6.12 Exigences fonctionnelles — Compliance transversal
+
+**FR-COMP-01** : SMSI ISO 27001 — Le système DOIT implémenter les 93 contrôles Annexe A applicables, avec tableau de bord de suivi.
+
+**FR-COMP-02** : Registre des risques — Le système DOIT maintenir un registre des risques SI conforme ISO 31000, avec matrice 5x5, revue trimestrielle.
+
+**FR-COMP-03** : PCI DSS Tokenisation — Le système DOIT tokeniser tout PAN avant stockage (INV-16). Chiffrement AES-256-GCM au niveau champ.
+
+**FR-COMP-04** : PCI DSS MFA — Le système DOIT exiger MFA pour tout acces au CDE (INV-17).
+
+**FR-COMP-05** : Consent Management — Le système DOIT gérer le consentement granulaire (grant, revoke, expire) avec dashboard client (INV-19).
+
+**FR-COMP-06** : DPIA — Le système DOIT supporter les évaluations d'impact (DPIA) pour les traitements à haut risque.
+
+**FR-COMP-07** : Notification violations — Le système DOIT notifier l'INPDP sous 72h en cas de violation de données (INV-18).
+
+**FR-COMP-08** : Droit à la portabilité — Le système DOIT exporter les données client en format structuré (JSON/CSV) sur demande.
+
+**FR-COMP-09** : Droit à l'effacement — Le système DOIT anonymiser/supprimer les données personnelles sur demande légitime (hors obligations légales de conservation 10 ans).
+
+**FR-COMP-10** : goAML — Le système DOIT générer et transmettre les déclarations de soupçon via la plateforme goAML de la CTAF.
+
+**FR-COMP-11** : TuniCheque — Le système DOIT vérifier en temps réel la couverture des chèques via l'API TuniCheque.
+
+**FR-COMP-12** : e-KYC — Le système DOIT supporter l'enrôlement électronique avec vérification biométrique (reconnaissance faciale).
+
+**FR-COMP-13** : Travel Rule R.16 — Le système DOIT inclure les données originator ET beneficiary complètes pour tout transfert international > 1000 EUR/USD (INV-20).
+
+**FR-COMP-14** : Open Banking APIs — Le système DOIT exposer des APIs REST conformes aux standards PSD3 (accounts, balances, transactions, payments, consents).
+
+**FR-COMP-15** : SCA — Le système DOIT implémenter l'authentification forte à 2 facteurs pour les opérations sensibles (paiements, accès données).
+
+---
+
 ## 7. Exigences non-fonctionnelles
 
 ### 7.1 Performance
@@ -1488,19 +1530,38 @@ Scenario: Rejet virement si montant > limite quotidienne
 | **XSS** | CSP headers strict, Svelte escaping automatique | OWASP |
 | **CSRF** | SameSite=Strict sur tous les cookies | OWASP |
 | **Audit vulnérabilités** | `cargo audit` hebdomadaire, pentest annuel | DevSecOps |
+| **Conformité ISO 27001:2022** | 93 contrôles Annexe A applicables, SMSI certifiable, revue annuelle | ISO 27001:2022 |
+| **Conformité PCI DSS v4.0.1** | 12 exigences, CDE scope minimisé par tokenisation, SAQ-D ou ROC selon périmètre | PCI DSS v4.0.1 |
+| **Tests d'intrusion ANCS** | Tests d'intrusion biennaux obligatoires pour e-KYC (Circ. 2025-06) | [REF-73] |
 
-### 7.3 Conformité INPDP (Loi 2004-63) [REF-54]
+### 7.3 Conformité INPDP — Loi données personnelles 2025 (remplace Loi 2004-63, application 11 juillet 2026)
 
 | Exigence | Détail |
 |---|---|
-| **Consentement** | Explicite avant traitement, tracé (FR-029) |
+| **Consentement granulaire** | Explicite avant traitement, tracé, révocable, avec dashboard client (FR-029, FR-COMP-05) |
+| **DPO obligatoire** | Désignation d'un Délégué à la Protection des Données, rôle interne ou externe |
+| **DPIA** | Évaluation d'impact obligatoire pour traitements à haut risque (FR-COMP-06) |
+| **Notification violations 72h** | Notification INPDP sous 72h en cas de violation de données (FR-COMP-07) |
 | **Droit d'accès** | Export données personnelles en 30 jours |
 | **Droit de rectification** | Client peut modifier données fausses |
 | **Droit d'opposition** | Marketing, analyse crédit (FR-029) |
-| **Droit à l'oubli** | Suppression après 10 ans clôture compte (INV-10) |
-| **Anonymisation** | Données test non-réelles, compliance masquage |
+| **Droit à la portabilité** | Export données client en format structuré JSON/CSV sur demande (FR-COMP-08) |
+| **Droit à l'effacement** | Anonymisation/suppression sur demande légitime, hors obligations légales de conservation 10 ans (FR-COMP-09) |
+| **Anonymisation et pseudonymisation** | Données test non-réelles, chiffrement + pseudonymisation obligatoires pour données sensibles |
 | **DPA (Data Protection Agreement)** | Si tiers (cloud, payment provider) |
-| **Breach notification** | 72h à INPDP si fuite > 10 personnes |
+| **Amendes proportionnelles CA** | Amendes proportionnelles au chiffre d'affaires en cas de non-conformité (loi 2025) |
+
+### 7.3bis Conformité réglementaire transversale
+
+| Exigence | Détail |
+|---|---|
+| **Référentiel légal** | 95 références légales (REFERENTIEL v0.3.0) couvrant BCT, CTAF, INPDP, GAFI, normes internationales |
+| **ISO 27001:2022** | SMSI certifiable, 93 contrôles Annexe A, registre des risques SI conforme ISO 31000 |
+| **PCI DSS v4.0.1** | 12 exigences, tokenisation PAN, chiffrement AES-256-GCM, MFA pour CDE |
+| **PSD3/PSR** | APIs Open Banking ready (accounts, balances, transactions, payments, consents) |
+| **FIDA** | Framework for Financial Data Access — anticipation réglementation données financières |
+| **Loi données personnelles 2025** | DPO, DPIA, notification 72h, amendes proportionnelles CA, portabilité, effacement |
+| **GAFI 5ème cycle** | Évaluation mutuelle 2026, effectivité LBC/FT, Travel Rule R.16 élargie |
 
 ### 7.4 i18n — Langues et RTL
 
@@ -2165,6 +2226,142 @@ CREATE TABLE swift_messages (
 );
 ```
 
+### 10.12 Compliance transversal
+
+```sql
+-- SMSI ISO 27001 — Contrôles et suivi
+CREATE TABLE smsi_controls (
+  id UUID PRIMARY KEY,
+  control_ref VARCHAR(20) NOT NULL, -- Ex: A.5.1, A.6.1, etc.
+  control_name VARCHAR(200),
+  control_description TEXT,
+  implementation_status VARCHAR(20) CHECK (implementation_status IN ('NOT_STARTED', 'IN_PROGRESS', 'IMPLEMENTED', 'NOT_APPLICABLE')),
+  evidence_reference VARCHAR(500),
+  last_reviewed_at DATE,
+  reviewed_by UUID REFERENCES users(id),
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
+);
+
+-- Registre des risques SI (ISO 31000)
+CREATE TABLE risk_register (
+  id UUID PRIMARY KEY,
+  risk_title VARCHAR(200),
+  risk_description TEXT,
+  risk_category VARCHAR(50), -- CONFIDENTIALITY, INTEGRITY, AVAILABILITY, COMPLIANCE
+  likelihood SMALLINT CHECK (likelihood BETWEEN 1 AND 5), -- Matrice 5x5
+  impact SMALLINT CHECK (impact BETWEEN 1 AND 5),
+  risk_level VARCHAR(20), -- LOW, MEDIUM, HIGH, CRITICAL (calculé)
+  mitigation_measures TEXT,
+  risk_owner UUID REFERENCES users(id),
+  review_frequency VARCHAR(20) DEFAULT 'QUARTERLY',
+  last_reviewed_at DATE,
+  next_review_at DATE,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
+);
+
+CREATE TABLE risk_assessments (
+  id UUID PRIMARY KEY,
+  risk_id UUID NOT NULL REFERENCES risk_register(id),
+  assessment_date DATE,
+  assessed_by UUID REFERENCES users(id),
+  previous_level VARCHAR(20),
+  new_level VARCHAR(20),
+  notes TEXT,
+  created_at TIMESTAMPTZ
+);
+
+CREATE TABLE compliance_audits (
+  id UUID PRIMARY KEY,
+  audit_type VARCHAR(50), -- ISO_27001, PCI_DSS, INTERNAL, EXTERNAL
+  audit_scope TEXT,
+  auditor_name VARCHAR(200),
+  audit_date DATE,
+  findings TEXT,
+  non_conformities SMALLINT DEFAULT 0,
+  corrective_actions TEXT,
+  status VARCHAR(20) CHECK (status IN ('PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CLOSED')),
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
+);
+
+-- PCI DSS — Tokenisation et gestion clés
+CREATE TABLE token_vault (
+  token_id UUID PRIMARY KEY,
+  masked_pan VARCHAR(20) NOT NULL, -- Ex: **** **** **** 1234
+  token_value VARCHAR(64) NOT NULL UNIQUE,
+  created_at TIMESTAMPTZ NOT NULL,
+  expires_at TIMESTAMPTZ,
+  status VARCHAR(20) DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'REVOKED', 'EXPIRED'))
+);
+
+CREATE TABLE encryption_keys (
+  key_id UUID PRIMARY KEY,
+  key_alias VARCHAR(100) NOT NULL,
+  algorithm VARCHAR(20) NOT NULL DEFAULT 'AES-256-GCM',
+  key_purpose VARCHAR(50), -- DATA_ENCRYPTION, TOKEN_ENCRYPTION, AUDIT_SIGNING
+  status VARCHAR(20) CHECK (status IN ('ACTIVE', 'ROTATED', 'REVOKED')),
+  created_at TIMESTAMPTZ NOT NULL,
+  rotated_at TIMESTAMPTZ,
+  rotated_by UUID REFERENCES users(id)
+);
+
+-- Consent Management (Loi données personnelles 2025)
+CREATE TABLE consents (
+  id UUID PRIMARY KEY,
+  customer_id UUID NOT NULL REFERENCES customers(id),
+  tpp_id VARCHAR(100), -- Third Party Provider ID (Open Banking)
+  consent_type VARCHAR(50) NOT NULL, -- KYC_PROCESSING, MARKETING, CREDIT_ANALYSIS, ACCOUNT_ACCESS, PAYMENT_INITIATION
+  permissions JSONB, -- Permissions granulaires accordées
+  scope VARCHAR(200), -- Périmètre du consentement
+  granted_at TIMESTAMPTZ NOT NULL,
+  expires_at TIMESTAMPTZ,
+  revoked_at TIMESTAMPTZ,
+  revoked_reason VARCHAR(200),
+  status VARCHAR(20) CHECK (status IN ('ACTIVE', 'EXPIRED', 'REVOKED')),
+  ip_address VARCHAR(45),
+  user_agent VARCHAR(500),
+  created_at TIMESTAMPTZ
+);
+
+-- DPIA — Évaluations d'impact
+CREATE TABLE impact_assessments (
+  id UUID PRIMARY KEY,
+  processing_type VARCHAR(200) NOT NULL, -- Description du traitement évalué
+  processing_purpose TEXT,
+  data_categories TEXT, -- Types de données concernées
+  risk_level VARCHAR(20) CHECK (risk_level IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL')),
+  necessity_assessment TEXT,
+  measures TEXT, -- Mesures d'atténuation
+  residual_risk VARCHAR(20),
+  approved_by UUID REFERENCES users(id),
+  approved_at TIMESTAMPTZ,
+  review_date DATE,
+  status VARCHAR(20) CHECK (status IN ('DRAFT', 'IN_REVIEW', 'APPROVED', 'REJECTED')),
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
+);
+
+-- Notifications de violations de données
+CREATE TABLE breach_notifications (
+  id UUID PRIMARY KEY,
+  breach_type VARCHAR(50) NOT NULL, -- DATA_LEAK, UNAUTHORIZED_ACCESS, SYSTEM_COMPROMISE, RANSOMWARE
+  breach_description TEXT,
+  data_subjects_affected INT,
+  data_categories_affected TEXT,
+  detected_at TIMESTAMPTZ NOT NULL,
+  notified_inpdp_at TIMESTAMPTZ, -- Doit être < detected_at + 72h
+  notification_reference VARCHAR(100),
+  details TEXT,
+  remediation_measures TEXT,
+  status VARCHAR(20) CHECK (status IN ('DETECTED', 'INVESTIGATING', 'NOTIFIED', 'RESOLVED')),
+  resolved_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
+);
+```
+
 ---
 
 ## 11. Intégrations externes
@@ -2207,6 +2404,35 @@ CREATE TABLE swift_messages (
 **Objectif** : Échanges SWIFT pour virements internationaux.
 **Format** : MT103, MT202.
 **Sécurité** : SWIFTNet PKI.
+
+### 11.6 goAML (CTAF) — P0
+
+**Objectif** : Déclarations de soupçon électroniques via la plateforme goAML de la CTAF.
+**Format** : XML/JSON structuré conforme au schéma goAML (UNODC).
+**Fréquence** : Immédiat (sur constitution DOS) ou J+1 maximum.
+**Mode** : API REST goAML sécurisée, accusé de réception automatique.
+**Conformité** : Circ. 2025-17 [REF-76], art. 125 Loi 2015-26 [REF-28].
+
+### 11.7 TuniCheque — P1
+
+**Objectif** : Vérification en temps réel de la couverture des chèques via l'API TuniCheque.
+**Format** : API REST, requête/réponse JSON.
+**Fréquence** : Temps réel (à chaque remise de chèque).
+**Conformité** : Circ. 2025-03 [REF-72].
+
+### 11.8 ANCS (Agence Nationale de la Cybersécurité) — P1
+
+**Objectif** : Rapports de tests d'intrusion biennaux obligatoires pour les systèmes e-KYC.
+**Format** : Rapport d'audit PDF structuré, résultats de tests de pénétration.
+**Fréquence** : Biennale (tous les 2 ans).
+**Conformité** : Circ. 2025-06 [REF-73].
+
+### 11.9 INPDP (Instance Nationale de Protection des Données Personnelles) — P0
+
+**Objectif** : Notifications de violations de données sous 72h, registre des traitements.
+**Format** : Formulaire structuré INPDP (PDF/électronique).
+**Fréquence** : Sur événement (violation) + registre permanent des traitements.
+**Conformité** : Loi données personnelles 2025, application 11 juillet 2026.
 
 ---
 
@@ -2258,6 +2484,6 @@ CREATE TABLE swift_messages (
 
 ---
 
-**Révision** : 2.0.0
-**Date** : 4 avril 2026
+**Révision** : 3.0.0
+**Date** : 6 avril 2026
 **Statut** : Approuvé pour développement Étape 3

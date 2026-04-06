@@ -3,7 +3,7 @@
 ## Méthode Maury — Phase TOGAF C-D (SI + Technique)
 
 **Disciplines** : SOLID + DDD + Hexagonal + BDD + TDD
-**Version** : 1.0.0 — 4 avril 2026
+**Version** : 3.0.0 — 6 avril 2026
 **Stack** : Rust + Actix-web 4.9 + PostgreSQL 16 + Astro 6 + Svelte 5
 
 ---
@@ -91,6 +91,32 @@
 └──────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────┐
+│              Compliance Layer (Cross-cutting Concern)                │
+├──────────────────────────────────────────────────────────────────────┤
+│  ┌────────────────────┐  ┌────────────────────┐                    │
+│  │  SMSI ISO 27001    │  │  PCI DSS v4.0.1    │                    │
+│  │  ├─ Risk Register  │  │  ├─ Token Vault    │                    │
+│  │  │  (ISO 31000,    │  │  │  (PAN → Token)  │                    │
+│  │  │  matrice 5×5)   │  │  ├─ CDE Boundary   │                    │
+│  │  ├─ 93 Controls    │  │  │  (NetworkPolicy) │                    │
+│  │  │  Dashboard      │  │  ├─ AES-256-GCM    │                    │
+│  │  ├─ 11 New 2022    │  │  │  (field-level)  │                    │
+│  │  │  Controls       │  │  └─ MFA (Req 8.4.2)│                    │
+│  │  └─ Climate 1:2024 │  └────────────────────┘                    │
+│  └────────────────────┘                                             │
+│  ┌────────────────────┐  ┌────────────────────┐                    │
+│  │  Open Banking      │  │  Privacy (INPDP)   │                    │
+│  │  ├─ Consent Service│  │  ├─ DPO Dashboard  │                    │
+│  │  │  (grant/revoke/ │  │  ├─ DPIA Workflow  │                    │
+│  │  │   expire)       │  │  ├─ Breach Notif.  │                    │
+│  │  ├─ TPP Gateway    │  │  │  (72h INPDP)    │                    │
+│  │  │  (OAuth2+PKCE)  │  │  ├─ Portability    │                    │
+│  │  ├─ mTLS (eIDAS)   │  │  │  (JSON/CSV)     │                    │
+│  │  └─ JWS Signatures │  │  └─ Erasure/Anon.  │                    │
+│  └────────────────────┘  └────────────────────┘                    │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
 │                    External Integrations                             │
 │  ├─ SWIFT / ISO 20022 (Payment networks)                           │
 │  ├─ Sanctions lists (ONU, UE, OFAC, national)                     │
@@ -119,6 +145,32 @@
 | **BC10** | **ForeignExchange** | `src/fx/` | Opérations change, position change, conformité Loi 76-18 | `FxOperationAggregate` | `FxOperationId`, `ExchangeRate`, `FxPosition` |
 | **BC11** | **Governance** | `src/governance/` | Contrôle interne, 3 lignes, comités, piste d'audit | `AuditTrailAggregate` | `AuditEventId`, `AuditTrail`, `ComplianceReport` |
 | **BC12** | **Identity** | `src/identity/` | Authentification, RBAC, sessions, 2FA, JWT | `UserAggregate` | `UserId`, `Role`, `Permission`, `SessionToken` |
+| **BC13** | **Compliance** | `src/compliance/` | Compliance transversal (SMSI, PCI DSS, consent, DPIA) | `SmsiControlAggregate`, `ConsentAggregate` | `ControlId`, `RiskLevel`, `Token`, `ConsentScope`, `BreachType` |
+
+### Module Compliance — Détail structure
+
+```
+crates/domain/src/compliance/
+├── mod.rs
+├── entities.rs          # SmsiControl, RiskEntry, TokenVault, Consent, ImpactAssessment, BreachNotification
+├── value_objects.rs     # ControlId, RiskLevel, Token, ConsentScope, BreachType
+├── aggregates.rs        # SmsiControlAggregate, ConsentAggregate
+├── errors.rs            # DomainError::Compliance::*
+└── rules.rs             # SmsiControlRules, TokenizationRules, ConsentLifecycleRules, DpiaRules
+
+services:
+  - ComplianceService     — Orchestration SMSI, vérification contrôles, dashboard
+  - TokenizationService   — Tokenisation PAN, détokenisation autorisée, rotation tokens
+  - ConsentService        — Gestion consentement (grant, revoke, expire, dashboard)
+  - DpiaService           — Évaluations d'impact (DPIA), workflow approbation
+
+ports (traits):
+  - ITokenVaultRepository      — Stockage/récupération tokens (vault isolé)
+  - IConsentRepository         — Persistance consentements (lifecycle complet)
+  - IRiskRegisterRepository    — Registre des risques SI (ISO 31000)
+  - ISmsiControlRepository     — Suivi des 93 contrôles Annexe A
+  - IBreachNotificationRepository — Gestion notifications violations INPDP
+```
 
 ---
 
@@ -195,12 +247,18 @@ src/domain/
 │   ├── aggregates.rs        # AuditTrailAggregate
 │   ├── errors.rs            # DomainError::Governance::*
 │   └── rules.rs             # AuditRules, ControlRules
-└── identity/
-    ├── entities.rs          # User, Role, Permission
-    ├── value_objects.rs     # UserId, SessionToken, PasswordHash
-    ├── aggregates.rs        # UserAggregate
-    ├── errors.rs            # DomainError::Identity::*
-    └── rules.rs             # AuthenticationRules, RbacRules
+├── identity/
+│   ├── entities.rs          # User, Role, Permission
+│   ├── value_objects.rs     # UserId, SessionToken, PasswordHash
+│   ├── aggregates.rs        # UserAggregate
+│   ├── errors.rs            # DomainError::Identity::*
+│   └── rules.rs             # AuthenticationRules, RbacRules
+└── compliance/
+    ├── entities.rs          # SmsiControl, RiskEntry, TokenVault, Consent, ImpactAssessment, BreachNotification
+    ├── value_objects.rs     # ControlId, RiskLevel, Token, ConsentScope, BreachType
+    ├── aggregates.rs        # SmsiControlAggregate, ConsentAggregate
+    ├── errors.rs            # DomainError::Compliance::*
+    └── rules.rs             # SmsiControlRules, TokenizationRules, ConsentLifecycleRules, DpiaRules
 ```
 
 #### Key Domain Principles (SOLID)
@@ -270,11 +328,16 @@ src/application/
 │   ├── use_cases.rs         # LogAuditEventUseCase, GenerateAuditReportUseCase
 │   ├── ports.rs             # AuditRepository, AuditLogger
 │   └── errors.rs            # ApplicationError::Governance::*
-└── identity/
-    ├── dto.rs               # RegisterUserRequest, LoginRequest, UserResponse
-    ├── use_cases.rs         # RegisterUserUseCase, AuthenticateUseCase
-    ├── ports.rs             # UserRepository, PasswordHasher, TokenGenerator
-    └── errors.rs            # ApplicationError::Identity::*
+├── identity/
+│   ├── dto.rs               # RegisterUserRequest, LoginRequest, UserResponse
+│   ├── use_cases.rs         # RegisterUserUseCase, AuthenticateUseCase
+│   ├── ports.rs             # UserRepository, PasswordHasher, TokenGenerator
+│   └── errors.rs            # ApplicationError::Identity::*
+└── compliance/
+    ├── dto.rs               # TokenizeRequest, ConsentRequest, DpiaRequest, SmsiControlResponse
+    ├── use_cases.rs         # TokenizePanUseCase, ManageConsentUseCase, RunDpiaUseCase, CheckSmsiControlUseCase
+    ├── ports.rs             # ITokenVaultRepository, IConsentRepository, IRiskRegisterRepository
+    └── errors.rs            # ApplicationError::Compliance::*
 ```
 
 ### 3.3 Couche Infrastructure
@@ -295,6 +358,7 @@ src/infrastructure/
 │   │   ├── fx_repository.rs          # impl FxRepository
 │   │   ├── governance_repository.rs  # impl AuditRepository
 │   │   ├── identity_repository.rs    # impl UserRepository
+│   │   ├── compliance_repository.rs  # impl ITokenVaultRepository, IConsentRepository, IRiskRegisterRepository
 │   │   ├── connection.rs             # PgPool, migrations
 │   │   └── queries.rs                # SQL compiled queries (sqlx macros)
 │   ├── redis/
@@ -342,7 +406,8 @@ src/infrastructure/
 │   │   ├── payment_handler.rs        # HTTP handlers for Payment BC
 │   │   ├── fx_handler.rs             # HTTP handlers for FX BC
 │   │   ├── governance_handler.rs     # HTTP handlers for Governance BC
-│   │   └── identity_handler.rs       # HTTP handlers for Identity BC
+│   │   ├── identity_handler.rs       # HTTP handlers for Identity BC
+│   │   └── compliance_handler.rs     # HTTP handlers for Compliance BC
 │   ├── middleware/
 │   │   ├── auth_middleware.rs        # JWT verification
 │   │   ├── audit_middleware.rs       # Request/response logging
@@ -468,6 +533,21 @@ tests/
     ├── account_workflow_test.rs
     └── [...]
 ```
+
+### Tests compliance spécifiques
+
+| Domaine | Type de test | Vérifications |
+|---|---|---|
+| **ISO 27001** | Automated compliance checks | Vérification implémentation des 93 contrôles Annexe A, statut dashboard, alertes sur contrôles non conformes |
+| **PCI DSS — Tokenisation** | Unit + Integration | PAN jamais en clair dans logs, base principale, fichiers ; token vault retourne token irréversible ; détokenisation impossible sans accès vault |
+| **PCI DSS — Chiffrement** | Integration | AES-256-GCM chiffrement/déchiffrement champ ; vérification données chiffrées au repos dans PostgreSQL |
+| **PCI DSS — MFA** | E2E | MFA enforcement pour accès CDE ; rejet sans 2FA ; TOTP validation |
+| **Consent** | BDD + E2E | Lifecycle complet : grant → active → revoke ; expiration automatique ; dashboard client ; vérification scope à chaque appel API |
+| **Privacy — Portabilité** | Integration + E2E | Export JSON/CSV complet des données client ; format structuré vérifiable |
+| **Privacy — Effacement** | Integration | Anonymisation effective des données personnelles ; conservation 10 ans pour obligations légales |
+| **Privacy — Notification 72h** | Unit + Integration | Déclenchement automatique workflow ; suivi délai 72h ; escalade si dépassement |
+| **e-KYC** | Integration (mock) | Biométrie mock (reconnaissance faciale) ; validation workflow enrôlement électronique complet |
+| **goAML** | Integration | Génération XML/JSON déclaration de soupçon conforme format CTAF ; validation schéma |
 
 ### Test-Driven Emergence (BDD ↔ E2E ↔ Vidéo)
 
@@ -1067,6 +1147,99 @@ CREATE TABLE two_factor_auth (
 );
 ```
 
+### Schema: compliance
+
+```sql
+-- Contrôles SMSI ISO 27001:2022
+CREATE TABLE smsi_controls (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    control_id VARCHAR(10) NOT NULL UNIQUE,    -- Ex: A.5.1, A.8.28
+    theme VARCHAR(50) NOT NULL,                -- organisationnel, personnes, physique, technologique
+    description TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'NOT_IMPLEMENTED', -- NOT_IMPLEMENTED, IN_PROGRESS, IMPLEMENTED, NOT_APPLICABLE
+    implemented_at TIMESTAMP,
+    evidence TEXT,                              -- Lien vers preuve d'implémentation
+    next_review_date DATE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Registre des risques SI (ISO 31000)
+CREATE TABLE risk_register (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    category VARCHAR(50) NOT NULL,             -- TECHNICAL, OPERATIONAL, LEGAL, STRATEGIC, CLIMATE
+    description TEXT NOT NULL,
+    likelihood INT NOT NULL CHECK (likelihood BETWEEN 1 AND 5),   -- Vraisemblance 1-5
+    impact INT NOT NULL CHECK (impact BETWEEN 1 AND 5),           -- Impact 1-5
+    risk_level VARCHAR(20) NOT NULL,           -- LOW, MEDIUM, HIGH, CRITICAL (calculé likelihood × impact)
+    treatment TEXT NOT NULL,                    -- ACCEPT, MITIGATE, TRANSFER, AVOID
+    owner VARCHAR(255) NOT NULL,               -- Responsable du risque
+    review_date DATE NOT NULL,                 -- Prochaine revue trimestrielle
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- PCI DSS : Token Vault (namespace isolé)
+CREATE TABLE token_vault (
+    token_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    masked_pan VARCHAR(19) NOT NULL,           -- 6 premiers + 4 derniers chiffres
+    token_hash BYTEA NOT NULL,                 -- Hash irréversible du token
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL
+);
+
+-- PCI DSS : Gestion des clés de chiffrement
+CREATE TABLE encryption_keys (
+    key_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    algorithm VARCHAR(20) NOT NULL,            -- AES-256-GCM, RSA-4096
+    purpose VARCHAR(50) NOT NULL,              -- FIELD_ENCRYPTION, TOKEN_VAULT, TLS, SIGNING
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, ROTATED, REVOKED, EXPIRED
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    rotated_at TIMESTAMP                       -- Dernière rotation (annuelle obligatoire)
+);
+
+-- Consent Management (Open Banking + INPDP)
+CREATE TABLE consents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    customer_id UUID NOT NULL REFERENCES customers(id),
+    tpp_id UUID,                               -- NULL si consentement interne INPDP
+    permissions JSONB NOT NULL,                -- Ex: ["accounts:read", "balances:read", "transactions:read"]
+    scope VARCHAR(100) NOT NULL,               -- ACCOUNTS, PAYMENTS, PERSONAL_DATA, MARKETING
+    granted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,
+    revoked_at TIMESTAMP,
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, EXPIRED, REVOKED
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Privacy : Évaluations d'impact (DPIA)
+CREATE TABLE impact_assessments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    processing_type VARCHAR(100) NOT NULL,     -- Type de traitement évalué
+    risk_level VARCHAR(20) NOT NULL,           -- LOW, MEDIUM, HIGH, CRITICAL
+    measures JSONB NOT NULL,                   -- Mesures de mitigation proposées
+    approved_by UUID REFERENCES users(id),
+    approved_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Privacy : Notifications de violations (72h INPDP)
+CREATE TABLE breach_notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    breach_type VARCHAR(50) NOT NULL,          -- CONFIDENTIALITY, INTEGRITY, AVAILABILITY
+    detected_at TIMESTAMP NOT NULL,
+    notified_inpdp_at TIMESTAMP,              -- NULL si pas encore notifié
+    deadline_at TIMESTAMP NOT NULL,            -- detected_at + 72h
+    affected_count INT NOT NULL DEFAULT 0,     -- Nombre de personnes affectées
+    details JSONB NOT NULL,                    -- Description, impact, mesures correctives
+    status VARCHAR(20) NOT NULL DEFAULT 'DETECTED', -- DETECTED, INVESTIGATING, NOTIFIED, CLOSED
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+```
+
 ---
 
 ## 7. API REST (100+ endpoints par BC)
@@ -1632,11 +1805,49 @@ Tous les composants frontend doivent respecter WCAG 2.1 Level AA :
 - Replication to secure off-site = even if production DB destroyed, audit trail survives
 **Consequences** : Audit table grows indefinitely, but partitioning by date keeps queries fast.
 
+### ADR-008: Tokenisation PAN (vault isolé vs chiffrement réversible)
+
+**Status** : Accepted
+**Context** : PCI DSS v4.0.1 (Req 3.5.1.2) exige la protection des PAN stockés. Deux approches possibles : chiffrement réversible (AES-256-GCM) ou tokenisation irréversible (remplacement par token).
+**Decision** : Tokenisation irréversible avec token vault isolé dans namespace Kubernetes dédié `compliance`.
+**Rationale** :
+- Tokenisation irréversible = le PAN complet n'existe pas en dehors du vault, réduisant drastiquement le scope PCI DSS
+- Vault isolé = NetworkPolicy restrictive, seul le Payment BC peut accéder au token vault
+- Chiffrement réversible garderait le PAN accessible = scope PCI DSS étendu à toute la base
+- Moins de surface d'attaque : compromission d'un service non-CDE ne donne accès à aucun PAN
+**Consequences** : Nécessite un service de tokenisation dédié (overhead réseau ~2ms), mais scope PCI DSS réduit de 80%. Audit PCI DSS simplifié.
+
+### ADR-009: Consent-as-a-Service (BC transversal vs intégré par BC)
+
+**Status** : Accepted
+**Context** : La gestion du consentement (INPDP + Open Banking PSD3) peut être intégrée dans chaque BC consommateur ou centralisée dans un service transversal.
+**Decision** : Service transversal centralisé dans le BC Compliance, exposant une API de vérification de consentement.
+**Rationale** :
+- Centralisé = source unique de vérité pour tous les consentements (INPDP, Open Banking, marketing)
+- Chaque BC appelle `ConsentService.verify(customer_id, scope)` avant tout traitement
+- Audit simplifié : un seul point d'inspection pour le DPO et les auditeurs
+- Lifecycle uniforme : grant → active → expire/revoke avec dashboard client unique
+- Alternative (par BC) créerait duplication, incohérences entre BCs, difficulté d'audit global
+**Consequences** : Dépendance transversale vers le BC Compliance (couplage acceptable via port/trait). Performance : vérification ~1ms avec cache Redis.
+
+### ADR-010: ISO 27001 controls-as-code (suivi automatisé vs documentation manuelle)
+
+**Status** : Accepted
+**Context** : Le suivi des 93 contrôles ISO 27001:2022 Annexe A peut être fait manuellement (documents Excel/Word) ou automatisé avec dashboard temps réel.
+**Decision** : Controls-as-code avec dashboard temps réel intégré au système.
+**Rationale** :
+- Controls-as-code = chaque contrôle est une entrée en base (table `smsi_controls`) avec statut, preuve, date de revue
+- Dashboard temps réel = visibilité immédiate sur le niveau de conformité (% implémenté, contrôles en retard)
+- Alerting automatique : notification quand un contrôle approche de sa date de revue ou passe en non-conforme
+- Audit : exportation instantanée de la Déclaration d'Applicabilité (SoA) pour les auditeurs ISO
+- Alternative manuelle = risque de documentation obsolète, pas de visibilité temps réel, revue laborieuse
+**Consequences** : Investissement initial pour modéliser les 93 contrôles en base. ROI rapide : préparation audit ISO réduite de semaines à heures.
+
 ---
 
-## 10. Sécurité & INPDP (Loi 2004-63)
+## 10. Sécurité & Compliance
 
-### Principes
+### Principes fondamentaux
 
 1. **Privacy-by-design** : Minimal data collection, purpose limitation
 2. **Encryption at rest** : LUKS AES-XTS-512 on all disks
@@ -1651,14 +1862,92 @@ Tous les composants frontend doivent respecter WCAG 2.1 Level AA :
 | Mesure | Implémentation | Scope |
 |---|---|---|
 | **Chiffrement de repos** | LUKS AES-512 | PostgreSQL, backups, S3 |
-| **Chiffrement transit** | TLS 1.3 | HTTP, replication, SWIFT |
+| **Chiffrement transit** | TLS 1.3 (Traefik), mTLS inter-services | HTTP, replication, SWIFT |
+| **Chiffrement champ** | AES-256-GCM (PostgreSQL field-level) | PAN, données sensibles CDE |
 | **Hachage mots de passe** | Bcrypt (cost 12) | Credentials utilisateurs |
 | **Tokens JWT** | RS256 (RSA 4096), expires 1h | Sessions API |
 | **Rotation clés HSM** | Annuelle | Signatures bancaires |
-| **Rate limiting** | 1000 req/min par IP | DDoS protection |
+| **Rate limiting** | 1000 req/min par IP, par TPP | DDoS protection |
 | **WAF (Web Application Firewall)** | CrowdSec | Injection SQL, XSS, CSRF |
 | **IDS (Intrusion Detection)** | Suricata | Network-level anomalies |
 | **Fail2ban** | Ban après 5 failed logins | Brute force protection |
+| **Tokenisation PAN** | Token vault isolé (irréversible) | Données carte PCI DSS |
+| **MFA CDE** | TOTP + mot de passe | Accès Cardholder Data Environment |
+| **Crates Rust crypto** | `ring`, `rustls`, `aes-gcm`, `zeroize` | Opérations cryptographiques |
+
+### 10.1 ISO 27001:2022 — Système de Management de la Sécurité de l'Information (SMSI)
+
+Le SMSI BANKO est aligné sur la norme ISO/IEC 27001:2022 (seule version en vigueur depuis octobre 2025) :
+
+- **93 contrôles Annexe A** organisés en 4 thèmes :
+  - Contrôles organisationnels (A.5) : 37 contrôles
+  - Contrôles relatifs aux personnes (A.6) : 8 contrôles
+  - Contrôles physiques (A.7) : 14 contrôles
+  - Contrôles technologiques (A.8) : 34 contrôles
+- **Registre des risques intégré** : conforme ISO 31000, matrice d'évaluation 5x5 (vraisemblance x impact), revue trimestrielle obligatoire
+- **11 nouveaux contrôles 2022** implémentés :
+  - A.5.7 Threat intelligence (veille menaces)
+  - A.5.23 Sécurité cloud (isolation, chiffrement)
+  - A.5.30 Préparation TIC pour continuité d'activité
+  - A.7.4 Surveillance de la sécurité physique
+  - A.8.9 Gestion de la configuration
+  - A.8.10 Suppression de l'information
+  - A.8.11 Masquage des données (pseudonymisation, anonymisation)
+  - A.8.12 Prévention des fuites de données (DLP)
+  - A.8.16 Surveillance des activités (SIEM)
+  - A.8.23 Filtrage web
+  - A.8.28 Codage sécurisé (Rust memory safety, clippy lints, cargo audit)
+- **Amendement climatique ISO 27001:2022/Amd 1:2024** : évaluation des risques climatiques sur data centers (température, inondation, alimentation électrique), plan de continuité adapté
+- **Référence** : `docs/compliance/iso-27001/`
+
+### 10.2 PCI DSS v4.0.1 — Sécurité des données de cartes de paiement
+
+L'architecture CDE (Cardholder Data Environment) est minimisée par tokenisation :
+
+- **Architecture CDE minimisée** : le scope PCI DSS est réduit au strict minimum par l'utilisation d'un token vault isolé dans un namespace Kubernetes dédié
+- **Tokenisation PAN** : remplacement irréversible du PAN par un token avant tout stockage (Req 3.5.1.2). Le PAN complet ne transite jamais dans les logs, la base principale, ni les fichiers
+- **Chiffrement multi-couches** :
+  - AES-256-GCM au niveau champ (PostgreSQL) pour données sensibles dans le CDE
+  - TLS 1.3 via Traefik pour tout trafic externe
+  - mTLS pour communications inter-services internes
+- **MFA obligatoire** pour tout accès au CDE (Req 8.4.2) : TOTP (Time-based One-Time Password) + mot de passe minimum 12 caractères
+- **Crates Rust sécurité** :
+  - `ring` : primitives cryptographiques (FIPS-validated)
+  - `rustls` : TLS natif Rust (pas d'OpenSSL)
+  - `aes-gcm` : chiffrement authentifié AES-256-GCM
+  - `zeroize` : effacement mémoire des secrets après utilisation (protection contre dump mémoire)
+- **Référence** : `docs/compliance/pci-dss/`
+
+### 10.3 Open Banking API Security
+
+Sécurité des APIs ouvertes aux TPP (Third-Party Providers) :
+
+- **OAuth 2.0 + PKCE** (Proof Key for Code Exchange) : authentification des TPP sans secret client exposé
+- **mTLS pour certificats TPP** : mutual TLS avec certificats de type eIDAS (QWAC/QSealC) pour authentification forte des TPP
+- **JWS (JSON Web Signatures)** : signature des messages API pour garantir l'intégrité et la non-répudiation
+- **Rate limiting par TPP et par client** : quotas différenciés par TPP, avec protection contre l'abus par client individuel
+- **Consent-verified authorization** : chaque appel API vérifie que le scope demandé est couvert par un consentement actif du client
+- **Endpoints Open Banking** :
+  - `GET /api/v1/open-banking/accounts` — Consultation comptes (avec consentement)
+  - `GET /api/v1/open-banking/balances` — Consultation soldes
+  - `GET /api/v1/open-banking/transactions` — Historique transactions
+  - `POST /api/v1/open-banking/payments` — Initiation de paiement
+  - `POST /api/v1/open-banking/consents` — Gestion consentements
+- **Référence** : `docs/compliance/open-banking-psd2/`
+
+### 10.4 Loi données personnelles 2025 (INPDP)
+
+Protection des données personnelles conforme à la loi tunisienne 2025 et aux principes RGPD :
+
+- **Privacy-by-design** : chiffrement AES-256-GCM + pseudonymisation obligatoires pour toutes les données personnelles sensibles
+- **DPO dashboard intégré** : tableau de bord temps réel pour le Délégué à la Protection des Données, avec vue sur les traitements, consentements, et violations
+- **DPIA workflow automatisé** : évaluations d'impact (Data Protection Impact Assessment) automatisées pour tout nouveau traitement à haut risque, avec circuit d'approbation intégré
+- **Notification violations INPDP sous 72h** : système d'alerting automatique qui déclenche le workflow de notification dès détection d'une violation, avec suivi du délai 72h et escalade
+- **APIs portabilité** :
+  - `GET /api/v1/privacy/export/{customer_id}` — Export données client en JSON/CSV (droit à la portabilité)
+  - `POST /api/v1/privacy/erasure/{customer_id}` — Anonymisation/effacement données (droit à l'effacement, hors obligations légales de conservation 10 ans)
+  - `GET /api/v1/privacy/dpia` — Liste des évaluations d'impact
+  - `POST /api/v1/privacy/breach-notification` — Déclarer une violation de données
 
 ---
 
@@ -1810,6 +2099,94 @@ spec:
     targetPort: 8000
     protocol: TCP
 ```
+
+### Infrastructure Compliance (PCI DSS / SMSI)
+
+```yaml
+# Namespace dédié compliance (isolation PCI DSS)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: compliance
+  labels:
+    pci-dss: "true"
+    isolation: "strict"
+---
+# NetworkPolicy restrictive — seul Payment BC peut accéder au token vault
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: token-vault-policy
+  namespace: compliance
+spec:
+  podSelector:
+    matchLabels:
+      app: token-vault
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          app: banko
+      podSelector:
+        matchLabels:
+          component: payment-bc
+    ports:
+    - protocol: TCP
+      port: 8443
+---
+# Token Vault Deployment (CDE isolé)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: token-vault
+  namespace: compliance
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: token-vault
+  template:
+    metadata:
+      labels:
+        app: token-vault
+    spec:
+      serviceAccountName: token-vault-sa
+      securityContext:
+        runAsNonRoot: true
+        fsReadOnlyRootFilesystem: true
+      containers:
+      - name: token-vault
+        image: banko-token-vault:latest
+        ports:
+        - containerPort: 8443
+          name: https
+        env:
+        - name: VAULT_ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: vault-secrets
+              key: encryption-key
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+```
+
+**Secrets Management** :
+- **HashiCorp Vault** pour gestion centralisée des clés de chiffrement (AES-256-GCM, RSA-4096)
+- **Rotation annuelle** obligatoire des clés de chiffrement (PCI DSS Req 3.6.1)
+- **Transit engine** : chiffrement/déchiffrement via API Vault (clés jamais exposées aux services)
+
+**Backup Token Vault** :
+- Backups chiffrés (AES-256-GCM) avec clé séparée stockée en HSM
+- Stockage off-site (S3-compatible, région différente)
+- Rétention 10 ans (obligation légale bancaire tunisienne)
+- Test de restauration trimestriel (vérification intégrité)
 
 ---
 
@@ -2113,13 +2490,13 @@ BANKO implements **by-design** regulatory compliance through:
 - **HSM** : Cryptographic protection of critical signing
 - **SOLID** : Maintainability for 10+ year lifetime
 
-**Reference Commits** [REF-01] through [REF-70] in `docs/legal/REFERENTIEL_LEGAL_ET_NORMATIF.md` map each invariant to Tunisian law and international standards (Bâle III, GAFI, IFRS 9, ISO 20022/27001).
+**Reference Commits** [REF-01] through [REF-95] in `docs/legal/REFERENTIEL_LEGAL_ET_NORMATIF.md` map each invariant to Tunisian law and international standards (Bâle III, GAFI, IFRS 9, ISO 20022, ISO 27001:2022, PCI DSS v4.0.1, loi données personnelles 2025).
 
 Architecture is designed for autonomous operation by solo-dev or small team with clear module boundaries, comprehensive testing, and regulatory traceability.
 
 ---
 
-**Document Version** : 1.0.0
-**Last Updated** : 4 avril 2026
+**Document Version** : 3.0.0
+**Last Updated** : 6 avril 2026
 **Maintainer** : GILMRY / BANKO Project
 **License** : AGPL-3.0

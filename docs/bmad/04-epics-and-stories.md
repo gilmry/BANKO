@@ -6,7 +6,7 @@
 **Exécution** : Scrum → Nexus → SAFe
 **Production** : ITIL + IaC ISO 27001
 
-**Version** : 1.0.0 — 4 avril 2026
+**Version** : 3.0.0 — 6 avril 2026
 **Auteur** : GILMRY / Projet BANKO
 **Référentiel légal** : [REFERENTIEL_LEGAL_ET_NORMATIF.md](../legal/REFERENTIEL_LEGAL_ET_NORMATIF.md)
 
@@ -5355,7 +5355,7 @@ Then données en temps réel, caching 5min
 
 ---
 
-## Sprint Planning (Sprints 1-6)
+## Sprint Planning (Sprints 1-7)
 
 ### Sprint 1 (Semaines 1-2) : Foundations + Identity
 - STORY-ID-01 : User domain
@@ -5409,6 +5409,26 @@ Then données en temps réel, caching 5min
 - STORY-ID-09 : 2FA (security hardening)
 - **Documentation vivante** : E2E multi-rôles
 - **Heures** : ~15h
+
+### Sprint 7 (Semaines 13-15) : Compliance transversal (ISO 27001, PCI DSS, Open Banking, Privacy)
+- STORY-COMP-01 : Domain Compliance (SmsiControl, RiskEntry)
+- STORY-COMP-02 : Token Vault PCI DSS (INV-16)
+- STORY-COMP-03 : Application ports + ComplianceService
+- STORY-COMP-04 : Infrastructure tables + repositories
+- STORY-COMP-05 : API SMSI ISO 27001
+- STORY-COMP-06 : Consent aggregate (INV-19)
+- STORY-COMP-07 : API Consent + dashboard client
+- STORY-COMP-08 : DPIA + Notification violations (INV-18)
+- STORY-COMP-09 : Portabilité + effacement données
+- STORY-COMP-10 : goAML (CTAF)
+- STORY-COMP-11 : TuniCheque (Circ. 2025-03)
+- STORY-COMP-12 : e-KYC biométrique (Circ. 2025-06)
+- STORY-COMP-13 : Travel Rule R.16 (INV-20)
+- STORY-COMP-14 : MFA CDE (INV-17)
+- STORY-COMP-15 : Open Banking APIs (PSD3-ready)
+- **BC** : BC13 Compliance (transversal)
+- **Capacités** : C20-C26
+- **Heures** : ~55h (5 L × 5h + 10 M × 3h)
 
 ---
 
@@ -6138,6 +6158,457 @@ export function formatNumber(num: number, locale: string = 'fr'): string {
 
 ---
 
+## Sprint 10 — SESSION-10 : Compliance transversal (ISO 27001, PCI DSS, Open Banking, Privacy)
+
+> **Bounded Context** : BC13 Compliance (transversal)
+> **Prérequis** : Sprint 0-9 complétés
+> **Agent** : 1 agent séquentiel
+> **Capacités** : C20 (ISO 27001), C21 (PCI DSS), C22 (Open Banking), C23 (Loi données 2025), C24 (goAML), C25 (TuniCheque), C26 (e-KYC)
+> **Durée estimée** : ~6h (agent IA)
+
+---
+
+### STORY-COMP-01 | Domain — Entités Compliance (SmsiControl, RiskEntry)
+
+**Type** : Feature | **Taille** : M | **BC** : Compliance | **Entité** : SmsiControl, RiskEntry | **SOLID** : SRP
+
+> En tant que RSSI, je veux un registre des contrôles ISO 27001 et des risques SI, afin de suivre la conformité SMSI.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Création d'un contrôle SMSI
+  Given un contrôle Annexe A "A.8.28 — Codage sécurisé"
+  When je l'enregistre avec le statut "In Progress" et le thème "Technologique"
+  Then le contrôle est persisté avec un ID unique et une date de création
+
+Scenario: Évaluation d'un risque
+  Given un risque "Inscription liste grise GAFI" avec vraisemblance 4 et impact 5
+  When je calcule le niveau de risque
+  Then le niveau est "Critique" (score 20)
+
+Scenario: Revue trimestrielle obligatoire
+  Given un risque créé il y a 4 mois sans revue
+  When je vérifie les revues en retard
+  Then le risque apparaît dans la liste des revues échues
+```
+
+**Tâches TDD** :
+1. Test : SmsiControl::new() avec control_id, theme, description, status
+2. Impl : struct SmsiControl avec validation (theme ∈ {Organisationnel, Personnes, Physique, Technologique})
+3. Test : RiskEntry::new() avec calcul automatique risk_level = likelihood × impact
+4. Impl : struct RiskEntry avec enum RiskLevel {Faible, Moyen, Élevé, Critique}
+5. Test : RiskEntry::is_review_overdue() renvoie true après 90 jours
+6. Impl : logique de revue trimestrielle
+7. Test : SmsiControl::update_status() avec transition valide (Planned → InProgress → Done)
+
+**Dépendances** : Aucune (fondation compliance)
+
+---
+
+### STORY-COMP-02 | Domain — TokenVault et chiffrement PCI DSS (INV-16)
+
+**Type** : Feature | **Taille** : L | **BC** : Compliance | **Entité** : TokenVault | **SOLID** : SRP, DIP
+
+> En tant que responsable sécurité, je veux que tout PAN soit tokenisé avant stockage, afin de minimiser le périmètre PCI DSS (INV-16).
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Tokenisation d'un PAN
+  Given un PAN "4111111111111111"
+  When je tokenise le PAN
+  Then un token irréversible est généré et le PAN masqué est "411111******1111"
+
+Scenario: Détokenisation interdite sans autorisation CDE
+  Given un token existant
+  When un utilisateur sans rôle CDE_ACCESS tente la détokenisation
+  Then l'accès est refusé avec DomainError::CdeAccessDenied
+
+Scenario: Chiffrement niveau champ en base
+  Given un PAN à stocker
+  When il est persisté dans token_vault
+  Then le champ token_hash est chiffré AES-256-GCM et le PAN original n'apparaît nulle part en clair
+
+Scenario: Zéroisation mémoire après usage
+  Given un PAN déchiffré en mémoire pour traitement
+  When le traitement est terminé
+  Then la mémoire contenant le PAN est zéroïsée (crate zeroize)
+```
+
+**Tâches TDD** :
+1. Test : TokenVault::tokenize(pan) génère token + masked_pan
+2. Impl : struct TokenVault avec tokenisation SHA-256 + salt
+3. Test : TokenVault::detokenize(token) requiert Permission::CdeAccess
+4. Impl : contrôle d'accès CDE
+5. Test : chiffrement AES-256-GCM au repos (aes-gcm crate)
+6. Impl : EncryptionService avec key hierarchy (KEK/DEK)
+7. Test : clé de chiffrement rotation (key_id change, anciennes données toujours lisibles)
+8. Impl : key rotation avec double-déchiffrement
+9. Test : PAN JAMAIS présent en clair dans les logs (grep logs)
+10. Impl : middleware log sanitizer pour masquer les PAN
+
+**Dépendances** : STORY-COMP-01
+
+---
+
+### STORY-COMP-03 | Application — ComplianceService + ports
+
+**Type** : Tech | **Taille** : M | **BC** : Compliance | **SOLID** : ISP, DIP
+
+> En tant qu'architecte, je veux des ports (traits) pour le module compliance, afin d'isoler le domaine de l'infrastructure.
+
+**Tâches TDD** :
+1. Test : ISmsiControlRepository trait (save, find_by_id, find_by_theme, find_overdue_reviews)
+2. Test : ITokenVaultRepository trait (store_token, find_by_token, rotate_key)
+3. Test : IConsentRepository trait (save, find_by_customer, find_active, revoke)
+4. Test : IRiskRegisterRepository trait (save, find_by_level, find_overdue)
+5. Impl : tous les traits dans application/ports/
+6. Test : ComplianceService orchestre SmsiControl + RiskEntry
+7. Impl : ComplianceService
+
+**Dépendances** : STORY-COMP-01, STORY-COMP-02
+
+---
+
+### STORY-COMP-04 | Infrastructure — Tables compliance + migrations
+
+**Type** : Tech | **Taille** : M | **BC** : Compliance
+
+> En tant que développeur, je veux les tables PostgreSQL pour le module compliance.
+
+**Tâches TDD** :
+1. Migration : CREATE TABLE smsi_controls (id, control_id, theme, description, status, implemented_at, evidence, created_at)
+2. Migration : CREATE TABLE risk_register (id, category, description, likelihood, impact, risk_level, treatment, owner, review_date, created_at)
+3. Migration : CREATE TABLE token_vault (token_id, masked_pan, token_hash, created_at, expires_at)
+4. Migration : CREATE TABLE encryption_keys (key_id, algorithm, purpose, status, created_at, rotated_at)
+5. Migration : CREATE TABLE consents (id, customer_id, tpp_id, permissions, scope, granted_at, expires_at, revoked_at, status)
+6. Migration : CREATE TABLE impact_assessments (id, processing_type, risk_level, measures, approved_by, approved_at)
+7. Migration : CREATE TABLE breach_notifications (id, breach_type, detected_at, notified_inpdp_at, affected_count, details)
+8. Impl : repositories PostgreSQL pour chaque trait
+
+**Dépendances** : STORY-COMP-03
+
+---
+
+### STORY-COMP-05 | API — Endpoints SMSI ISO 27001
+
+**Type** : Feature | **Taille** : M | **BC** : Compliance
+
+> En tant que RSSI, je veux des APIs pour gérer les contrôles SMSI et le registre des risques.
+
+**Endpoints** :
+- GET /compliance/smsi/controls — Liste des 93 contrôles avec statut
+- GET /compliance/smsi/controls/{id} — Détail d'un contrôle
+- PUT /compliance/smsi/controls/{id}/status — Mettre à jour le statut
+- GET /compliance/risks — Registre des risques
+- POST /compliance/risks — Ajouter un risque
+- GET /compliance/risks/overdue — Risques en retard de revue
+- GET /compliance/dashboard — Dashboard conformité global
+
+**Tâches TDD** : 7 tests (1 par endpoint) + implémentation handlers Actix-web
+
+**Dépendances** : STORY-COMP-04
+
+---
+
+### STORY-COMP-06 | Domain — Consent aggregate (INV-19)
+
+**Type** : Feature | **Taille** : L | **BC** : Compliance | **Entité** : Consent | **SOLID** : SRP
+
+> En tant que client bancaire, je veux gérer mes consentements de partage de données, afin de contrôler qui accède à mes informations (INV-19).
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Octroi de consentement
+  Given un client authentifié et un TPP "FinApp" demandant accès "account_balance, transaction_history"
+  When le client accorde le consentement pour 90 jours
+  Then un Consent est créé avec status "Active" et expires_at = now + 90 jours
+
+Scenario: Révocation de consentement
+  Given un consentement actif pour le TPP "FinApp"
+  When le client révoque le consentement
+  Then le status passe à "Revoked" et le TPP perd immédiatement l'accès
+
+Scenario: Expiration automatique
+  Given un consentement avec expires_at = hier
+  When le système vérifie les consentements
+  Then le status passe à "Expired"
+
+Scenario: Consentement requis avant partage (INV-19)
+  Given un TPP demandant des données client
+  When aucun consentement actif n'existe pour ce TPP
+  Then l'accès est refusé avec DomainError::ConsentRequired
+```
+
+**Tâches TDD** :
+1. Test : Consent::new() avec customer_id, tpp_id, permissions, scope, duration
+2. Impl : struct Consent avec lifecycle (Pending → Active → Revoked/Expired)
+3. Test : Consent::revoke() met à jour revoked_at et status
+4. Impl : révocation
+5. Test : Consent::is_expired() vérifie expires_at
+6. Impl : vérification expiration
+7. Test : ConsentService::verify_access(tpp_id, customer_id, permission) → Result
+8. Impl : vérification accès basée sur consentement actif
+9. Test : audit log pour chaque changement de consentement (INV-12)
+10. Impl : intégration audit trail
+
+**Dépendances** : STORY-COMP-03, STORY-GOV-01
+
+---
+
+### STORY-COMP-07 | API — Consent Management + Dashboard client
+
+**Type** : Feature | **Taille** : M | **BC** : Compliance
+
+> En tant que client, je veux un dashboard pour voir et gérer mes consentements.
+
+**Endpoints** :
+- POST /consents — Demande de consentement (par TPP)
+- GET /consents/{id} — Détail d'un consentement
+- DELETE /consents/{id} — Révocation
+- GET /customers/{id}/consents — Liste des consentements d'un client
+- GET /customers/{id}/consents/dashboard — Dashboard visuel
+
+**Dépendances** : STORY-COMP-06
+
+---
+
+### STORY-COMP-08 | Feature — DPIA + Notification violations (INV-18)
+
+**Type** : Feature | **Taille** : M | **BC** : Compliance | **Entité** : ImpactAssessment, BreachNotification
+
+> En tant que DPO, je veux gérer les DPIA et être alerté automatiquement des violations pour notifier l'INPDP sous 72h (INV-18).
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Création d'une DPIA
+  Given un traitement à haut risque "Profilage crédit automatisé"
+  When je crée une évaluation d'impact
+  Then une DPIA est générée avec risk_level, mesures proposées, et statut "Pending"
+
+Scenario: Détection et notification de violation (INV-18)
+  Given une violation détectée (accès non autorisé à données clients)
+  When le système enregistre la violation
+  Then une alerte est déclenchée immédiatement
+  And le délai de 72h pour notification INPDP commence
+
+Scenario: Notification INPDP dans les délais
+  Given une violation enregistrée il y a 48h sans notification
+  When le système vérifie les notifications en attente
+  Then une alerte urgente est envoyée au DPO (24h restantes)
+```
+
+**Dépendances** : STORY-COMP-04
+
+---
+
+### STORY-COMP-09 | Feature — Portabilité et effacement des données
+
+**Type** : Feature | **Taille** : M | **BC** : Compliance
+
+> En tant que client, je veux exercer mon droit à la portabilité et à l'effacement de mes données personnelles (Loi données 2025).
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Export données (portabilité)
+  Given un client demande l'export de ses données
+  When le système génère l'export
+  Then un fichier JSON structuré contenant toutes les données personnelles est produit
+
+Scenario: Effacement avec contrainte légale
+  Given un client demande l'effacement de ses données
+  And le client a des obligations de conservation LBC/FT (10 ans)
+  When le système traite la demande
+  Then les données non soumises à conservation sont anonymisées
+  And les données LBC/FT sont marquées "retention_hold" avec date d'expiration
+```
+
+**Dépendances** : STORY-COMP-06, STORY-C01
+
+---
+
+### STORY-COMP-10 | Feature — Intégration goAML (CTAF)
+
+**Type** : Feature | **Taille** : L | **BC** : Compliance + AML
+
+> En tant que CMLCO (Sonia), je veux transmettre les déclarations de soupçon directement via goAML à la CTAF (Circ. 2025-17).
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Génération déclaration goAML
+  Given une investigation AML conclue avec décision "Soupçon confirmé"
+  When Sonia valide la déclaration
+  Then un rapport XML/JSON conforme au format goAML est généré
+
+Scenario: Transmission à la CTAF
+  Given un rapport goAML prêt
+  When le système transmet à la plateforme CTAF
+  Then un accusé de réception est enregistré avec horodatage
+```
+
+**Dépendances** : STORY-AML-07, STORY-COMP-04
+
+---
+
+### STORY-COMP-11 | Feature — Intégration TuniCheque (Circ. 2025-03)
+
+**Type** : Feature | **Taille** : M | **BC** : Compliance + Payment
+
+> En tant que guichetier (Karim), je veux vérifier en temps réel la couverture d'un chèque via TuniCheque.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Vérification chèque couvert
+  Given un chèque n° 12345 sur le compte RIB 01-234-0001234-56
+  When je vérifie via TuniCheque
+  Then le statut "Couvert" est affiché avec le solde disponible
+
+Scenario: Chèque interdit
+  Given un chèque émis par un client interdit bancaire
+  When je vérifie via TuniCheque
+  Then le statut "Interdit" est affiché et l'opération est bloquée
+```
+
+**Dépendances** : STORY-PAY-01, STORY-COMP-04
+
+---
+
+### STORY-COMP-12 | Feature — e-KYC biométrique (Circ. 2025-06)
+
+**Type** : Feature | **Taille** : L | **BC** : Compliance + Identity + Customer
+
+> En tant que client, je veux m'enrôler à distance via reconnaissance faciale conforme à la Circ. 2025-06.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Enrôlement biométrique réussi
+  Given un prospect avec pièce d'identité et photo selfie
+  When le système compare la photo selfie avec la photo du document
+  Then la vérification biométrique est validée (score > seuil)
+  And un profil KYC est créé avec method = "e-KYC"
+
+Scenario: Échec biométrique
+  Given un prospect avec une photo de mauvaise qualité
+  When la comparaison biométrique échoue (score < seuil)
+  Then l'enrôlement est refusé avec suggestion de rendez-vous en agence
+```
+
+**Dépendances** : STORY-ID-01, STORY-C01, STORY-COMP-04
+
+---
+
+### STORY-COMP-13 | Feature — Travel Rule R.16 (INV-20)
+
+**Type** : Feature | **Taille** : M | **BC** : Compliance + Payment
+
+> En tant que système, je veux inclure les données originator ET beneficiary complètes pour tout transfert international > 1000 EUR/USD (INV-20, GAFI R.16 révisée juin 2025).
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Transfert international conforme R.16
+  Given un virement SWIFT de 5000 EUR vers la France
+  When le système prépare le message
+  Then les données originator (nom, compte, adresse, LEI si personne morale) ET beneficiary (nom, compte, pays, ville) sont incluses
+
+Scenario: Transfert < 1000 EUR — données réduites
+  Given un virement de 500 EUR
+  When le système prépare le message
+  Then seuls les noms et numéros de compte sont requis
+
+Scenario: Données manquantes — blocage
+  Given un virement de 2000 EUR sans adresse beneficiary
+  When le système valide le transfert
+  Then DomainError::TravelRuleIncomplete est retourné
+```
+
+**Dépendances** : STORY-PAY-05, STORY-COMP-04
+
+---
+
+### STORY-COMP-14 | Feature — MFA pour accès CDE (INV-17)
+
+**Type** : Feature | **Taille** : M | **BC** : Compliance + Identity
+
+> En tant que système, je veux imposer MFA (2 facteurs) pour tout accès au CDE (INV-17, PCI DSS Req 8.4.2).
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Accès CDE avec MFA
+  Given un utilisateur avec rôle CDE_ACCESS authentifié par mot de passe
+  When il accède à un endpoint CDE (/compliance/tokens/*)
+  Then une vérification TOTP est exigée avant l'accès
+
+Scenario: Accès CDE sans MFA — refus
+  Given un utilisateur authentifié par mot de passe seul
+  When il tente d'accéder au token vault
+  Then l'accès est refusé avec DomainError::MfaRequired
+```
+
+**Dépendances** : STORY-ID-09, STORY-COMP-02
+
+---
+
+### STORY-COMP-15 | Feature — Open Banking APIs (PSD3-ready)
+
+**Type** : Feature | **Taille** : L | **BC** : Compliance
+
+> En tant que TPP (Third Party Provider), je veux accéder aux données client via des APIs standardisées conformes PSD3, après consentement du client.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Accès compte avec consentement valide
+  Given un TPP "FinApp" avec consentement actif scope "account_balance"
+  When le TPP appelle GET /open-banking/accounts/{id}/balances
+  Then le solde est retourné
+
+Scenario: Accès sans consentement — refus
+  Given un TPP sans consentement actif
+  When le TPP appelle GET /open-banking/accounts/{id}/balances
+  Then HTTP 403 avec erreur "CONSENT_REQUIRED"
+
+Scenario: Initiation de paiement avec SCA
+  Given un TPP avec consentement "payment_initiation" et SCA validée
+  When le TPP appelle POST /open-banking/payments
+  Then le paiement est initié avec statut "Pending"
+```
+
+**Endpoints Open Banking** :
+- GET /open-banking/accounts — Liste comptes (AISP)
+- GET /open-banking/accounts/{id}/balances — Solde (AISP)
+- GET /open-banking/accounts/{id}/transactions — Historique (AISP)
+- POST /open-banking/payments — Initiation paiement (PISP)
+- GET /open-banking/payments/{id}/status — Statut paiement
+- POST /open-banking/consents — Demande consentement
+- GET /open-banking/consents/{id} — Détail consentement
+- DELETE /open-banking/consents/{id} — Révocation
+
+**Dépendances** : STORY-COMP-06, STORY-COMP-07, STORY-AC-05, STORY-PAY-01
+
+---
+
+### Synthèse Sprint 10
+
+| Story | Titre | Taille | Capacité | INV |
+|-------|-------|--------|----------|-----|
+| COMP-01 | Domain Compliance (SMSI, risques) | M | C20 | — |
+| COMP-02 | Token Vault PCI DSS | L | C21 | INV-16 |
+| COMP-03 | Application ports + services | M | C20-C21 | — |
+| COMP-04 | Infrastructure tables + repos | M | C20-C26 | — |
+| COMP-05 | API SMSI ISO 27001 | M | C20 | — |
+| COMP-06 | Consent aggregate | L | C22-C23 | INV-19 |
+| COMP-07 | API Consent + dashboard | M | C22-C23 | INV-19 |
+| COMP-08 | DPIA + Notifications | M | C23 | INV-18 |
+| COMP-09 | Portabilité + effacement | M | C23 | — |
+| COMP-10 | goAML (CTAF) | L | C24 | — |
+| COMP-11 | TuniCheque | M | C25 | — |
+| COMP-12 | e-KYC biométrique | L | C26 | — |
+| COMP-13 | Travel Rule R.16 | M | C24 | INV-20 |
+| COMP-14 | MFA CDE | M | C21 | INV-17 |
+| COMP-15 | Open Banking APIs | L | C22 | INV-19 |
+
+**Total** : 15 stories (5 L + 10 M) = 5×5h + 10×3h = **55h agent IA**
+
+---
+
 ## Stories d'Émergence (Réserve 20%)
 
 **STORY-EMG-01** | Bug fixes + refactoring
@@ -6199,10 +6670,11 @@ export function formatNumber(num: number, locale: string = 'fr'): string {
 | **i18n (AR/FR/EN)** | 8 M | 4h | **32h** |
 | **Documentation vivante** | 6 L | 8h | **48h** |
 | **CI/CD + Security** | 10 M | 4h | **40h** |
-| **Subtotal** | | | **824h** |
-| **+ 20% émergence** | | | **165h** |
-| **+ 10% CI stabilisation** | | | **99h** |
-| **TOTAL HEURES** | | | **~1 088h** |
+| **Compliance (BC13)** | 5 L + 10 M | 5h + 3h | **55h** |
+| **Subtotal** | | | **879h** |
+| **+ 20% émergence** | | | **176h** |
+| **+ 10% CI stabilisation** | | | **106h** |
+| **TOTAL HEURES** | | | **~1 161h** |
 
 ### Budget Client (Scénario)
 
@@ -6210,12 +6682,12 @@ export function formatNumber(num: number, locale: string = 'fr'): string {
 
 | Item | Calcul | Montant |
 |---|---|---|
-| Développement | 1 088h × 30 TND | **32 640 TND** |
+| Développement | 1 161h × 30 TND | **34 830 TND** |
 | Infrastructure (3 mois OVH) | 150 EUR/mois × 3 | **450 EUR** |
 | Licences (GitLab, Sentry, etc.) | Forfait | **0 EUR** (open source alternatives) |
 | Audit sécurité (pentest) | Devis externe | **500-1000 EUR** |
-| **Total TND** | | **~33 500 TND** |
-| **Total EUR** | | **~10 500 EUR** |
+| **Total TND** | | **~35 700 TND** |
+| **Total EUR** | | **~11 200 EUR** |
 
 ---
 
@@ -6223,10 +6695,10 @@ export function formatNumber(num: number, locale: string = 'fr'): string {
 
 | Profil | Calcul | Durée |
 |---|---|---|
-| Solo-dev side-project (8h/sem) | 1 088 ÷ 8 | **136 semaines ≈ 31 mois** |
-| Solo-dev time-plein (35h/sem) | 1 088 ÷ 35 | **31 semaines ≈ 7 mois** |
-| Duo (2 × 20h/sem) | 1 088 ÷ 40 | **27 semaines ≈ 6 mois** |
-| Équipe (3 × 30h/sem) | 1 088 ÷ 90 | **12 semaines ≈ 3 mois** |
+| Solo-dev side-project (8h/sem) | 1 161 ÷ 8 | **145 semaines ≈ 33 mois** |
+| Solo-dev time-plein (35h/sem) | 1 161 ÷ 35 | **33 semaines ≈ 8 mois** |
+| Duo (2 × 20h/sem) | 1 161 ÷ 40 | **29 semaines ≈ 7 mois** |
+| Équipe (3 × 30h/sem) | 1 161 ÷ 90 | **13 semaines ≈ 3 mois** |
 
 ---
 
@@ -6243,13 +6715,13 @@ export function formatNumber(num: number, locale: string = 'fr'): string {
 
 ## Recap Général
 
-- **Total stories** : ~95 (13 tech + 12 epics × 7 stories/epic)
-- **Bounded Contexts** : 12 (tous couverts)
-- **Scénarios BDD** : ~200 (20+ par BC)
-- **Endpoints API** : ~160 (12-15 par BC)
-- **Heures estimées** : 1 088h (+ 20% émergence)
-- **Durée calendaire** : 7 mois (duo) à 31 mois (solo side-project)
-- **Conformité légale** : 100% Circ. 2025-17 + Bâle III + INPDP + NCT
+- **Total stories** : ~110 (13 tech + 12 epics × 7 stories/epic + 15 compliance BC13)
+- **Bounded Contexts** : 13 (12 originaux + BC13 Compliance)
+- **Scénarios BDD** : ~230 (20+ par BC, 30+ compliance)
+- **Endpoints API** : ~180 (12-15 par BC + 20 compliance/open-banking)
+- **Heures estimées** : 1 161h (+ 20% émergence)
+- **Durée calendaire** : 7 mois (duo) à 33 mois (solo side-project)
+- **Conformité légale** : 100% Circ. 2025-17 + Bâle III + INPDP + NCT + ISO 27001 + PCI DSS + PSD3
 - **Disciplines** : SOLID + DDD + BDD + TDD + Hexagonal + YAGNI + DRY
 
 ---
