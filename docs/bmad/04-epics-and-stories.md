@@ -6,7 +6,7 @@
 **Exécution** : Scrum → Nexus → SAFe
 **Production** : ITIL + IaC ISO 27001
 
-**Version** : 3.0.0 — 6 avril 2026
+**Version** : 3.1.0 — 6 avril 2026
 **Auteur** : GILMRY / Projet BANKO
 **Référentiel légal** : [REFERENTIEL_LEGAL_ET_NORMATIF.md](../legal/REFERENTIEL_LEGAL_ET_NORMATIF.md)
 
@@ -6734,3 +6734,1805 @@ Scenario: Initiation de paiement avec SCA
 4. **Étape 8** : Sprint 1-2 dev (Identity + Customer + Account avec BDD)
 
 **Fin du document.**
+
+---
+
+## Epics Additionnels — Core Banking (v3.1)
+
+> **Ajouté en v3.1** — Stories identifiées par gap analysis entre les ambitions BMAD et les standards core banking (Apache Fineract, Temenos, Finastra).
+
+---
+
+## Epic 14 : Notifications & Alertes — Must Have
+
+**Objectif** : Système de notification multicanal (Email, SMS, Push) pour alerter les clients et les opérateurs.
+**Priorité** : P1
+**Bounded Context** : Transversal (tous les BC)
+
+### STORY-NOT-01 | Domain — Notification aggregate (Email/SMS/Push)
+
+**Type** : Feature | **Taille** : L | **BC** : Transversal | **Entité** : NotificationAggregate
+
+> En tant que système, je veux un agrégat Notification supportant Email, SMS et Push, afin de centraliser la gestion des canaux de communication.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Création d'une notification Email
+  Given un client avec email "john@example.com"
+  When je crée une notification Email avec template "account_opened"
+  Then une Notification est créée avec channel = Email, status = Pending
+
+Scenario: Notification SMS avec templating
+  Given un client avec téléphone "+21612345678"
+  When je crée une notification SMS personnalisée
+  Then le template est remplacé avec variables (client_name, amount, etc.)
+
+Scenario: Push notification avec payload
+  Given un client authentifié avec FCM token
+  When je crée une Push notification
+  Then le payload contient titre, corps, et deeplink
+```
+
+**Tâches TDD** :
+1. Test : NotificationAggregate::new() avec channel, recipient, template_id
+2. Impl : enum Channel { Email, Sms, Push }
+3. Test : NotificationAggregate::render_template() avec variables
+4. Impl : template rendering engine
+5. Test : status lifecycle (Pending → Sent → Delivered/Failed)
+6. Impl : status tracking
+7. Test : retry logic pour notifications échouées
+8. Impl : retry with exponential backoff
+9. Test : audit trail pour chaque notification
+10. Impl : AuditTrail integration
+11. Test : deduplication (pas 2 notifications identiques en 5min)
+12. Impl : deduplication logic
+13. Test : multilingual templates (FR/EN/AR)
+14. Impl : language support
+
+**Dépendances** : STORY-ID-01, STORY-C01
+
+---
+
+### STORY-NOT-02 | Application — NotificationService + templates
+
+**Type** : Feature | **Taille** : M | **BC** : Transversal
+
+> En tant qu'architecte, je veux une NotificationService orchestrant les notifications avec templates multilingues.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Envoi notification via Service
+  Given un NotificationService configuré
+  When j'appelle send(notification) pour une notification Email
+  Then le service valide, rend le template, et déclenche l'adaptateur
+
+Scenario: Templates multilingues
+  Given un client avec locale = "ar"
+  When je rends le template "payment_received"
+  Then le contenu est en arabe avec formattage locale-spécifique
+
+Scenario: Fallback si template manquant
+  Given un template "unknown_event" inexistant
+  When le service le cherche
+  Then il utilise un template par défaut générique
+```
+
+**Tâches TDD** :
+1. Test : INotificationRepository trait (save, find, find_pending, update_status)
+2. Test : ITemplateRepository trait (find_by_id, find_by_locale)
+3. Impl : traits dans application/ports/
+4. Test : NotificationService::send(notification, channel) → Result
+5. Impl : service orchestration
+6. Test : template validation (variables requises présentes)
+7. Impl : validation
+8. Test : error handling et logging
+9. Impl : error types + logging
+
+**Dépendances** : STORY-NOT-01
+
+---
+
+### STORY-NOT-03 | Infrastructure — Provider Email (SMTP) + SMS gateway
+
+**Type** : Feature | **Taille** : M | **BC** : Transversal
+
+> En tant que responsable ops, je veux les adaptateurs Email (SMTP) et SMS configurés.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Envoi Email via SMTP
+  Given un adaptateur SmtpEmailProvider configuré
+  When j'appelle send() avec to, subject, body
+  Then le message est envoyé via SMTP et un ID message est retourné
+
+Scenario: SMS via provider externe (Twilio)
+  Given un adaptateur SmsProvider avec Twilio credentials
+  When j'appelle send_sms(phone, message)
+  Then le SMS est transmis à Twilio et un status Pending est retourné
+
+Scenario: Gestion des erreurs de livraison
+  Given un Email non livrable (invalid address)
+  When l'adaptateur reçoit une erreur SMTP
+  Then le status passe à Failed avec reason = "invalid_recipient"
+```
+
+**Tâches TDD** :
+1. Impl : SmtpEmailProvider avec lettre crate
+2. Test : connexion SMTP avec TLS
+3. Impl : SmsProvider trait avec adaptateurs (Twilio, local)
+4. Test : SMS sending avec formatage
+5. Impl : error handling + retry logic
+6. Test : credentials gestion (env vars)
+7. Impl : configuration sécurisée
+
+**Dépendances** : STORY-NOT-02
+
+---
+
+### STORY-NOT-04 | Infrastructure — Tables + queue async (Tokio tasks)
+
+**Type** : Feature | **Taille** : M | **BC** : Transversal
+
+> En tant que développeur, je veux les tables de persistance et une queue asynchrone pour les notifications.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Persistance notification en base
+  Given une notification créée
+  When je l'enregistre dans notifications table
+  Then elle est queryable et son status est trackable
+
+Scenario: Queue asynchrone avec retry
+  Given une notification en Pending
+  When la queue Tokio la traite
+  Then elle est envoyée et le status est mis à jour
+  And si elle échoue, elle est réenquêtée avec délai exponentiel
+
+Scenario: Nettoyage historique
+  Given des notifications envoyées il y a 90 jours
+  When un job EOD s'exécute
+  Then les notifications archivées sont supprimées
+```
+
+**Tâches TDD** :
+1. Migration : CREATE TABLE notifications (id, customer_id, channel, status, template_id, variables, created_at, sent_at, error)
+2. Migration : CREATE TABLE notification_templates (id, event_type, channel, locale, subject, body, variables)
+3. Impl : PostgreSQL repositories
+4. Test : Tokio task spawner pour queue async
+5. Impl : notification queue worker
+6. Test : retry logic avec exponential backoff
+7. Impl : retry scheduler
+
+**Dépendances** : STORY-NOT-03
+
+---
+
+### STORY-NOT-05 | Feature — Preferences client (opt-in/opt-out)
+
+**Type** : Feature | **Taille** : M | **BC** : Transversal
+
+> En tant que client INPDP-compliant, je veux contrôler mes préférences de notification.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Opt-in Email pour marketing
+  Given un client sans préférence
+  When il opt-in explicitement pour newsletters
+  Then NotificationPreference(channel=Email, type=Marketing) = Opted_In
+
+Scenario: Opt-out SMS après consent
+  Given un client avec SMS opt-in actif
+  When il opt-out des SMS
+  Then NotificationPreference(channel=Sms) = Opted_Out
+  And aucun SMS ne sera envoyé sauf notifications légales
+
+Scenario: Respect INPDP automatique
+  Given un client sans consentement explicite
+  When le système évalue les préférences
+  Then seules les notifications obligatoires (statut légal, sécurité) sont envoyées
+```
+
+**Tâches TDD** :
+1. Test : NotificationPreference aggregate avec per-channel opt-in/out
+2. Impl : struct avec enum OptIn | OptOut | Default
+3. Test : INotificationPreferenceRepository
+4. Impl : repository
+5. Test : vérification compliance (pas de marketing sans consent)
+6. Impl : check before sending
+
+**Dépendances** : STORY-NOT-02, STORY-COMP-06
+
+---
+
+### STORY-NOT-06 | Feature — Alertes transactionnelles temps réel
+
+**Type** : Feature | **Taille** : M | **BC** : Transversal
+
+> En tant que client, je veux des alertes immédiates pour débits/crédits et événements de sécurité.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Alerte débit automatique
+  Given une transaction débit > 1000 TND
+  When la transaction est commitée
+  Then une notification Email + SMS est déclenchée immédiatement
+
+Scenario: Alerte seuil dépassé
+  Given un seuil d'alerte configuré à 5000 TND
+  When le solde descend sous ce seuil
+  Then une alerte "Low Balance" est envoyée
+
+Scenario: Alerte login suspect
+  Given un login depuis pays non habituel
+  When le système détecte l'anomalie
+  Then une alerte Email immédiate + MFA requise
+
+Scenario: Pas d'alerte si opt-out
+  Given un client opt-out des alertes transactionnelles
+  When une transaction se produit
+  Then aucune notification n'est envoyée
+```
+
+**Tâches TDD** :
+1. Test : TransactionAlertService::on_transaction_created(transaction)
+2. Impl : event listener intégré à STORY-PAY-01
+3. Test : evaluation seuil (amount > threshold)
+4. Impl : threshold evaluation
+5. Test : respect des préférences client
+6. Impl : preference check
+7. Test : priorité alertes sécurité vs marketing
+
+**Dépendances** : STORY-NOT-04, STORY-NOT-05, STORY-PAY-01, STORY-SEC-01
+
+---
+
+## Epic 15 : Catalogue Produits Bancaires — Must Have
+
+**Objectif** : Gestion des produits (comptes, crédits, dépôts) avec tarification dynamique.
+**Priorité** : P1
+**Bounded Context** : Account + Credit
+
+### STORY-PROD-01 | Domain — Product aggregate (taux, frais, conditions)
+
+**Type** : Feature | **Taille** : L | **BC** : Account + Credit | **Entité** : Product
+
+> En tant que product manager, je veux un agrégat Product centralisé avec taux, frais, et conditions d'éligibilité.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Création produit compte courant
+  Given les conditions : solde_minimum = 100 TND, frais_mensuels = 5 TND
+  When je crée le produit "Compte Courant Standard"
+  Then le Product a taux = 0%, frais = 5 TND/mois, conditions appliquées
+
+Scenario: Variation tarification par segment
+  Given un produit "Crédit Consommation" avec tarification par segment (VIP, Standard, Junior)
+  When j'évalue la tarification pour un client Standard
+  Then taux = 12%, frais_dossier = 2% appliqués
+
+Scenario: Conditions d'éligibilité
+  Given un produit avec age_min = 18, income_min = 1000 TND
+  When j'évalue un client de 17 ans
+  Then le client est inéligible avec raison "Age minimum non atteint"
+```
+
+**Tâches TDD** :
+1. Test : Product::new() avec name, product_type, terms
+2. Impl : enum ProductType { CurrentAccount, SavingsAccount, Loan, TermDeposit }
+3. Test : Fee aggregate (fee_type, amount, charged_when)
+4. Impl : struct Fee with enum FeeType { Monthly, Transaction, Setup, Early_Withdrawal }
+5. Test : InterestRate aggregate (annual_rate, calculation_method, period)
+6. Impl : struct InterestRate with enum CalcMethod { Simple, Compound, Daily }
+7. Test : Eligibility rules (age, income, credit_score)
+8. Impl : EligibilityChecker trait
+9. Test : Product::evaluate_eligibility(customer) → Result
+10. Impl : eligibility evaluation
+11. Test : pricing variations par segment
+12. Impl : segment-based pricing
+13. Test : versioning (product_version tracking)
+
+**Dépendances** : STORY-C01 (Customer pour eligibility data)
+
+---
+
+### STORY-PROD-02 | Application — ProductService + pricing engine
+
+**Type** : Feature | **Taille** : M | **BC** : Account + Credit
+
+> En tant qu'architecte, je veux une ProductService et un pricing engine pour calculer les tarifs dynamiquement.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Calcul prix pour client
+  Given un client Standard demandant un crédit
+  When j'appelle ProductService.calculate_price(customer, product)
+  Then le pricing engine retourne taux = 12%, frais = 2%, montant_total calculé
+
+Scenario: Promotion temporaire
+  Given une promotion "Taux réduit 10%" valide jusqu'au 30 avril
+  When je calcule le prix avec this date
+  Then le taux appliqué est 10% (au lieu de 12%)
+
+Scenario: Vérification d'éligibilité dans le service
+  Given un client inéligible pour un produit
+  When j'appelle ProductService.get_eligible_products(customer)
+  Then seuls les produits éligibles sont retournés
+```
+
+**Tâches TDD** :
+1. Test : IProductRepository trait
+2. Test : IPricingEngine trait (calculate_price, apply_promotion)
+3. Impl : traits dans application/ports/
+4. Test : ProductService::calculate_price(customer, product) → PriceQuote
+5. Impl : service
+6. Test : promotion logic avec validation dates
+7. Impl : promotion engine
+8. Test : caching des pricing (Redis optional)
+
+**Dépendances** : STORY-PROD-01
+
+---
+
+### STORY-PROD-03 | Feature — Grille tarifaire configurable
+
+**Type** : Feature | **Taille** : M | **BC** : Account + Credit
+
+> En tant qu'admin, je veux gérer les grilles tarifaires via API sans redéploiement.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Création d'une grille tarifaire
+  Given un admin authentifié
+  When je crée une PricingGrid pour "Crédit Consommation" avec bands par montant
+  Then les bands (0-5k, 5k-20k, 20k+) ont des taux distincts sauvegardés
+
+Scenario: Activation avec date effective
+  Given une grille tarifaire créée
+  When j'active avec effective_date = 2026-05-01
+  Then la grille devient active à minuit le 1er mai
+  And les anciennes grilles sont archivées
+
+Scenario: Audit des changements tarifaires
+  Given une grille modifiée (ancien taux 10% → 11%)
+  When j'enregistre la modification
+  Then un audit trail captures {who, when, old_value, new_value}
+```
+
+**Tâches TDD** :
+1. Test : PricingGrid aggregate avec bands (min_amount, max_amount, rate, fees)
+2. Impl : struct PricingGrid
+3. Test : table pricing_grids avec versioning
+4. Migration : CREATE TABLE pricing_grids
+5. Test : APIs CRUD /admin/pricing-grids
+6. Impl : handlers Actix-web
+7. Test : audit trail integration
+
+**Dépendances** : STORY-PROD-02
+
+---
+
+### STORY-PROD-04 | Feature — Calcul intérêts automatique (DAT, épargne)
+
+**Type** : Feature | **Taille** : M | **BC** : Account
+
+> En tant que system, je veux calculer et appliquer les intérêts quotidiennement sur les comptes épargne et DAT.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Calcul intérêt DAT
+  Given un DAT de 10 000 TND à taux annuel 6% sur 12 mois
+  When j'exécute le job EOD de calculation d'intérêts
+  Then intérêt_quotidien = (10000 × 6%) / 365 = ~1.64 TND ajouté au solde
+
+Scenario: Intérêt composé compte épargne
+  Given un compte épargne avec intérêt composé mensuel
+  When le job EOD s'exécute 30 jours après ouverture
+  Then intérêts composés sont calculés et capitalisés
+
+Scenario: Fin de DAT — retour principal
+  Given un DAT arrivant à maturité demain
+  When le job EOD s'exécute
+  Then le principal est rétabli dans le compte principal du client
+  And un événement MaturityReached est déclenché
+```
+
+**Tâches TDD** :
+1. Test : InterestCalculator::calculate_daily_interest(account, date) → Decimal
+2. Impl : calculation logic
+3. Test : accrual vs. disbursement logic
+4. Impl : accrual tracking table
+5. Test : compounding (simple vs. compound)
+6. Impl : compounding logic
+7. Test : job EOD orchestration
+8. Impl : scheduler Tokio avec cron
+
+**Dépendances** : STORY-AC-01, STORY-AC-02
+
+---
+
+## Epic 16 : Gestion Cartes Bancaires — Must Have
+
+**Objectif** : Émission, activation et gestion du cycle de vie des cartes bancaires.
+**Priorité** : P1
+**Bounded Context** : Payment
+
+### STORY-CARD-01 | Domain — Card aggregate (émission, activation, blocage)
+
+**Type** : Feature | **Taille** : L | **BC** : Payment | **Entité** : Card
+
+> En tant que système, je veux gérer le cycle de vie complet d'une carte (émission → activation → blocage/résiliation).
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Émission de carte
+  Given un client demandant une carte de crédit
+  When je crée une Card avec card_type = Credit, validity = 5 ans
+  Then la carte est créée avec status = Issued, un PAN unique, et un CVV
+
+Scenario: Activation suite à livraison
+  Given une carte physique livrée au client
+  When le client l'active via code secret
+  Then le status passe à Active et elle peut être utilisée
+
+Scenario: Blocage temporaire
+  Given une carte active
+  When le client demande un blocage
+  Then status passe à Blocked, aucune transaction n'est possible
+
+Scenario: Résiliation définitive
+  Given une carte blockée ou suspendue
+  When le client la résilie
+  Then status passe à Cancelled et le PAN est archivé
+```
+
+**Tâches TDD** :
+1. Test : Card::new() avec card_type, account_id, validity_years
+2. Impl : enum CardType { Debit, Credit, Prepaid }
+3. Test : enum CardStatus { Issued, ActivationPending, Active, Blocked, Cancelled }
+4. Impl : status enum
+5. Test : Card::generate_pan() crée PAN unique 16 digits
+6. Impl : PAN generation
+7. Test : Card::activate(activation_code) valide et change status
+8. Impl : activation logic
+9. Test : Card::block() et Card::cancel()
+10. Impl : status transitions
+11. Test : audit trail pour chaque changement
+12. Impl : AuditTrail integration
+
+**Dépendances** : STORY-AC-01 (Account)
+
+---
+
+### STORY-CARD-02 | Application — CardService + lifecycle
+
+**Type** : Feature | **Taille** : M | **BC** : Payment
+
+> En tant qu'architecte, je veux un CardService orchestrant le cycle de vie des cartes.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Demande de carte via service
+  Given un CardService et un client authentifié
+  When j'appelle CardService.request_card(customer_id, card_type)
+  Then une Card est créée avec status = Issued et un numéro de demande
+
+Scenario: Activation avec validation
+  Given une carte en ActivationPending
+  When j'appelle CardService.activate(card_id, activation_code)
+  Then la validation réussit et le status devient Active
+
+Scenario: Gestion blocage et déblocage
+  Given une carte active
+  When j'appelle CardService.block(card_id) puis unblock()
+  Then les transitions de status sont validées
+```
+
+**Tâches TDD** :
+1. Test : ICardRepository trait
+2. Impl : trait dans application/ports/
+3. Test : CardService::request_card(customer_id, card_type) → Card
+4. Impl : service
+5. Test : CardService::activate(card_id, activation_code) → Result
+6. Impl : activation
+7. Test : CardService::block/unblock
+8. Impl : blocking logic
+
+**Dépendances** : STORY-CARD-01
+
+---
+
+### STORY-CARD-03 | Infrastructure — Tables cards + card_transactions
+
+**Type** : Feature | **Taille** : M | **BC** : Payment
+
+> En tant que développeur, je veux les tables PostgreSQL pour cartes et transactions.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Persistance carte en base
+  Given une Card créée
+  When je l'enregistre dans la table cards
+  Then elle est queryable avec ses attributs (pan_hash, cvv_hash, status)
+
+Scenario: Enregistrement transactions
+  Given une transaction par carte
+  When je l'enregistre dans card_transactions
+  Then amount, merchant, timestamp, mcc, status sont trackables
+```
+
+**Tâches TDD** :
+1. Migration : CREATE TABLE cards (id, account_id, card_type, pan_hash, cvv_hash, status, validity_end, created_at, activated_at, cancelled_at)
+2. Migration : CREATE TABLE card_transactions (id, card_id, amount, currency, merchant_name, mcc_code, status, timestamp, auth_code)
+3. Impl : PostgreSQL repositories
+
+**Dépendances** : STORY-CARD-02
+
+---
+
+### STORY-CARD-04 | API — Endpoints gestion cartes
+
+**Type** : Feature | **Taille** : M | **BC** : Payment
+
+> En tant qu'utilisateur frontend, je veux des APIs pour gérer mes cartes.
+
+**Endpoints** :
+- POST /cards — Demander une carte
+- GET /cards — Lister mes cartes
+- GET /cards/{id} — Détail (PAN masqué)
+- POST /cards/{id}/activate — Activer
+- POST /cards/{id}/block — Bloquer
+- POST /cards/{id}/unblock — Débloquer
+- DELETE /cards/{id} — Résiliation
+- GET /cards/{id}/transactions — Historique
+
+**Tâches TDD** : 8 tests (1 par endpoint) + handlers
+
+**Dépendances** : STORY-CARD-03
+
+---
+
+### STORY-CARD-05 | Feature — Plafonds et limites par carte
+
+**Type** : Feature | **Taille** : M | **BC** : Payment
+
+> En tant que client, je veux configurer des plafonds de dépense par jour/mois.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Configuration plafond journalier
+  Given une carte active
+  When je configure daily_limit = 2000 TND
+  Then aucune transaction > 2000 TND n'est acceptée le même jour
+
+Scenario: Plafond mensuel
+  Given un monthly_limit = 50000 TND
+  When la somme des transactions du mois approche 50000
+  Then une alerte est envoyée et les transactions > limit sont refusées
+
+Scenario: Exception plafond
+  Given un client VIP avec exception valide
+  When il dépasse le plafond
+  Then la transaction est autorisée et un audit trail enregistre l'exception
+```
+
+**Tâches TDD** :
+1. Test : CardLimit aggregate (limit_type, amount, period)
+2. Impl : struct CardLimit
+3. Test : validation limit avant transaction
+4. Impl : limit checking
+5. Test : cumul montants pour période
+
+**Dépendances** : STORY-CARD-01
+
+---
+
+### STORY-CARD-06 | Feature — Tokenisation carte (PCI DSS)
+
+**Type** : Feature | **Taille** : L | **BC** : Payment + Compliance
+
+> En tant que responsable sécurité, je veux que tout PAN soit tokenisé et jamais stocké en clair.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Tokenisation PAN à la création
+  Given une carte créée
+  When le PAN est enregistré
+  Then seul pan_hash (SHA-256) et masked_pan (411111****1111) sont stockés
+
+Scenario: Utilisation token pour transaction
+  Given une transaction par carte
+  When le système accède aux détails
+  Then il utilise le token_hash, jamais le PAN original
+
+Scenario: Zéroisation en mémoire
+  Given un PAN décodé pour processing
+  When le processing est terminé
+  Then la variable PAN est zéroïsée (crate zeroize)
+
+Scenario: Pas de PAN dans logs
+  Given une transaction traitée
+  When je consulte les logs
+  Then le PAN n'apparaît jamais, même chiffré
+```
+
+**Tâches TDD** :
+1. Test : pan_hash generation (SHA-256 + salt)
+2. Impl : hashing logic
+3. Test : masked_pan generation
+4. Impl : masking (keep first 6, last 4)
+5. Test : zeroize integration avec crate zeroize
+6. Impl : zeroize on drop
+7. Test : log sanitizer middleware
+8. Impl : sanitizing logs
+9. Test : PCI DSS audit (grep PAN dans logs fail)
+10. Impl : security checks
+
+**Dépendances** : STORY-CARD-03, STORY-COMP-02
+
+---
+
+## Epic 17 : Virements Récurrents & Prélèvements — Must Have
+
+**Objectif** : Gestion des virements permanents (standing orders) et prélèvements (direct debit).
+**Priorité** : P1
+**Bounded Context** : Payment
+
+### STORY-RECUR-01 | Feature — Virements permanents (standing orders)
+
+**Type** : Feature | **Taille** : M | **BC** : Payment
+
+> En tant que client, je veux configurer des virements automatiques récurrents (loyer, salaire, etc.).
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Création virement permanent
+  Given un client et un virement type (loyer 1500 TND mensuel)
+  When je crée un StandingOrder avec fréquence = Monthly, start_date, end_date
+  Then le virement est enregistré avec status = Active
+
+Scenario: Exécution automatique
+  Given un virement permanent actif pour le 1er du mois
+  When le job EOD s'exécute le 1er
+  Then le virement est exécuté comme un virement normal
+  And un statut Executed est enregistré
+
+Scenario: Suspension et reprise
+  Given un virement permanent actif
+  When je le suspends
+  Then status = Suspended et aucune exécution ne s'effectue
+  When je le reprends
+  Then status = Active et les exécutions reprennent
+```
+
+**Tâches TDD** :
+1. Test : StandingOrder aggregate avec fréquence (Daily, Weekly, Monthly)
+2. Impl : enum Frequency { Daily, Weekly, BiWeekly, Monthly, Quarterly, Yearly }
+3. Test : status lifecycle (Active, Suspended, Completed, Cancelled)
+4. Impl : status enum
+5. Test : next_execution_date calculation
+6. Impl : date calculation logic
+7. Test : vérification solde avant exécution
+8. Impl : balance check
+9. Test : audit trail pour chaque exécution
+
+**Dépendances** : STORY-PAY-01, STORY-EOD-01
+
+---
+
+### STORY-RECUR-02 | Feature — Prélèvements (direct debit mandats)
+
+**Type** : Feature | **Taille** : M | **BC** : Payment
+
+> En tant que créancier/client, je veux gérer les prélèvements automatiques via mandats.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Création mandat SEPA
+  Given un client authorisant un créancier
+  When je crée un Mandate avec creditor, amount_limit, frequency
+  Then un document mandat est généré et le statut = Pending_Signature
+
+Scenario: Signature mandat électronique
+  Given un mandat en attente
+  When le client le signe électroniquement
+  Then status = Active et les prélèvements peuvent être exécutés
+
+Scenario: Prélèvement avec débit
+  Given un mandat actif
+  When un prélèvement est déclenché
+  Then le montant est débité du compte du client
+  And le créancier est crédité
+
+Scenario: Opposition mandat
+  Given un mandat actif
+  When le client demande l'opposition
+  Then status = Revoked et plus aucun prélèvement
+```
+
+**Tâches TDD** :
+1. Test : Mandate aggregate avec creditor, amount_limit, frequency
+2. Impl : struct Mandate
+3. Test : signature management
+4. Impl : e-signature integration
+5. Test : prélèvement execution via job
+6. Impl : debit processing
+7. Test : opposition logic
+
+**Dépendances** : STORY-PAY-01, STORY-COMP-06
+
+---
+
+### STORY-RECUR-03 | Feature — Scheduler paiements récurrents (Tokio cron)
+
+**Type** : Feature | **Taille** : M | **BC** : Payment
+
+> En tant que système, je veux un scheduler Tokio exécutant virements et prélèvements récurrents.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Scheduler détecte standing orders
+  Given des standing orders programmés
+  When le scheduler Tokio s'exécute chaque heure
+  Then il détecte ceux due et les enfile pour exécution
+
+Scenario: Exécution lot avec rollback sur erreur
+  Given 100 standing orders à exécuter
+  When le job les traite
+  Then les réussites sont commitées
+  And les échecs sont retried avec backoff exponentiel
+
+Scenario: Notification client
+  Given un virement récurrent exécuté
+  When le statut devient Executed
+  Then une notification (Email/SMS) est déclenchée
+```
+
+**Tâches TDD** :
+1. Test : RecurringPaymentScheduler struct
+2. Impl : Tokio task scheduler
+3. Test : cron expression parsing (0 1 * * * pour 1h du matin)
+4. Impl : cron logic
+5. Test : batch processing (1000s de paiements)
+6. Impl : efficient batch handling
+7. Test : rollback sur transaction échouée
+8. Impl : transaction rollback
+9. Test : notification integration
+
+**Dépendances** : STORY-RECUR-01, STORY-RECUR-02, STORY-NOT-06
+
+---
+
+## Epic 18 : Multi-Devise & Frais — Must Have
+
+**Objectif** : Gestion de comptes en plusieurs devises et calcul/application automatique de frais.
+**Priorité** : P1
+**Bounded Context** : Account + ForeignExchange + Accounting
+
+### STORY-MCUR-01 | Feature — Comptes multi-devises (TND, EUR, USD)
+
+**Type** : Feature | **Taille** : L | **BC** : Account + ForeignExchange
+
+> En tant que client international, je veux ouvrir des comptes en TND, EUR, et USD.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Ouverture compte EUR
+  Given un client existant
+  When je crée un compte avec currency = EUR
+  Then un Account avec IBAN EUR est généré et le solde initial = 0 EUR
+
+Scenario: Vue consolidée en devise principale
+  Given un client avec comptes TND, EUR, USD
+  When j'affiche le "Total Balance"
+  Then les soldes sont convertis en TND avec taux du jour et sommés
+
+Scenario: Transaction cross-devise
+  Given un compte TND et un compte EUR
+  When j'effectue un virement TND → EUR
+  Then la conversion est effectuée et frais de conversion appliqués
+```
+
+**Tâches TDD** :
+1. Test : Account::new() avec currency param
+2. Impl : enum Currency { TND, EUR, USD, GBP }
+3. Test : balance consolidation avec taux courants
+4. Impl : conversion logic
+5. Test : IBAN generation per currency
+6. Impl : IBAN generation
+7. Test : audit trail pour conversions
+
+**Dépendances** : STORY-AC-01, STORY-FX-01
+
+---
+
+### STORY-MCUR-02 | Feature — Conversion automatique inter-comptes
+
+**Type** : Feature | **Taille** : M | **BC** : Account + ForeignExchange
+
+> En tant que client, je veux convertir automatiquement entre mes comptes multi-devises.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Conversion inter-compte
+  Given un compte TND = 1000 et EUR = 0
+  When j'ordonne conversion 500 TND → EUR
+  Then 500 TND est débité, EUR crédité avec 500/taux_courant, frais appliqués
+
+Scenario: Taux de marché vs taux bancaire
+  Given un taux marché EUR/TND = 3.5
+  When la banque applique marge 2%
+  Then le client reçoit 500 / 3.57 EUR (taux bancaire)
+
+Scenario: Limitation conversion
+  Given une limite 10,000 EUR par mois
+  When le client a converti 9,500 EUR ce mois
+  Then une conversion 1,500 EUR est refusée (limite dépassée)
+```
+
+**Tâches TDD** :
+1. Test : CurrencyConverter::convert(from_amount, from_currency, to_currency) → Result
+2. Impl : conversion logic avec taux
+3. Test : application margin bank
+4. Impl : margin calculation
+5. Test : limit checking
+
+**Dépendances** : STORY-MCUR-01, STORY-FX-01
+
+---
+
+### STORY-FEE-01 | Domain — Fee aggregate (type, montant, conditions)
+
+**Type** : Feature | **Taille** : M | **BC** : Accounting
+
+> En tant que contrôleur financier, je veux un agrégat Fee centralisé pour tous les types de frais.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Création frais mensuels
+  Given un type = MonthlyAccountFee, amount = 5 TND
+  When je crée la Fee
+  Then elle est enregistrée avec charged_on = day_of_month (ex: 1er)
+
+Scenario: Frais transaction avec pourcentage
+  Given un type = TransactionFee, rate = 0.5%, min = 0.5 TND, max = 50 TND
+  When une transaction de 500 TND est effectuée
+  Then frais = max(0.5, min(500 × 0.5%, 50)) = 2.5 TND
+
+Scenario: Frais conditionnels
+  Given frais = 10 TND si solde < 100 TND
+  When le solde passe sous 100
+  Then les frais s'appliquent automatiquement
+```
+
+**Tâches TDD** :
+1. Test : Fee aggregate avec fee_type, amount, rate, min, max
+2. Impl : struct Fee
+3. Test : calculation logic
+4. Impl : fee calculator
+5. Test : conditions evaluation
+6. Impl : conditional fee logic
+
+**Dépendances** : STORY-AC-01
+
+---
+
+### STORY-FEE-02 | Feature — Calcul et prélèvement automatique frais
+
+**Type** : Feature | **Taille** : M | **BC** : Accounting
+
+> En tant que système, je veux calculer et prélever automatiquement les frais selon la grille configurée.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Calcul frais EOD
+  Given des comptes avec frais mensuels
+  When le job EOD s'exécute le 1er du mois
+  Then les frais sont calculés et débités du compte
+
+Scenario: Prélèvement avec résultat
+  Given un compte avec solde 50 TND et frais 5 TND exigibles
+  When les frais sont prélevés
+  Then le solde devient 45 TND
+  And une transaction "Fee" est enregistrée
+
+Scenario: Frais non prélevables
+  Given un compte avec solde 3 TND et frais 5 TND exigibles
+  When le job essaie de les prélever
+  Then un statut "Unpaid" est enregistré et une alerte est envoyée
+```
+
+**Tâches TDD** :
+1. Test : FeeCalculator::calculate_monthly_fees(account) → Vec<Fee>
+2. Impl : calculation service
+3. Test : FeeService::charge_fees(account, fees) → Result
+4. Impl : charging logic
+5. Test : insufficient_balance handling
+6. Impl : error handling
+
+**Dépendances** : STORY-FEE-01, STORY-EOD-01
+
+---
+
+### STORY-FEE-03 | Feature — Grille frais par segment client
+
+**Type** : Feature | **Taille** : M | **BC** : Accounting
+
+> En tant qu'admin, je veux configurer des grilles tarifaires différentes par segment client (VIP, Standard, Junior).
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Grille VIP
+  Given un client segment VIP
+  When je récupère la grille de frais
+  Then frais_mensuel = 2 TND (vs. 5 pour Standard)
+
+Scenario: Changement segment
+  Given un client passant de Standard à VIP
+  When le changement est effectif
+  Then la nouvelle grille s'applique au prochain calcul
+
+Scenario: Audit changements grille
+  Given une grille modifiée (frais 5→6 TND)
+  When j'enregistre le changement
+  Then un audit trail capture {who, when, old_fee, new_fee, effective_date}
+```
+
+**Tâches TDD** :
+1. Test : FeeGrid aggregate avec segment-specific fees
+2. Impl : struct FeeGrid
+3. Test : segment resolution (customer segment → fee grid)
+4. Impl : segment lookup
+5. Test : effective_date handling
+6. Impl : date-based activation
+
+**Dépendances** : STORY-FEE-02, STORY-PROD-03
+
+---
+
+## Epic 19 : Gestion Chèques — Must Have (Tunisie)
+
+**Objectif** : Gestion complète du cycle de vie des chèques (émission, encaissement, rejet, compensation).
+**Priorité** : P1
+**Bounded Context** : Payment
+
+### STORY-CHQ-01 | Domain — Cheque aggregate (émission, encaissement, rejet)
+
+**Type** : Feature | **Taille** : M | **BC** : Payment | **Entité** : Cheque
+
+> En tant que système bancaire tunisien, je veux gérer le cycle de vie complet d'un chèque.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Émission chèque
+  Given un client avec account_id
+  When je crée un Cheque avec number, amount, beneficiary
+  Then le Cheque est créé avec status = Issued et le montant réservé
+
+Scenario: Encaissement chèque
+  Given un chèque présenté à l'encaissement
+  When je valide la couverture et les données
+  Then le statut passe à Encashed et le montant est débité
+
+Scenario: Rejet pour manque couverture
+  Given un chèque sans couverture suffisante
+  When il est présenté
+  Then le statut passe à Rejected avec reason = "Insufficient Balance"
+
+Scenario: Chèque barré
+  Given un chèque barré (crossed cheque)
+  When il est encaissé
+  Then il ne peut être encaissé que via compte bancaire (pas en espèces)
+```
+
+**Tâches TDD** :
+1. Test : Cheque::new() avec number, amount, beneficiary, account_id
+2. Impl : struct Cheque
+3. Test : enum ChequeType { Bearer, Crossed, Not_Negotiable }
+4. Impl : ChequeType enum
+5. Test : status lifecycle (Issued → Encashed/Rejected)
+6. Impl : status enum
+7. Test : amount reservation logic
+8. Impl : reservation on issue
+9. Test : validation at encashment (coverage, not expired, format)
+10. Impl : validation logic
+
+**Dépendances** : STORY-AC-01
+
+---
+
+### STORY-CHQ-02 | Feature — Opposition chèque + interdit bancaire
+
+**Type** : Feature | **Taille** : M | **BC** : Payment
+
+> En tant que client, je veux pouvoir faire opposition à un chèque émis et gérer mon statut de compte interdit.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Opposition chèque
+  Given un chèque émis
+  When le client demande opposition avant encaissement
+  Then le chèque est marqué "Opposed" et l'encaissement est bloqué
+
+Scenario: Inscription interdit bancaire
+  Given un chèque rejeté pour manque de couverture
+  When cela constitue le 3e rejet du mois
+  Then le client est automatiquement inscrit interdit bancaire
+  And aucun chèque ne peut être émis
+
+Scenario: Levée interdit
+  Given un client interdit depuis 6 mois
+  When il le demande et que les conditions sont remplies
+  Then son statut passe à "Non-Interdit" et l'émission redevient possible
+```
+
+**Tâches TDD** :
+1. Test : Cheque::create_opposition(reason) marque opposed
+2. Impl : opposition logic
+3. Test : ChequeOpposition aggregate
+4. Impl : struct ChequeOpposition
+5. Test : automatic_blacklist_on_multiple_rejections()
+6. Impl : blacklist logic
+7. Test : lifting blacklist
+
+**Dépendances** : STORY-CHQ-01
+
+---
+
+### STORY-CHQ-03 | Feature — Compensation chèques (chambre BCT)
+
+**Type** : Feature | **Taille** : M | **BC** : Payment
+
+> En tant que système, je veux gérer la compensation des chèques via la chambre de compensation BCT.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Lot compensation quotidien
+  Given des chèques à compenser du jour
+  When le job EOD génère le fichier de compensation
+  Then un fichier au format standarisé BCT (ISO 20022 ou propriétaire) est généré
+
+Scenario: Upload à la chambre BCT
+  Given un fichier de compensation prêt
+  When le système l'envoie à la chambre BCT
+  Then un accusé de réception horodaté est enregistré
+
+Scenario: Retour résultats compensation
+  Given des résultats de compensation reçus
+  When je les importe
+  Then les chèques compensés sont marqués "Cleared"
+  And les chèques rejetés sont marqués "Rejected" avec code rejet BCT
+```
+
+**Tâches TDD** :
+1. Test : ChequeClearing aggregate pour la compensation
+2. Impl : struct ChequeClearing
+3. Test : batch file generation (ISO 20022 format)
+4. Impl : file generator
+5. Test : BCT integration (mock service)
+6. Impl : BCT adapter
+7. Test : result import et statut update
+
+**Dépendances** : STORY-CHQ-01, STORY-CHQ-02, STORY-EOD-01
+
+---
+
+## Epic 20 : Event Bus & Intégration Inter-BC — Should Have
+
+**Objectif** : Intégration asynchrone entre bounded contexts via event bus et event store.
+**Priorité** : P2
+**Bounded Context** : Transversal
+
+### STORY-EVT-01 | Feature — Event bus interne (domain events)
+
+**Type** : Feature | **Taille** : L | **BC** : Transversal
+
+> En tant qu'architecte, je veux un event bus interne pour publier et souscrire aux domain events.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Publication event account ouvert
+  Given un compte créé avec AccountOpenedEvent
+  When le domain event est publié
+  Then tous les abonnés reçoivent l'event asynchronement
+
+Scenario: Souscription multi-BC
+  Given un souscripteur dans BC Payment
+  When une AccountOpenedEvent est publiée depuis Account BC
+  Then le Payment BC reçoit et traite l'event
+
+Scenario: Ordering guarantee
+  Given 2 events publiés en séquence
+  When un souscripteur les reçoit
+  Then l'ordre est garanti (FIFO)
+```
+
+**Tâches TDD** :
+1. Test : DomainEvent trait avec event_type, aggregate_id, timestamp
+2. Impl : trait
+3. Test : EventBus trait (publish, subscribe)
+4. Impl : InMemoryEventBus + PostgreSQL variant
+5. Test : subscriber invocation (async)
+6. Impl : async invocation
+7. Test : event ordering
+8. Impl : ordered channel
+
+**Dépendances** : Tous les BC (transversal)
+
+---
+
+### STORY-EVT-02 | Feature — Event store + replay
+
+**Type** : Feature | **Taille** : L | **BC** : Transversal
+
+> En tant qu'auditeur, je veux une event store archivant tous les domain events pour replay et audit.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Archivage event
+  Given un domain event publié
+  When le bus le distribue
+  Then l'event est persisté dans event_store avec timestamp, aggregate_id, type
+
+Scenario: Replay depuis point temporel
+  Given des events archivés (ex: 100 jours)
+  When je demande un replay à partir du 50e jour
+  Then tous les events >= day 50 sont re-publiés dans l'ordre
+
+Scenario: Reconstruction d'agrégat
+  Given un agrégat Account avec 50 events
+  When je rejoue les events
+  Then l'état final reconstruit = l'état courant en base
+```
+
+**Tâches TDD** :
+1. Test : EventStore trait (append, get_events_for, replay)
+2. Impl : PostgreSQL-backed EventStore
+3. Test : snapshot logic (snapshot tous les 100 events)
+4. Impl : snapshotting
+5. Test : replay determinism
+6. Impl : replay engine
+7. Test : event versioning (old events adaptés)
+
+**Dépendances** : STORY-EVT-01
+
+---
+
+### STORY-EVT-03 | Feature — Saga pattern pour transactions cross-BC
+
+**Type** : Feature | **Taille** : L | **BC** : Transversal
+
+> En tant qu'architecte, je veux implémenter le pattern Saga pour transactions distribuées.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Saga virement (Account → Payment → Accounting)
+  Given un virement TND vers EUR
+  When la Saga démarre
+  Then Step 1: Account débite source (event: TransferInitiated)
+         Step 2: FX convertit (event: ConversionApplied)
+         Step 3: Accounting enregistre (event: GeneralLedgerUpdated)
+  And si une étape échoue, les compensations s'exécutent en ordre inverse
+
+Scenario: Compensation Saga
+  Given une Saga échouée à l'étape 2
+  When la compensation démarre
+  Then Compensation 1: Account crédite le montant débité
+  And la Saga est marquée "Compensated"
+```
+
+**Tâches TDD** :
+1. Test : Saga orchestrator avec steps
+2. Impl : SagaOrchestrator struct
+3. Test : step execution et event publishing
+4. Impl : step executor
+5. Test : compensation logic (reverse order)
+6. Impl : compensation handler
+7. Test : idempotency (replay safe)
+8. Impl : idempotency keys
+
+**Dépendances** : STORY-EVT-01, STORY-EVT-02
+
+---
+
+## Epic 21 : Sécurité Avancée & Anti-Fraude — Should Have
+
+**Objectif** : Rate limiting, détection fraude, IP whitelisting, audit cryptographique.
+**Priorité** : P2
+**Bounded Context** : Identity + AML + Payment
+
+### STORY-SEC-01 | Feature — Rate limiting API (Actix middleware)
+
+**Type** : Feature | **Taille** : M | **BC** : Identity
+
+> En tant qu'équipe sécurité, je veux rate limiting par IP/user pour prévenir les attaques brute-force.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Rate limit login attempts
+  Given une limite de 5 tentatives/minute par IP
+  When une IP fait 6 tentatives
+  Then la 6e requête est rejetée avec HTTP 429 Too Many Requests
+
+Scenario: Rate limit par user_id
+  Given une limite de 10 API calls/minute par user
+  When un user dépasse
+  Then les appels suivants reçoivent HTTP 429
+
+Scenario: Whitelist IP admin
+  Given une IP en whitelist (office)
+  When elle dépasse le rate limit
+  Then elle n'est pas throttled
+```
+
+**Tâches TDD** :
+1. Test : RateLimitMiddleware struct avec cache Redis/Memory
+2. Impl : Actix middleware
+3. Test : key generation (ip, user_id)
+4. Impl : key logic
+5. Test : limit enforcement
+6. Impl : enforcement
+
+**Dépendances** : STORY-ID-01
+
+---
+
+### STORY-SEC-02 | Feature — Détection fraude temps réel (rules engine)
+
+**Type** : Feature | **Taille** : L | **BC** : AML + Payment
+
+> En tant que compliance, je veux détecter les transactions suspectes en temps réel.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Détection montant anormal
+  Given un client avec pattern 500-1000 TND par jour
+  When une transaction 50,000 TND est ordonnée
+  Then la fraude score monte à 85/100 et l'alerte est déclenchée
+
+Scenario: Pays à risque
+  Given une transaction vers pays en liste noire AML
+  When elle est ordonnée
+  Then fraude_score += 40 (pays à risque)
+
+Scenario: Vélocité anormale
+  Given un client avec 5 transactions en 1 minute (normalement 1/jour)
+  When la 6e transaction arrive
+  Then fraude_score += 30 (vélocité anormale)
+
+Scenario: Decision règle
+  Given fraude_score >= 75
+  When l'évaluation est complète
+  Then la transaction est bloquée et une alerte expert_review est créée
+```
+
+**Tâches TDD** :
+1. Test : FraudDetector struct avec rules
+2. Impl : rules engine
+3. Test : rule evaluation (amount, country, velocity, etc.)
+4. Impl : rule evaluators
+5. Test : score aggregation
+6. Impl : scoring
+7. Test : decision (block vs. allow vs. challenge)
+8. Impl : decision logic
+
+**Dépendances** : STORY-PAY-01, STORY-AML-01
+
+---
+
+### STORY-SEC-03 | Feature — IP whitelisting + geo-blocking
+
+**Type** : Feature | **Taille** : M | **BC** : Identity
+
+> En tant que client, je veux contrôler les IPs autorisées et bloquer les accès géographiques suspects.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Whitelist IP personnelle
+  Given un client configurant une whitelist
+  When il ajoute son IP de bureau (192.168.1.100)
+  Then seules ses IPs whitelistées peuvent se connecter
+
+Scenario: Accès depuis IP non whitelistée
+  Given une whitelist active
+  When un accès vient d'une IP non whitelistée
+  Then MFA est exigée avant accès
+
+Scenario: Geo-blocking
+  Given un client en Tunisie
+  When un accès est tenté depuis la Chine
+  Then la connexion est refusée avec alerte
+  And une notification est envoyée au client
+```
+
+**Tâches TDD** :
+1. Test : IpWhitelist aggregate
+2. Impl : struct IpWhitelist
+3. Test : GeoLocation lookup (MaxMind GeoIP2)
+4. Impl : geo lookup
+5. Test : blocking logic
+6. Impl : location check
+7. Test : whitelist bypass of geo-block
+
+**Dépendances** : STORY-ID-01
+
+---
+
+### STORY-SEC-04 | Feature — Audit cryptographique (hash chain)
+
+**Type** : Feature | **Taille** : M | **BC** : Governance
+
+> En tant qu'auditeur, je veux une chaîne de hash cryptographique pour vérifier l'intégrité des opérations sensibles.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Hash chain transaction
+  Given une transaction T
+  When elle est enregistrée
+  Then hash(T) = SHA-256(transaction_data)
+        next_hash(T+1) = SHA-256(hash(T) + transaction_T+1_data)
+  And la chaîne est vérifiable rétroactivement
+
+Scenario: Détection tampering
+  Given une chaîne de 1000 transactions
+  When je modifie la transaction 500
+  Then hash_chain validation échoue (hashes T500+ tous invalides)
+
+Scenario: Audit trail proof
+  Given une opération sensible (KYC approval, crédit)
+  When j'en demande la preuve
+  Then une chaîne de hash depuis origination jusqu'à maintenant est fournie
+```
+
+**Tâches TDD** :
+1. Test : HashChain struct avec previous_hash, current_hash
+2. Impl : struct
+3. Test : hash computation (SHA-256)
+4. Impl : hashing
+5. Test : chain validation (verify_chain())
+6. Impl : validation logic
+7. Test : tampering detection
+
+**Dépendances** : STORY-GOV-01
+
+---
+
+## Epic 22 : Business Intelligence & Analytics — Should Have
+
+**Objectif** : Tableaux de bord analytiques et reporting self-service.
+**Priorité** : P2
+**Bounded Context** : Reporting
+
+### STORY-BI-01 | Feature — Dashboard clients (portfolio overview)
+
+**Type** : Feature | **Taille** : M | **BC** : Reporting
+
+> En tant que client, je veux voir un dashboard de mes avoirs consolidés.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Portfolio overview
+  Given un client avec 3 comptes (TND, EUR, USD), 2 cartes, 1 crédit
+  When j'ouvre le dashboard
+  Then je vois : balance consolidée, historique 30j, frais YTD, scoring crédit
+
+Scenario: Drill-down compte
+  Given un compte en EUR
+  When je clique dessus
+  Then je vois détail : solde, intérêts gagnés, frais payés, 10 dernières transactions
+```
+
+**Tâches TDD** :
+1. Test : ReportingService::get_client_portfolio(customer_id) → Portfolio
+2. Impl : aggregation service
+3. Test : currency consolidation
+4. Impl : conversion logic
+5. Test : performance (< 500ms response)
+
+**Dépendances** : STORY-AC-01, STORY-CARD-01, STORY-CR-01
+
+---
+
+### STORY-BI-02 | Feature — Dashboard opérateur (KPIs bancaires)
+
+**Type** : Feature | **Taille** : M | **BC** : Reporting
+
+> En tant que gestionnaire, je veux des KPIs sur les clients, comptes, crédits, fraude.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: KPI clients
+  Given un dashboard d'exploitation
+  When je l'ouvre
+  Then je vois : clients total, clients actifs/30j, nouveaux clients, taux attrition
+
+Scenario: KPI fraude
+  Given un widget fraude
+  When je l'ouvre
+  Then je vois : alertes/jour, transactions bloquées, montant bloqué, trend 30j
+```
+
+**Tâches TDD** :
+1. Test : OperationalDashboard service
+2. Impl : aggregation queries
+3. Test : caching (1h)
+4. Impl : Redis cache
+
+**Dépendances** : STORY-NOT-06, STORY-SEC-02
+
+---
+
+### STORY-BI-03 | Feature — Rapports paramétrables (Grafana/Metabase integration)
+
+**Type** : Feature | **Taille** : M | **BC** : Reporting
+
+> En tant qu'analyste, je veux créer des rapports personnalisés sans code.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Rapport transactionnel
+  Given Metabase connecté à la DB
+  When je crée un rapport "Virements > 5000 TND"
+  Then un dashboard se génère avec timeline, géographie, top bénéficiaires
+
+Scenario: Rapport compliance
+  Given un rapport SAR (Suspicious Activity Report)
+  When je le génère pour période donnée
+  Then un PDF avec alertes AML, investigations, statuts est exporté
+```
+
+**Tâches TDD** :
+1. Test : ReportingAPI /admin/reports avec paramètres
+2. Impl : report builder
+3. Test : Metabase/Grafana integration
+4. Impl : adapters
+
+**Dépendances** : STORY-COMP-01
+
+---
+
+## Epic 23 : Mobile Banking — Should Have
+
+**Objectif** : Application mobile native (React Native) avec offline support.
+**Priorité** : P2
+**Bounded Context** : Frontend
+
+### STORY-MOB-01 | Feature — App mobile React Native (iOS + Android)
+
+**Type** : Feature | **Taille** : L | **BC** : Frontend
+
+> En tant que client mobile, je veux une app native iOS/Android pour accéder à mes comptes.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Installation + Login
+  Given une app sur App Store/Play Store
+  When j'installe et m'authentifie
+  Then je vois dashboard personnel
+
+Scenario: Offline mode
+  Given l'app en offline
+  When je consulte mes comptes
+  Then les dernières données cached sont affichées (solde, 10 transactions)
+
+Scenario: Sync background
+  Given l'app en online
+  When elle revient au premier plan
+  Then les données sont synced avec le serveur
+```
+
+**Tâches TDD** :
+1. Setup : React Native project
+2. Test : Login flow
+3. Impl : authentication
+4. Test : Offline sync (SQLite cache)
+5. Impl : cache layer
+6. Test : background sync Tokio
+
+**Dépendances** : STORY-ID-01, STORY-AC-01
+
+---
+
+### STORY-MOB-02 | Feature — Biométrie + PIN (Touch/Face ID)
+
+**Type** : Feature | **Taille** : M | **BC** : Frontend
+
+> En tant que client, je veux me connecter via Touch/Face ID et PIN.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Enrôlement biométrie
+  Given un premier login par password
+  When je crée un PIN et scanne mon empreinte
+  Then les identifiants biométriques sont stockés de manière sécurisée
+
+Scenario: Login biométrique
+  Given une biométrie enrôlée
+  When je touche le lecteur
+  Then l'authentification réussit sans password
+```
+
+**Tâches TDD** :
+1. Test : React Native TouchID/FaceID integration
+2. Impl : biometric auth
+3. Test : PIN storage (Keychain iOS, Keystore Android)
+4. Impl : secure storage
+
+**Dépendances** : STORY-MOB-01
+
+---
+
+### STORY-MOB-03 | Feature — Push notifications + Deep linking
+
+**Type** : Feature | **Taille** : M | **BC** : Frontend
+
+> En tant que client, je veux recevoir des notifications push et des deep links.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Push notification
+  Given une alerte transaction
+  When elle est déclenché
+  Then une notification pousse arrive sur le téléphone
+
+Scenario: Deep linking
+  Given une notification "Virement reçu 500 TND"
+  When je la tape
+  Then l'app ouvre et affiche le détail du virement
+```
+
+**Tâches TDD** :
+1. Test : FCM integration (React Native)
+2. Impl : push handler
+3. Test : deep linking
+4. Impl : URL routing
+
+**Dépendances** : STORY-NOT-06, STORY-MOB-01
+
+---
+
+## Epic 24 : Backup & Disaster Recovery — Must Have
+
+**Objectif** : Stratégie de backup automatisé et recovery point objective (RTO/RPO).
+**Priorité** : P1
+**Bounded Context** : Infrastructure
+
+### STORY-DR-01 | Feature — Backup automatisé PostgreSQL (pg_dump + S3)
+
+**Type** : Feature | **Taille** : M | **BC** : Infrastructure
+
+> En tant qu'ops, je veux des backups quotidiens de la DB archivés dans S3.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Backup quotidien
+  Given un job cron 22h
+  When il s'exécute
+  Then pg_dump génère un dump .sql.gz envoyé à S3/MinIO
+
+Scenario: Retention backup
+  Given des backups > 90 jours
+  When la politique de retention s'applique
+  Then les anciens backups sont supprimés de S3
+
+Scenario: Vérification intégrité
+  Given un backup créé
+  When une tâche de vérification s'exécute
+  Then le dump est validé (header PostgreSQL OK, taille > seuil)
+```
+
+**Tâches TDD** :
+1. Test : BackupService::backup_database() → S3 path
+2. Impl : pg_dump wrapper
+3. Test : S3 upload + checksum
+4. Impl : S3 client
+5. Test : retention policy
+6. Impl : cleanup job
+
+**Dépendances** : Infra
+
+---
+
+### STORY-DR-02 | Feature — Point-in-time recovery (PITR)
+
+**Type** : Feature | **Taille** : M | **BC** : Infrastructure
+
+> En tant qu'ops, je veux pouvoir restaurer la DB à un point précis dans le temps.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Récupération WAL (Write-Ahead Logs)
+  Given PostgreSQL avec archivage WAL vers S3
+  When je récupère tous les WALs depuis backup complet
+  Then je peux rejouer jusqu'à T-1 (1 seconde avant défaillance)
+
+Scenario: Restauration à T spécifique
+  Given un incident à 14h30
+  When j'ordonne restore_as_of(14h25)
+  Then la DB est restaurée avec état à 14h25 exactement
+
+Scenario: Vérification recoverable state
+  Given une restauration complétée
+  When je teste la connexion
+  Then la DB est opérationnelle et data est cohérente
+```
+
+**Tâches TDD** :
+1. Test : WAL archiving to S3
+2. Impl : PostgreSQL WAL archiver config
+3. Test : RestoreService::restore_as_of(target_time) → Result
+4. Impl : restore logic
+5. Test : validation after restore
+
+**Dépendances** : STORY-DR-01
+
+---
+
+### STORY-DR-03 | Feature — Disaster recovery plan + runbook
+
+**Type** : Feature | **Taille** : M | **BC** : Infrastructure
+
+> En tant qu'ops, je veux un plan DR documenté avec runbooks automatisés.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: RTO/RPO définition
+  Given une cible RTO = 1h, RPO = 15min
+  When un sinistre se produit
+  Then la DB est restaurée < 1h avec données à jour < 15min
+
+Scenario: Runbook automation
+  Given un sinistre DB (corruption, perte connexion)
+  When j'exécute le runbook DR
+  Then les étapes automatiques s'exécutent : backup restore, WAL replay, health check
+
+Scenario: Notification escalade
+  Given un sinistre en cours
+  When chaque étape échoue
+  Then des alertes escaladées sont envoyées (SMS → email → phone call)
+```
+
+**Tâches TDD** :
+1. Test : DisasterRecoveryOrchestrator automation
+2. Impl : runbook executor
+3. Test : health checks post-restore
+4. Impl : health check suite
+5. Test : notification escalation
+
+**Dépendances** : STORY-DR-01, STORY-DR-02
+
+---
+
+## Epic 25 : End-of-Day Processing — Must Have
+
+**Objectif** : Job EOD orchestrant tous les traitements de fin de journée.
+**Priorité** : P1
+**Bounded Context** : Transversal
+
+### STORY-EOD-01 | Feature — Job EOD orchestrateur
+
+**Type** : Feature | **Taille** : L | **BC** : Transversal
+
+> En tant que système, je veux un job EOD orchestrant tous les traitements fin de jour.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Orchestration EOD
+  Given un job cron 23h59 (juste avant minuit)
+  When il s'exécute
+  Then il lance séquentiellement :
+    1. Calculation d'intérêts (STORY-EOD-02)
+    2. Réconciliation comptable (STORY-EOD-03)
+    3. Calcul frais (STORY-FEE-02)
+    4. Compensation chèques (STORY-CHQ-03)
+    5. Backup (STORY-DR-01)
+    6. Reporting snapshots
+
+Scenario: Rollback si une étape échoue
+  Given une étape EOD échouée
+  When la compensation chèques échoue à l'étape 4
+  Then les étapes 1-3 sont rollbackées
+  And une alerte expert_review est créée
+
+Scenario: Retry avec délai
+  Given une étape échouée (timeout)
+  When le retry s'exécute 5 minutes après
+  Then l'étape est retentée jusqu'à 3 fois max
+```
+
+**Tâches TDD** :
+1. Test : EndOfDayOrchestrator struct avec steps
+2. Impl : orchestrator
+3. Test : step execution sequencing
+4. Impl : executor
+5. Test : transaction management (all-or-nothing)
+6. Impl : transaction handling
+7. Test : retry logic
+8. Impl : retry scheduler
+9. Test : logging & audit trail
+
+**Dépendances** : STORY-AC-01, STORY-AC-02
+
+---
+
+### STORY-EOD-02 | Feature — Calcul intérêts quotidien (accrual)
+
+**Type** : Feature | **Taille** : M | **BC** : Account + Credit
+
+> En tant que système, je veux calculer et accruer les intérêts quotidiennement.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Accrual intérêts DAT
+  Given un DAT de 10,000 TND à 6% annuel
+  When le job EOD s'exécute
+  Then accrued_interest = (10000 × 6%) / 365 = 1.64 TND
+  And une ligne accrual_journal est enregistrée
+
+Scenario: Capitalisation mensuelle
+  Given un compte épargne avec capitalisation mensuelle
+  When 30 jours se sont écoulés
+  Then intérêts du mois sont capitalisés (ajoutés au principal)
+
+Scenario: Bénéficiaires vs. payeurs
+  Given un prêt (-balance) vs. une épargne (+ balance)
+  When les intérêts sont calculés
+  Then le prêt se voit débiter intérêts, l'épargne se voit créditer
+```
+
+**Tâches TDD** :
+1. Test : InterestAccrualService::accrue_daily(date) → Vec<JournalEntry>
+2. Impl : accrual service
+3. Test : compound vs. simple logic
+4. Impl : compounding
+5. Test : journal entry generation
+6. Impl : accounting integration
+
+**Dépendances** : STORY-AC-01, STORY-AC-02, STORY-PROD-04
+
+---
+
+### STORY-EOD-03 | Feature — Réconciliation automatique EOD
+
+**Type** : Feature | **Taille** : M | **BC** : Accounting
+
+> En tant qu'auditeur, je veux une réconciliation automatique de la comptabilité générale vs. grand livre.
+
+**Scénarios BDD** :
+```gherkin
+Scenario: Matching accounts
+  Given la GL avec débits = 100,000 TND et crédits = 100,000 TND
+  When la réconciliation s'exécute
+  Then le bilan est équilibré (débits = crédits)
+
+Scenario: Variance détection
+  Given un compte débits = 50,000 TND vs. crédits = 49,999 TND
+  When la réconciliation échoue
+  Then un rapport variance est généré identifiant l'écart
+
+Scenario: Auto-resolution
+  Given une variance < 1 TND (rounding error)
+  When une politique auto-resolve s'applique
+  Then une écriture de rounding est créée
+
+Scenario: Audit trail
+  Given une réconciliation complétée
+  When j'en demande les détails
+  Then un rapport complet {accounts, totals, variances, resolutions} est fourni
+```
+
+**Tâches TDD** :
+1. Test : GeneralLedgerReconciliationService::reconcile(date) → ReconciliationReport
+2. Impl : reconciliation logic
+3. Test : variance detection
+4. Impl : variance calculator
+5. Test : auto-resolution policy
+6. Impl : rounding handler
+7. Test : report generation
+
+**Dépendances** : STORY-AC-01, STORY-ACC-01
+
+---
+
+---
+
+**Fin du document (v3.1).**
