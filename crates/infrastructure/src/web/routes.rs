@@ -5,7 +5,7 @@ use super::handlers::{
     account_handlers, accounting_handlers, aml_handlers, auth_handlers, consent_handlers,
     credit_handlers, customer_handlers, data_rights_handlers, fx_handlers, governance_handlers,
     notification_handlers, payment_handlers, cheque_handlers, product_handlers, profile_handlers, prudential_handlers, reporting_handlers,
-    retention_handlers, sanctions_handlers, two_factor_handlers, user_handlers,
+    retention_handlers, sanctions_handlers, two_factor_handlers, user_handlers, analytics_handlers, mobile_handlers,
 };
 use crate::payment::recurring_handlers;
 
@@ -47,6 +47,7 @@ pub fn configure_api_routes(cfg: &mut web::ServiceConfig) {
     // Configure domain-specific routes
     configure_payment_routes(cfg);
     configure_recurring_payment_routes(cfg);
+    configure_mobile_routes(cfg);
 }
 
 pub fn configure_customer_routes(cfg: &mut web::ServiceConfig) {
@@ -669,4 +670,118 @@ pub fn configure_admin_pricing_routes(cfg: &mut web::ServiceConfig) {
 
 pub fn configure_cheque_routes(cfg: &mut web::ServiceConfig) {
     cheque_handlers::configure_cheque_routes(cfg);
+}
+
+pub fn configure_analytics_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/analytics")
+            .route(
+                "/portfolio/{customer_id}",
+                web::get().to(analytics_handlers::get_client_portfolio_handler),
+            )
+            .route(
+                "/accounts/{id}/drilldown",
+                web::get().to(analytics_handlers::get_account_drilldown_handler),
+            )
+            .route(
+                "/kpis",
+                web::get().to(analytics_handlers::get_operational_kpis_handler),
+            )
+            .route(
+                "/trends",
+                web::get().to(analytics_handlers::get_trend_handler),
+            )
+            .route(
+                "/reports",
+                web::post().to(analytics_handlers::create_report_handler),
+            )
+            .route(
+                "/reports/{id}/execute",
+                web::post().to(analytics_handlers::execute_report_handler),
+            )
+            .route(
+                "/reports",
+                web::get().to(analytics_handlers::list_reports_handler),
+            ),
+    );
+}
+
+pub fn configure_admin_backup_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/admin")
+            .route(
+                "/backup",
+                web::post().to(analytics_handlers::trigger_backup_handler),
+            )
+            .route(
+                "/backups",
+                web::get().to(analytics_handlers::list_backups_handler),
+            )
+            .route(
+                "/dr/execute",
+                web::post().to(analytics_handlers::trigger_dr_handler),
+            ),
+    );
+}
+
+pub fn configure_mobile_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/mobile")
+            // Mobile Auth: Device Management
+            .route(
+                "/devices",
+                web::post().to(mobile_handlers::register_device_handler),
+            )
+            .route(
+                "/devices",
+                web::get().to(mobile_handlers::list_devices_handler),
+            )
+            .route(
+                "/devices/{id}",
+                web::delete().to(mobile_handlers::deactivate_device_handler),
+            )
+            .route(
+                "/devices/{id}/biometric",
+                web::post().to(mobile_handlers::enable_biometric_handler),
+            )
+            .route(
+                "/devices/{id}/pin",
+                web::post().to(mobile_handlers::set_pin_handler),
+            )
+            // Mobile Auth: Session Management
+            .route(
+                "/auth/login",
+                web::post().to(mobile_handlers::login_mobile_handler),
+            )
+            .route(
+                "/auth/refresh",
+                web::post().to(mobile_handlers::refresh_session_handler),
+            )
+            // Mobile Account: Dashboard & Sync
+            .route(
+                "/dashboard",
+                web::get().to(mobile_handlers::get_dashboard_handler),
+            )
+            .route(
+                "/offline-cache",
+                web::get().to(mobile_handlers::get_offline_data_handler),
+            )
+            .route(
+                "/sync",
+                web::post().to(mobile_handlers::sync_handler),
+            )
+            // Mobile Payments: Transfers & QR
+            .route(
+                "/payments/transfer",
+                web::post().to(mobile_handlers::quick_transfer_handler),
+            )
+            .route(
+                "/payments/beneficiaries",
+                web::get().to(mobile_handlers::frequent_beneficiaries_handler),
+            )
+            .route(
+                "/payments/scan-qr",
+                web::post().to(mobile_handlers::scan_qr_handler),
+            ),
+    );
 }

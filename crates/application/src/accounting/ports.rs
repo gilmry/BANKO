@@ -101,3 +101,8 @@ pub trait IFeeGridRepository: Send + Sync {
     ) -> Result<Option<FeeGrid>, String>;
     async fn list_all(&self) -> Result<Vec<FeeGrid>, String>;
 }
+
+// ==================== Interest Accrual Ports ====================
+
+// Ports for interest accrual and reconciliation are defined in their respective service modules
+// to avoid circular dependencies and maintain clear architectural boundaries.
