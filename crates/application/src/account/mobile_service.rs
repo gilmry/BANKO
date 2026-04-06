@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Timelike, Utc};
 use rust_decimal::Decimal;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -159,7 +159,7 @@ impl MobileAccountService {
             .await
             .map_err(|e| MobileAccountError::Internal(e))?;
 
-        let total_balance = self
+        let total_balance: Decimal = self
             .dashboard_provider
             .get_total_balance(&customer_id)
             .await

@@ -1,4 +1,4 @@
-use chrono::NaiveDate;
+use chrono::{Datelike, NaiveDate};
 use rust_decimal::Decimal;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -148,6 +148,7 @@ impl InterestAccrualService {
         let mut total_credit_interest = Decimal::ZERO;
         let mut total_debit_interest = Decimal::ZERO;
         let mut capitalizations = 0;
+        let accounts_count = accounts.len();
 
         for account in accounts {
             // Skip zero-balance accounts
@@ -200,7 +201,7 @@ impl InterestAccrualService {
 
         Ok(AccrualBatchResult {
             date,
-            accounts_processed: accounts.len(),
+            accounts_processed: accounts_count,
             total_credit_interest,
             total_debit_interest,
             capitalizations,
@@ -214,10 +215,11 @@ impl InterestAccrualService {
         from: NaiveDate,
         to: NaiveDate,
     ) -> Result<Decimal, AccountingServiceError> {
-        self.accrual_repo
+        let result: Decimal = self.accrual_repo
             .sum_accrued(account_id, from, to)
             .await
-            .map_err(AccountingServiceError::Internal)
+            .map_err(AccountingServiceError::Internal)?;
+        Ok(result)
     }
 
     /// Capitalizes interest for accounts with monthly capitalization frequency.
@@ -250,7 +252,7 @@ impl InterestAccrualService {
             }
 
             // Sum accrued interest for the month
-            let accrued = self
+            let accrued: Decimal = self
                 .accrual_repo
                 .sum_accrued(account.account_id, month_start, date)
                 .await
@@ -258,7 +260,7 @@ impl InterestAccrualService {
 
             if accrued > Decimal::ZERO {
                 // Mark accruals as capitalized
-                let entries = self
+                let entries: Vec<AccrualEntry> = self
                     .accrual_repo
                     .find_by_account(account.account_id, month_start, date)
                     .await
@@ -300,7 +302,7 @@ impl InterestAccrualService {
                 NaiveDate::from_ymd_opt(date.year(), (quarter - 1) * 3 + 1, 1).unwrap();
 
             // Sum accrued interest for the quarter
-            let accrued = self
+            let accrued: Decimal = self
                 .accrual_repo
                 .sum_accrued(account.account_id, quarter_start, date)
                 .await
@@ -308,7 +310,7 @@ impl InterestAccrualService {
 
             if accrued > Decimal::ZERO {
                 // Mark accruals as capitalized
-                let entries = self
+                let entries: Vec<AccrualEntry> = self
                     .accrual_repo
                     .find_by_account(account.account_id, quarter_start, date)
                     .await
@@ -348,7 +350,7 @@ impl InterestAccrualService {
             let year_start = NaiveDate::from_ymd_opt(date.year(), 1, 1).unwrap();
 
             // Sum accrued interest for the year
-            let accrued = self
+            let accrued: Decimal = self
                 .accrual_repo
                 .sum_accrued(account.account_id, year_start, date)
                 .await
@@ -356,7 +358,7 @@ impl InterestAccrualService {
 
             if accrued > Decimal::ZERO {
                 // Mark accruals as capitalized
-                let entries = self
+                let entries: Vec<AccrualEntry> = self
                     .accrual_repo
                     .find_by_account(account.account_id, year_start, date)
                     .await

@@ -1,5 +1,7 @@
 use chrono::{DateTime, Utc};
+use num_traits::pow::Pow;
 use rust_decimal::Decimal;
+use rust_decimal::prelude::ToPrimitive;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -261,7 +263,7 @@ impl InterestRate {
 
     pub fn calculate_compound_monthly(&self, principal: Decimal, months: u32) -> Decimal {
         let monthly_rate = self.annual_rate / Decimal::from(12) / Decimal::from(100);
-        let compound_factor = (Decimal::ONE + monthly_rate).pow(months);
+        let compound_factor = (Decimal::ONE + monthly_rate).pow(months as u64);
         principal * (compound_factor - Decimal::ONE)
     }
 }

@@ -342,13 +342,12 @@ impl RatioCalculationService {
         ratio: f64,
     ) -> Result<(), PrudentialServiceError> {
         let alert = BreachAlert::new(
-            InstitutionId::from_uuid(institution_id),
-            "Concentration".into(),
+            RatioId::new(),
+            BreachType::ConcentrationBreach,
             ratio,
             CONCENTRATION_MAXIMUM,
-            "High".into(),
-        )
-        .map_err(|e| PrudentialServiceError::DomainError(e.to_string()))?;
+            AlertSeverity::Critical,
+        );
 
         self.alert_repo
             .save(&alert)

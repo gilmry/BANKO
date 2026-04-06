@@ -90,7 +90,7 @@ pub async fn get_consolidated_balance_handler(
             };
             HttpResponse::Ok().json(response)
         }
-        Ok(Err(AccountServiceError::InvalidEntry(msg))) => {
+        Ok(Err(AccountServiceError::InvalidInput(msg))) => {
             HttpResponse::BadRequest().json(serde_json::json!({"error": msg}))
         }
         Ok(Err(e)) => {
@@ -158,7 +158,7 @@ pub async fn convert_between_accounts_handler(
             };
             HttpResponse::Ok().json(response)
         }
-        Ok(Err(AccountServiceError::InvalidEntry(msg))) => {
+        Ok(Err(AccountServiceError::InvalidInput(msg))) => {
             HttpResponse::BadRequest().json(serde_json::json!({"error": msg}))
         }
         Ok(Err(e)) => {

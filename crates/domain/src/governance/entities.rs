@@ -302,9 +302,9 @@ impl AuditTrailEntry {
 // HashChain — verification helper
 // ============================================================
 
-pub struct HashChain;
+pub struct HashChainVerifier;
 
-impl HashChain {
+impl HashChainVerifier {
     /// Verify the integrity of a sequence of audit trail entries.
     /// Each entry's previous_hash must match the prior entry's hash.
     pub fn verify_chain(entries: &[AuditTrailEntry]) -> Result<(), DomainError> {
@@ -1149,7 +1149,7 @@ mod tests {
         );
 
         let chain = vec![e1, e2, e3];
-        assert!(HashChain::verify_chain(&chain).is_ok());
+        assert!(HashChainVerifier::verify_chain(&chain).is_ok());
     }
 
     #[test]
@@ -1180,7 +1180,7 @@ mod tests {
         );
 
         let chain = vec![e1, e2];
-        let result = HashChain::verify_chain(&chain);
+        let result = HashChainVerifier::verify_chain(&chain);
         assert!(result.is_err());
         match result {
             Err(DomainError::HashChainViolation { .. }) => {}

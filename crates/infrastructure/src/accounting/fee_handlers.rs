@@ -2,6 +2,7 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse};
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
+use rust_decimal::prelude::ToPrimitive;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

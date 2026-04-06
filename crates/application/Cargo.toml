@@ -14,6 +14,8 @@ uuid.workspace = true
 thiserror.workspace = true
 chrono.workspace = true
 tracing.workspace = true
+rust_decimal.workspace = true
+num-traits = "0.2"
 rand = "0.8"
 tokio = { workspace = true, features = ["sync"] }
 

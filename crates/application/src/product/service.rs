@@ -84,10 +84,10 @@ impl ProductService {
         // Parse segment pricing
         let mut segment_pricing = HashMap::new();
         if let Some(sp) = req.segment_pricing {
-            for (segment_str, rate) in sp {
-                let segment = CustomerSegment::from_str(&segment_str)
-                    .map_err(|e| ProductServiceError::InvalidInput(e))?;
-                segment_pricing.insert(segment, rate);
+            for (segment_str, rate) in sp.iter() {
+                let segment = CustomerSegment::from_str(segment_str)
+                    .map_err(|e| ProductServiceError::InvalidInput(e.to_string()))?;
+                segment_pricing.insert(segment, *rate);
             }
         }
 
@@ -198,7 +198,7 @@ impl ProductService {
             .map_err(|e| ProductServiceError::InvalidInput(e))?;
 
         // Get rate: first try pricing grid, then segment override, then default
-        let rate = self
+        let rate: Decimal = self
             .get_effective_rate(&product, amount)
             .await
             .or_else(|| product.get_rate_for_segment(&segment))

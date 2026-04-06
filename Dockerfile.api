@@ -1,7 +1,8 @@
 # Multi-stage build for BANKO API
-FROM rust:1.83-alpine AS builder
+FROM rust:latest AS builder
 
-RUN apk add --no-cache musl-dev pkgconfig openssl-dev
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY Cargo.toml Cargo.lock ./
@@ -10,15 +11,16 @@ COPY crates/ crates/
 ENV SQLX_OFFLINE=true
 RUN cargo build --release -p banko-infrastructure
 
-FROM alpine:3.20 AS runtime
+FROM debian:bookworm-slim AS runtime
 
-RUN apk add --no-cache ca-certificates libgcc
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates libssl3 curl && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app/target/release/banko-infrastructure /usr/local/bin/banko-api
+COPY --from=builder /app/target/release/server /usr/local/bin/banko-api
 
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-    CMD wget -q --spider http://localhost:8080/api/health || exit 1
+    CMD curl -sf http://localhost:8080/api/v1/health || exit 1
 
 ENTRYPOINT ["banko-api"]

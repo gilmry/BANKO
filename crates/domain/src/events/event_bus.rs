@@ -44,7 +44,7 @@ pub trait EventBus: Send + Sync {
 /// In-memory implementation of the EventBus.
 /// Suitable for testing and development. Events are distributed to handlers synchronously.
 pub struct InMemoryEventBus {
-    handlers: Arc<Mutex<Vec<Arc<dyn EventHandler>>>>,
+    handlers: Arc<Mutex<Vec<Box<dyn EventHandler + Send + Sync>>>>,
     published_events: Arc<Mutex<Vec<StoredEvent>>>,
 }
 
@@ -111,7 +111,7 @@ impl EventBus for InMemoryEventBus {
     }
 
     async fn subscribe(&self, handler: Box<dyn EventHandler + Send + Sync>) {
-        self.handlers.lock().await.push(Arc::from(handler));
+        self.handlers.lock().await.push(handler);
     }
 }
 

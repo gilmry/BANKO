@@ -145,7 +145,7 @@ impl MobilePaymentService {
         }
 
         // Check balance
-        let balance = self
+        let balance: Decimal = self
             .payment_provider
             .get_account_balance(&req.from_account_id)
             .await

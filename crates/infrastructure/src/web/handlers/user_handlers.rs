@@ -235,7 +235,7 @@ pub async fn update_user_roles_handler(
             // Log role change to immutable audit trail (STORY-ID-08)
             if let Err(e) = audit_service
                 .log_action(
-                    Uuid::parse(&guard.user.user_id).unwrap_or_else(|_| Uuid::nil()),
+                    Uuid::parse_str(&guard.user.user_id).unwrap_or_else(|_| Uuid::nil()),
                     AuditAction::Update,
                     ResourceType::User,
                     *user.id().as_uuid(),

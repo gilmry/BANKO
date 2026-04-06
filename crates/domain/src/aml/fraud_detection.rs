@@ -81,11 +81,11 @@ pub struct FraudScore {
 }
 
 impl FraudScore {
-    pub fn new(rule_name: &str, score: u32, reason: &str) -> Self {
+    pub fn new(rule_name: &str, score: u32, reason: impl Into<String>) -> Self {
         Self {
             rule_name: rule_name.to_string(),
             score: score.min(100),
-            reason: reason.to_string(),
+            reason: reason.into(),
         }
     }
 }

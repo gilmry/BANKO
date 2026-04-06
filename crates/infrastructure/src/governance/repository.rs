@@ -452,6 +452,14 @@ impl ICommitteeRepository for CommitteeRepository {
 
         Ok(decisions)
     }
+
+    async fn save_meeting(&self, _meeting: &CommitteeMeeting) -> Result<(), String> {
+        todo!("save_meeting not yet implemented")
+    }
+
+    async fn find_meeting_by_id(&self, _id: Uuid) -> Result<Option<CommitteeMeeting>, String> {
+        todo!("find_meeting_by_id not yet implemented")
+    }
 }
 
 #[derive(sqlx::FromRow)]
@@ -585,6 +593,26 @@ impl IControlCheckRepository for ControlCheckRepository {
         .await
         .map_err(|e| e.to_string())?;
         Ok(row.0)
+    }
+
+    async fn save_signoff(&self, _signoff: &ControlCheckSignOff) -> Result<(), String> {
+        todo!("save_signoff not yet implemented")
+    }
+
+    async fn find_signoff_by_id(&self, _id: Uuid) -> Result<Option<ControlCheckSignOff>, String> {
+        todo!("find_signoff_by_id not yet implemented")
+    }
+
+    async fn find_pending_signoffs(
+        &self,
+        _limit: i64,
+        _offset: i64,
+    ) -> Result<Vec<ControlCheckSignOff>, String> {
+        todo!("find_pending_signoffs not yet implemented")
+    }
+
+    async fn count_pending_signoffs(&self) -> Result<i64, String> {
+        todo!("count_pending_signoffs not yet implemented")
     }
 }
 

@@ -50,7 +50,7 @@ pub struct OpposeChequeRequest {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct ClearingBatchResponse {
+pub struct ChequeClearingBatchResponse {
     pub batch_id: String,
     pub clearing_date: NaiveDate,
     pub cheque_count: usize,
@@ -393,7 +393,7 @@ impl ChequeService {
     pub async fn generate_clearing_batch(
         &self,
         date: NaiveDate,
-    ) -> Result<ClearingBatchResponse, PaymentServiceError> {
+    ) -> Result<ChequeClearingBatchResponse, PaymentServiceError> {
         // Find all Presented cheques for the date
         let cheques = self
             .cheque_repo
@@ -421,7 +421,7 @@ impl ChequeService {
             .await
             .map_err(PaymentServiceError::Internal)?;
 
-        Ok(ClearingBatchResponse {
+        Ok(ChequeClearingBatchResponse {
             batch_id: batch.id().to_string(),
             clearing_date: batch.clearing_date(),
             cheque_count: batch.cheques().len(),
@@ -435,7 +435,7 @@ impl ChequeService {
         &self,
         batch_id: &str,
         results: Vec<ClearingResultRequest>,
-    ) -> Result<ClearingBatchResponse, PaymentServiceError> {
+    ) -> Result<ChequeClearingBatchResponse, PaymentServiceError> {
         let bid = Uuid::parse_str(batch_id)
             .map_err(|e| PaymentServiceError::InvalidInput(format!("Invalid batch ID: {e}")))?;
 
@@ -483,7 +483,7 @@ impl ChequeService {
             }
         }
 
-        Ok(ClearingBatchResponse {
+        Ok(ChequeClearingBatchResponse {
             batch_id: batch.id().to_string(),
             clearing_date: batch.clearing_date(),
             cheque_count: batch.cheques().len(),

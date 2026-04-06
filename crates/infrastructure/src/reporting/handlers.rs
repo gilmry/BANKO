@@ -265,6 +265,10 @@ pub async fn ifrs9_handler(
         .as_of
         .unwrap_or_else(|| chrono::Utc::now().date_naive());
 
-    let resp = service.generate_ifrs9_report(as_of);
-    HttpResponse::Ok().json(resp)
+    match service.generate_ifrs9_report(as_of).await {
+        Ok(report) => HttpResponse::Ok().json(report),
+        Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": e.to_string()
+        })),
+    }
 }

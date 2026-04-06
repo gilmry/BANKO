@@ -108,7 +108,7 @@ impl AuditService {
             .map_err(GovernanceServiceError::Internal)?;
 
         let count = entries.len();
-        match HashChain::verify_chain(&entries) {
+        match HashChainVerifier::verify_chain(&entries) {
             Ok(()) => Ok(IntegrityCheckResponse {
                 valid: true,
                 entries_checked: count,
@@ -185,7 +185,7 @@ impl ComplianceReportService {
             .find_chain(from, now)
             .await
             .map_err(GovernanceServiceError::Internal)?;
-        let integrity_valid = HashChain::verify_chain(&chain).is_ok();
+        let integrity_valid = HashChainVerifier::verify_chain(&chain).is_ok();
 
         // Third line: committee governance
         let committees = self

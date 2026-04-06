@@ -138,7 +138,7 @@ impl DomainEvent for AccountOpenedEvent {
         serde_json::to_value(self).expect("Failed to serialize AccountOpenedEvent")
     }
     fn event_id(&self) -> Uuid {
-        Uuid::new_v5(&self.account_id, b"AccountOpened")
+        Uuid::new_v4()
     }
 }
 
@@ -188,7 +188,7 @@ impl DomainEvent for PaymentInitiatedEvent {
         serde_json::to_value(self).expect("Failed to serialize PaymentInitiatedEvent")
     }
     fn event_id(&self) -> Uuid {
-        Uuid::new_v5(&self.payment_id, b"PaymentInitiated")
+        Uuid::new_v4()
     }
 }
 
@@ -226,7 +226,7 @@ impl DomainEvent for PaymentCompletedEvent {
         serde_json::to_value(self).expect("Failed to serialize PaymentCompletedEvent")
     }
     fn event_id(&self) -> Uuid {
-        Uuid::new_v5(&self.payment_id, b"PaymentCompleted")
+        Uuid::new_v4()
     }
 }
 
@@ -266,7 +266,7 @@ impl DomainEvent for LoanApprovedEvent {
         serde_json::to_value(self).expect("Failed to serialize LoanApprovedEvent")
     }
     fn event_id(&self) -> Uuid {
-        Uuid::new_v5(&self.loan_id, b"LoanApproved")
+        Uuid::new_v4()
     }
 }
 
@@ -306,7 +306,7 @@ impl DomainEvent for AmlAlertRaisedEvent {
         serde_json::to_value(self).expect("Failed to serialize AmlAlertRaisedEvent")
     }
     fn event_id(&self) -> Uuid {
-        Uuid::new_v5(&self.alert_id, b"AmlAlertRaised")
+        Uuid::new_v4()
     }
 }
 
@@ -342,7 +342,7 @@ impl DomainEvent for KycApprovedEvent {
         serde_json::to_value(self).expect("Failed to serialize KycApprovedEvent")
     }
     fn event_id(&self) -> Uuid {
-        Uuid::new_v5(&self.customer_id, b"KycApproved")
+        Uuid::new_v4()
     }
 }
 
@@ -389,7 +389,7 @@ impl DomainEvent for FxOperationSettledEvent {
         serde_json::to_value(self).expect("Failed to serialize FxOperationSettledEvent")
     }
     fn event_id(&self) -> Uuid {
-        Uuid::new_v5(&self.operation_id, b"FxOperationSettled")
+        Uuid::new_v4()
     }
 }
 
@@ -436,7 +436,7 @@ impl DomainEvent for AccountingEntryCreatedEvent {
         serde_json::to_value(self).expect("Failed to serialize AccountingEntryCreatedEvent")
     }
     fn event_id(&self) -> Uuid {
-        Uuid::new_v5(&self.entry_id, b"AccountingEntryCreated")
+        Uuid::new_v4()
     }
 }
 

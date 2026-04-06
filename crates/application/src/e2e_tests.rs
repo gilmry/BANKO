@@ -1991,7 +1991,7 @@ mod test_invariants {
         );
 
         // Valid chain should pass
-        let result = HashChain::verify_chain(&[entry1.clone(), entry2.clone(), entry3.clone()]);
+        let result = HashChainVerifier::verify_chain(&[entry1.clone(), entry2.clone(), entry3.clone()]);
         assert!(result.is_ok());
 
         // Tampered chain should fail (wrong previous hash)
@@ -2005,7 +2005,7 @@ mod test_invariants {
             "wrong_hash".to_string(),
         );
 
-        let result = HashChain::verify_chain(&[entry1, entry2, tampered]);
+        let result = HashChainVerifier::verify_chain(&[entry1, entry2, tampered]);
         assert!(result.is_err());
     }
 

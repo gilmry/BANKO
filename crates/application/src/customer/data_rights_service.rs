@@ -187,7 +187,7 @@ impl DataRightsService {
         // Fetch consents
         let consents = self
             .consent_repo
-            .find_by_customer(customer_id.to_uuid())
+            .find_by_customer(*customer_id.as_uuid())
             .await
             .map_err(CustomerServiceError::Internal)?;
 
@@ -217,7 +217,7 @@ impl DataRightsService {
                 "pep_status": customer.kyc_profile().pep_status().as_str(),
                 "source_of_funds": customer.kyc_profile().source_of_funds().as_str(),
             },
-            "risk_score": customer.risk_score().score(),
+            "risk_score": customer.risk_score().value(),
             "consent": customer.consent().as_str(),
             "created_at": customer.created_at().to_rfc3339(),
             "updated_at": customer.updated_at().to_rfc3339(),
@@ -272,7 +272,7 @@ impl DataRightsService {
                 "pep_status": customer.kyc_profile().pep_status().as_str(), // Keep for AML/regulatory
                 "source_of_funds": customer.kyc_profile().source_of_funds().as_str(), // Keep for regulatory
             },
-            "risk_score": customer.risk_score().score(),
+            "risk_score": customer.risk_score().value(),
             "consent": "[ANONYMIZED]",
             "created_at": customer.created_at().to_rfc3339(),
             "updated_at": customer.updated_at().to_rfc3339(),

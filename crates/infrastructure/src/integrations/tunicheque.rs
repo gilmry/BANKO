@@ -307,7 +307,7 @@ impl TuniChequeClient {
     /// Report a stopped cheque (stopcheque request)
     ///
     /// Submits a report for a cheque that should not be processed (e.g., lost,
-    stolen, or preventively stopped).
+    /// stolen, or preventively stopped).
     pub async fn report_stopped_cheque(
         &self,
         cheque_number: String,

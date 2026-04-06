@@ -323,4 +323,14 @@ pub enum DomainError {
 
     #[error("Recipient opted out")]
     RecipientOptedOut,
+
+    // --- Generic errors ---
+    #[error("Invalid state: {0}")]
+    InvalidState(String),
+
+    #[error("Invalid state transition: {0}")]
+    InvalidStateTransition(String),
+
+    #[error("Invalid input: {0}")]
+    InvalidInput(String),
 }

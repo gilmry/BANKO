@@ -5,10 +5,21 @@ use uuid::Uuid;
 
 use banko_domain::account::{Currency, CurrencyConverter, ConversionResult, AccountId};
 use banko_domain::shared::errors::DomainError;
-use banko_domain::shared::value_objects::{CustomerId, Rib};
+use banko_domain::shared::value_objects::{self, CustomerId, Rib};
 
 use super::errors::AccountServiceError;
 use super::ports::IAccountRepository;
+
+/// Convert shared Currency to account multi-currency Currency
+fn to_account_currency(c: value_objects::Currency) -> Currency {
+    match c {
+        value_objects::Currency::TND => Currency::TND,
+        value_objects::Currency::EUR => Currency::EUR,
+        value_objects::Currency::USD => Currency::USD,
+        value_objects::Currency::GBP => Currency::GBP,
+        value_objects::Currency::LYD => Currency::LYD,
+    }
+}
 
 // ==================== ConsolidatedBalance ====================
 
@@ -59,15 +70,15 @@ impl MultiCurrencyService {
         let mut rates = Vec::new();
         rates.push((Currency::TND, Decimal::from(1)));
         rates.push((Currency::EUR, Decimal::from(3)));
-        rates.push((Currency::USD, Decimal::from(3.1)));
-        rates.push((Currency::GBP, Decimal::from(3.9)));
+        rates.push((Currency::USD, Decimal::from_str_exact("3.1").unwrap_or(Decimal::ZERO)));
+        rates.push((Currency::GBP, Decimal::from_str_exact("3.9").unwrap_or(Decimal::ZERO)));
 
         let mut balances = Vec::new();
         let mut total_tnd = Decimal::ZERO;
 
         for account in accounts {
             let balance = account.balance();
-            let currency = balance.currency();
+            let currency = to_account_currency(balance.currency());
             let amount = balance.amount();
 
             balances.push((currency, Decimal::from_str_exact(&amount.to_string()).unwrap_or(Decimal::ZERO)));
@@ -119,13 +130,13 @@ impl MultiCurrencyService {
         if from_account.customer_id() != &expected_cid
             || to_account.customer_id() != &expected_cid
         {
-            return Err(AccountServiceError::InvalidEntry(
+            return Err(AccountServiceError::InvalidInput(
                 "Both accounts must belong to the same customer".to_string(),
             ));
         }
 
-        let from_currency = from_account.balance().currency();
-        let to_currency = to_account.balance().currency();
+        let from_currency = to_account_currency(from_account.balance().currency());
+        let to_currency = to_account_currency(to_account.balance().currency());
 
         // Check monthly limit (simplified - in real system would check against customer preferences)
         let monthly_limit = Decimal::from(100000);
@@ -138,13 +149,13 @@ impl MultiCurrencyService {
             monthly_limit,
             already_converted,
         )
-        .map_err(|e| AccountServiceError::InvalidEntry(e.to_string()))?;
+        .map_err(|e| AccountServiceError::InvalidInput(e.to_string()))?;
 
         // Perform conversion (simplified market rate)
         let market_rate = match (from_currency, to_currency) {
             (Currency::EUR, Currency::TND) => Decimal::from(3),
             (Currency::TND, Currency::EUR) => Decimal::from_str_exact("0.333333").unwrap_or(Decimal::ZERO),
-            (Currency::USD, Currency::TND) => Decimal::from(3.1),
+            (Currency::USD, Currency::TND) => Decimal::from_str_exact("3.1").unwrap_or(Decimal::ZERO),
             (Currency::TND, Currency::USD) => Decimal::from_str_exact("0.322580").unwrap_or(Decimal::ZERO),
             _ => Decimal::from(1),
         };
@@ -153,7 +164,7 @@ impl MultiCurrencyService {
         let result = self
             .converter
             .convert(amount, from_currency, to_currency, market_rate, is_buying_base)
-            .map_err(|e| AccountServiceError::InvalidEntry(e.to_string()))?;
+            .map_err(|e| AccountServiceError::InvalidInput(e.to_string()))?;
 
         // In a real system:
         // 1. Withdraw from from_account

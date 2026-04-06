@@ -1,9 +1,11 @@
 use actix_web::{web, HttpResponse};
-use actix_web_prom::PrometheusMetrics;
+use actix_web_prom::PrometheusMetricsBuilder;
 use prometheus::{Encoder, TextEncoder};
 
-pub fn create_prometheus_metrics() -> PrometheusMetrics {
-    PrometheusMetrics::new("banko", None)
+pub fn create_prometheus_metrics() -> actix_web_prom::PrometheusMetrics {
+    PrometheusMetricsBuilder::new("banko")
+        .build()
+        .expect("failed to create PrometheusMetrics")
 }
 
 pub async fn health_handler() -> HttpResponse {

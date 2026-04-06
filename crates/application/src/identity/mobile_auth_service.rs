@@ -686,3 +686,4 @@ mod tests {
         let device = device_repo.find_by_device_id("device123").await.unwrap().unwrap();
         assert!(!device.is_active);
     }
+}

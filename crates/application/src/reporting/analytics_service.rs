@@ -295,13 +295,13 @@ impl AnalyticsService {
             .await
             .map_err(ReportingServiceError::Internal)?;
 
-        let fees_ytd = self
+        let fees_ytd: Decimal = self
             .portfolio_provider
             .get_ytd_fees(customer_id)
             .await
             .map_err(ReportingServiceError::Internal)?;
 
-        let total_balance_tnd = self
+        let total_balance_tnd: Decimal = self
             .portfolio_provider
             .get_total_balance(customer_id)
             .await
@@ -341,77 +341,92 @@ impl AnalyticsService {
 
     /// Get operational KPIs dashboard metrics
     pub async fn get_operational_kpis(&self) -> Result<OperationalKpis, ReportingServiceError> {
+        let total_customers: i64 = self
+            .kpi_provider
+            .count_total_customers()
+            .await
+            .map_err(ReportingServiceError::Internal)?;
+        let active_customers_30d: i64 = self
+            .kpi_provider
+            .count_active_customers_30d()
+            .await
+            .map_err(ReportingServiceError::Internal)?;
+        let new_customers_30d: i64 = self
+            .kpi_provider
+            .count_new_customers_30d()
+            .await
+            .map_err(ReportingServiceError::Internal)?;
+        let attrition_rate: Decimal = self
+            .kpi_provider
+            .get_attrition_rate()
+            .await
+            .map_err(ReportingServiceError::Internal)?;
+        let total_accounts: i64 = self
+            .kpi_provider
+            .count_total_accounts()
+            .await
+            .map_err(ReportingServiceError::Internal)?;
+        let total_balance_tnd: Decimal = self
+            .kpi_provider
+            .get_total_balance_tnd()
+            .await
+            .map_err(ReportingServiceError::Internal)?;
+        let total_loans: i64 = self
+            .kpi_provider
+            .count_total_loans()
+            .await
+            .map_err(ReportingServiceError::Internal)?;
+        let loans_outstanding_tnd: Decimal = self
+            .kpi_provider
+            .get_loans_outstanding_tnd()
+            .await
+            .map_err(ReportingServiceError::Internal)?;
+        let npl_ratio: Decimal = self
+            .kpi_provider
+            .get_npl_ratio()
+            .await
+            .map_err(ReportingServiceError::Internal)?;
+        let fraud_alerts_today: i64 = self
+            .kpi_provider
+            .count_fraud_alerts_today()
+            .await
+            .map_err(ReportingServiceError::Internal)?;
+        let transactions_blocked_today: i64 = self
+            .kpi_provider
+            .count_transactions_blocked_today()
+            .await
+            .map_err(ReportingServiceError::Internal)?;
+        let blocked_amount_today: Decimal = self
+            .kpi_provider
+            .get_blocked_amount_today()
+            .await
+            .map_err(ReportingServiceError::Internal)?;
+        let aml_open_investigations: i64 = self
+            .kpi_provider
+            .count_aml_open_investigations()
+            .await
+            .map_err(ReportingServiceError::Internal)?;
+        let compliance_score: Decimal = self
+            .kpi_provider
+            .get_compliance_score()
+            .await
+            .map_err(ReportingServiceError::Internal)?;
+
         let kpis = OperationalKpis {
-            total_customers: self
-                .kpi_provider
-                .count_total_customers()
-                .await
-                .map_err(ReportingServiceError::Internal)?,
-            active_customers_30d: self
-                .kpi_provider
-                .count_active_customers_30d()
-                .await
-                .map_err(ReportingServiceError::Internal)?,
-            new_customers_30d: self
-                .kpi_provider
-                .count_new_customers_30d()
-                .await
-                .map_err(ReportingServiceError::Internal)?,
-            attrition_rate: self
-                .kpi_provider
-                .get_attrition_rate()
-                .await
-                .map_err(ReportingServiceError::Internal)?,
-            total_accounts: self
-                .kpi_provider
-                .count_total_accounts()
-                .await
-                .map_err(ReportingServiceError::Internal)?,
-            total_balance_tnd: self
-                .kpi_provider
-                .get_total_balance_tnd()
-                .await
-                .map_err(ReportingServiceError::Internal)?,
-            total_loans: self
-                .kpi_provider
-                .count_total_loans()
-                .await
-                .map_err(ReportingServiceError::Internal)?,
-            loans_outstanding_tnd: self
-                .kpi_provider
-                .get_loans_outstanding_tnd()
-                .await
-                .map_err(ReportingServiceError::Internal)?,
-            npl_ratio: self
-                .kpi_provider
-                .get_npl_ratio()
-                .await
-                .map_err(ReportingServiceError::Internal)?,
-            fraud_alerts_today: self
-                .kpi_provider
-                .count_fraud_alerts_today()
-                .await
-                .map_err(ReportingServiceError::Internal)?,
-            transactions_blocked_today: self
-                .kpi_provider
-                .count_transactions_blocked_today()
-                .await
-                .map_err(ReportingServiceError::Internal)?,
-            blocked_amount_today: self
-                .kpi_provider
-                .get_blocked_amount_today()
-                .await
-                .map_err(ReportingServiceError::Internal)?,
-            aml_open_investigations: self
-                .kpi_provider
-                .count_aml_open_investigations()
-                .await
-                .map_err(ReportingServiceError::Internal)?,
-            compliance_score: self
-                .kpi_provider
-                .get_compliance_score()
-                .await
-                .map_err(ReportingServiceError::Internal)?,
+            total_customers,
+            active_customers_30d,
+            new_customers_30d,
+            attrition_rate,
+            total_accounts,
+            total_balance_tnd,
+            total_loans,
+            loans_outstanding_tnd,
+            npl_ratio,
+            fraud_alerts_today,
+            transactions_blocked_today,
+            blocked_amount_today,
+            aml_open_investigations,
+            compliance_score,
             computed_at: Utc::now(),
         };
 

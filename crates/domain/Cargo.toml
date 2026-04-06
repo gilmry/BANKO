@@ -14,3 +14,5 @@ sha2.workspace = true
 async-trait.workspace = true
 tokio = { workspace = true, features = ["sync"] }
 serde_json.workspace = true
+rust_decimal.workspace = true
+num-traits = "0.2"
