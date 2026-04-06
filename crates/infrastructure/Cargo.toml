@@ -28,7 +28,7 @@ actix-web-prom = "0.8"
 prometheus = "0.13"
 
 [dev-dependencies]
-cucumber = "0.21"
+cucumber = "0.22"
 tokio = { workspace = true }
 futures = "0.3"
 actix-rt = "2"
