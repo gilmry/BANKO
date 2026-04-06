@@ -1,11 +1,13 @@
 use actix_web::web;
 
+use super::metrics;
 use super::handlers::{
     account_handlers, accounting_handlers, aml_handlers, auth_handlers, consent_handlers,
     credit_handlers, customer_handlers, data_rights_handlers, fx_handlers, governance_handlers,
-    payment_handlers, profile_handlers, prudential_handlers, reporting_handlers,
+    notification_handlers, payment_handlers, product_handlers, profile_handlers, prudential_handlers, reporting_handlers,
     retention_handlers, sanctions_handlers, two_factor_handlers, user_handlers,
 };
+use crate::payment::recurring_handlers;
 
 use crate::governance::bct_audit_handlers;
 
@@ -29,6 +31,7 @@ pub fn configure_auth_routes(cfg: &mut web::ServiceConfig) {
 pub fn configure_api_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api/v1")
+            .route("/health", web::get().to(metrics::health_handler))
             .route("/profile", web::get().to(profile_handlers::get_profile))
             .route("/users", web::post().to(user_handlers::create_user_handler))
             .route(
@@ -40,6 +43,10 @@ pub fn configure_api_routes(cfg: &mut web::ServiceConfig) {
                 web::put().to(user_handlers::update_user_roles_handler),
             ),
     );
+
+    // Configure domain-specific routes
+    configure_payment_routes(cfg);
+    configure_recurring_payment_routes(cfg);
 }
 
 pub fn configure_customer_routes(cfg: &mut web::ServiceConfig) {
@@ -388,6 +395,60 @@ pub fn configure_payment_routes(cfg: &mut web::ServiceConfig) {
     );
 }
 
+pub fn configure_recurring_payment_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/recurring")
+            // Standing Orders (STORY-RECUR-01)
+            .service(
+                web::scope("/standing-orders")
+                    .route(
+                        "",
+                        web::post().to(recurring_handlers::create_standing_order_handler),
+                    )
+                    .route(
+                        "",
+                        web::get().to(recurring_handlers::list_standing_orders_handler),
+                    )
+                    .route(
+                        "/{id}",
+                        web::get().to(recurring_handlers::get_standing_order_handler),
+                    )
+                    .route(
+                        "/{id}/suspend",
+                        web::post().to(recurring_handlers::suspend_standing_order_handler),
+                    )
+                    .route(
+                        "/{id}/resume",
+                        web::post().to(recurring_handlers::resume_standing_order_handler),
+                    )
+                    .route(
+                        "/{id}/cancel",
+                        web::post().to(recurring_handlers::cancel_standing_order_handler),
+                    ),
+            )
+            // Direct Debit Mandates (STORY-RECUR-02)
+            .service(
+                web::scope("/mandates")
+                    .route(
+                        "",
+                        web::post().to(recurring_handlers::create_mandate_handler),
+                    )
+                    .route(
+                        "",
+                        web::get().to(recurring_handlers::list_mandates_handler),
+                    )
+                    .route(
+                        "/{id}/sign",
+                        web::post().to(recurring_handlers::sign_mandate_handler),
+                    )
+                    .route(
+                        "/{id}/revoke",
+                        web::post().to(recurring_handlers::revoke_mandate_handler),
+                    ),
+            ),
+    );
+}
+
 pub fn configure_fx_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api/v1/fx")
@@ -473,6 +534,86 @@ pub fn configure_bct_audit_routes(cfg: &mut web::ServiceConfig) {
             .route(
                 "/suspicious",
                 web::get().to(bct_audit_handlers::suspicious_handler),
+            ),
+    );
+}
+
+pub fn configure_notification_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/notifications")
+            .route(
+                "/send",
+                web::post().to(notification_handlers::send_notification_handler),
+            )
+            .route("", web::get().to(notification_handlers::list_notifications_handler))
+            .route(
+                "/{id}",
+                web::get().to(notification_handlers::get_notification_handler),
+            )
+            .route(
+                "/preferences/{customer_id}",
+                web::get().to(notification_handlers::get_preferences_handler),
+            )
+            .route(
+                "/preferences",
+                web::put().to(notification_handlers::update_preference_handler),
+            )
+            .route(
+                "/templates",
+                web::get().to(notification_handlers::list_templates_handler),
+            ),
+    );
+}
+
+pub fn configure_product_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/products")
+            .route(
+                "",
+                web::post().to(product_handlers::create_product_handler),
+            )
+            .route("", web::get().to(product_handlers::list_products_handler))
+            .route(
+                "/{id}",
+                web::get().to(product_handlers::get_product_handler),
+            )
+            .route(
+                "/{id}/activate",
+                web::post().to(product_handlers::activate_product_handler),
+            )
+            .route(
+                "/{id}/suspend",
+                web::post().to(product_handlers::suspend_product_handler),
+            )
+            .route(
+                "/pricing/calculate",
+                web::post().to(product_handlers::calculate_price_handler),
+            )
+            .route(
+                "/eligibility/check",
+                web::post().to(product_handlers::check_eligibility_handler),
+            )
+            .route(
+                "/eligibility/eligible",
+                web::post().to(product_handlers::get_eligible_products_handler),
+            )
+            .route(
+                "/interest/daily",
+                web::post().to(product_handlers::calculate_daily_interest_handler),
+            )
+            .route(
+                "/interest/maturity",
+                web::post().to(product_handlers::calculate_maturity_handler),
+            ),
+    );
+}
+
+pub fn configure_admin_pricing_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/admin/pricing-grids")
+            .route(
+                "",
+                web::post().to(product_handlers::create_pricing_grid_handler),
             ),
     );
 }

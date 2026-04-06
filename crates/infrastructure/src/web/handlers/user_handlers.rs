@@ -1,9 +1,12 @@
 use std::sync::Arc;
 
-use actix_web::{web, HttpResponse};
+use actix_web::{web, HttpRequest, HttpResponse};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
+use banko_application::governance::AuditService;
 use banko_application::identity::{RegisterError, UserService};
+use banko_domain::governance::{AuditAction, ResourceType};
 use banko_domain::identity::UserId;
 
 use crate::web::handlers::auth_handlers::ErrorResponse;
@@ -150,6 +153,8 @@ pub struct UpdateRolesRequest {
 pub async fn update_user_roles_handler(
     auth_user: AuthenticatedUser,
     service: web::Data<Arc<UserService>>,
+    audit_service: web::Data<Arc<AuditService>>,
+    req: HttpRequest,
     path: web::Path<String>,
     body: web::Json<UpdateRolesRequest>,
 ) -> HttpResponse {
@@ -199,8 +204,49 @@ pub async fn update_user_roles_handler(
         });
     }
 
+    // Fetch the user before update to capture old roles for audit trail (STORY-ID-08)
+    let old_user = match service.find_by_id(&user_id).await {
+        Ok(u) => u,
+        Err(_) => {
+            return HttpResponse::NotFound().json(ErrorResponse {
+                error: "User not found".to_string(),
+            });
+        }
+    };
+    let old_roles: Vec<String> = old_user.roles().iter().map(|r| r.as_str().to_string()).collect();
+
     match service.update_roles(&user_id, roles).await {
         Ok(user) => {
+            let new_roles: Vec<String> = user.roles().iter().map(|r| r.as_str().to_string()).collect();
+
+            // Extract IP address from request
+            let ip_address = req
+                .connection_info()
+                .peer_addr()
+                .map(|s| s.to_string());
+
+            // Prepare audit log changes as JSON
+            let changes = serde_json::json!({
+                "old_roles": old_roles,
+                "new_roles": new_roles,
+            })
+            .to_string();
+
+            // Log role change to immutable audit trail (STORY-ID-08)
+            if let Err(e) = audit_service
+                .log_action(
+                    Uuid::parse(&guard.user.user_id).unwrap_or_else(|_| Uuid::nil()),
+                    AuditAction::Update,
+                    ResourceType::User,
+                    *user.id().as_uuid(),
+                    Some(changes),
+                    ip_address,
+                )
+                .await
+            {
+                tracing::error!("Failed to log role change audit entry: {:?}", e);
+            }
+
             tracing::info!(
                 "SuperAdmin {} changed user {} roles to {:?}",
                 guard.user.email,
@@ -234,7 +280,7 @@ mod tests {
 
     use super::*;
     use crate::config::JwtConfig;
-    use crate::test_helpers::make_test_user_service;
+    use crate::test_helpers::{make_test_audit_service, make_test_user_service};
     use crate::web::handlers::auth_handlers::{login_handler, register_handler, LoginResponse};
 
     fn test_jwt_config() -> JwtConfig {
@@ -254,6 +300,19 @@ mod tests {
                 "/users/{id}/roles",
                 web::put().to(update_user_roles_handler),
             );
+    }
+
+    // Helper to inject audit service into test app
+    fn configure_with_audit(cfg: &mut web::ServiceConfig, audit_service: Arc<AuditService>) {
+        cfg.route("/auth/register", web::post().to(register_handler))
+            .route("/auth/login", web::post().to(login_handler))
+            .route("/users", web::post().to(create_user_handler))
+            .route("/users/{id}", web::get().to(get_user_handler))
+            .route(
+                "/users/{id}/roles",
+                web::put().to(update_user_roles_handler),
+            )
+            .app_data(web::Data::new(audit_service));
     }
 
     async fn get_admin_token(jwt: &JwtConfig) -> String {
@@ -449,10 +508,12 @@ mod tests {
     async fn test_update_roles_as_super_admin() {
         let service = make_test_user_service();
         let jwt = test_jwt_config();
+        let audit_service = make_test_audit_service();
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(service))
                 .app_data(web::Data::new(jwt.clone()))
+                .app_data(web::Data::new(audit_service.clone()))
                 .configure(configure),
         )
         .await;
@@ -485,6 +546,10 @@ mod tests {
         let body: UserProfileResponse = test::read_body_json(resp).await;
         assert!(body.roles.contains(&"analyst".to_string()));
         assert!(body.roles.contains(&"compliance".to_string()));
+
+        // Verify audit trail entry was created (STORY-ID-08)
+        // Note: In a real test with a database, we would query the audit table
+        // Here we're just verifying the endpoint completed successfully
     }
 
     #[actix_rt::test]
