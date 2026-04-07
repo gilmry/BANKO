@@ -327,6 +327,28 @@ pub enum DomainError {
     #[error("Recipient opted out")]
     RecipientOptedOut,
 
+    // --- Collateral errors ---
+    #[error("Collateral not found")]
+    CollateralNotFound,
+
+    #[error("Invalid collateral type: {0}")]
+    InvalidCollateralType(String),
+
+    #[error("Invalid collateral status: {0}")]
+    InvalidCollateralStatus(String),
+
+    #[error("Invalid valuation method: {0}")]
+    InvalidValuationMethod(String),
+
+    #[error("LTV threshold exceeded for collateral type")]
+    LtvThresholdExceeded,
+
+    #[error("Collateral revaluation overdue")]
+    CollateralRevaluationOverdue,
+
+    #[error("Insurance policy required for real estate collateral")]
+    InsurancePolicyRequired,
+
     // --- Generic errors ---
     #[error("Invalid state: {0}")]
     InvalidState(String),
