@@ -1,4 +1,5 @@
 use actix_web::web;
+use serde_json::json;
 
 use super::metrics;
 use super::handlers::{
@@ -784,4 +785,599 @@ pub fn configure_mobile_routes(cfg: &mut web::ServiceConfig) {
                 web::post().to(mobile_handlers::scan_qr_handler),
             ),
     );
+}
+
+pub fn configure_compliance_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/compliance")
+            .route(
+                "/gafi",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/audits",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/audits",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/audits/{id}",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/risks",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/training",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/training",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/training/{id}/complete",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/regulatory-changes",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/regulatory-changes",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/incidents",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/incidents",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/incidents/{id}",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/whistleblower",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/third-party",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/third-party",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/third-party/{id}/assess",
+                web::post().to(not_implemented_handler),
+            ),
+    );
+}
+
+pub fn configure_credit_enhanced_routes(cfg: &mut web::ServiceConfig) {
+    // Revolving Credit Lines
+    cfg.service(
+        web::scope("/api/v1/credit/revolving")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(not_implemented_handler),
+            ),
+    );
+
+    // Syndicated Loans
+    cfg.service(
+        web::scope("/api/v1/credit/syndication")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(not_implemented_handler),
+            ),
+    );
+
+    // Loan Restructuring
+    cfg.service(
+        web::scope("/api/v1/credit/restructuring")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(not_implemented_handler),
+            ),
+    );
+}
+
+pub fn configure_prudential_enhanced_routes(cfg: &mut web::ServiceConfig) {
+    // Stress Testing
+    cfg.service(
+        web::scope("/api/v1/prudential/stress-test")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(not_implemented_handler),
+            ),
+    );
+
+    // Liquidity Coverage Ratio
+    cfg.service(
+        web::scope("/api/v1/prudential/lcr")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "",
+                web::post().to(not_implemented_handler),
+            ),
+    );
+
+    // Net Stable Funding Ratio
+    cfg.service(
+        web::scope("/api/v1/prudential/nsfr")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "",
+                web::post().to(not_implemented_handler),
+            ),
+    );
+
+    // Risk-Weighted Assets
+    cfg.service(
+        web::scope("/api/v1/prudential/rwa")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "",
+                web::post().to(not_implemented_handler),
+            ),
+    );
+
+    // ICAAP Assessments
+    cfg.service(
+        web::scope("/api/v1/prudential/icaap")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(not_implemented_handler),
+            ),
+    );
+}
+
+pub fn configure_payment_enhanced_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/payments")
+            .route(
+                "/consents",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/consents",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/consents/{id}",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/consents/{id}/revoke",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/instant",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/instant",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/instant/{id}",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/qr",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/qr",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/qr/{id}",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/pis",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/pis",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/pis/{id}",
+                web::get().to(not_implemented_handler),
+            ),
+    );
+}
+
+pub fn configure_fx_enhanced_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/fx")
+            // FX Forward Contracts
+            .route(
+                "/forwards",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/forwards",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/forwards/{id}",
+                web::get().to(not_implemented_handler),
+            )
+            // FX Swaps
+            .route(
+                "/swaps",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/swaps",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/swaps/{id}",
+                web::get().to(not_implemented_handler),
+            )
+            // FX Options
+            .route(
+                "/options",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/options",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/options/{id}",
+                web::get().to(not_implemented_handler),
+            ),
+    );
+}
+
+pub fn configure_governance_enhanced_routes(cfg: &mut web::ServiceConfig) {
+    // RBAC Management
+    cfg.service(
+        web::scope("/api/v1/governance/roles")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/{id}",
+                web::put().to(not_implemented_handler),
+            ),
+    );
+
+    // Permission Management
+    cfg.service(
+        web::scope("/api/v1/governance/permissions")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(not_implemented_handler),
+            ),
+    );
+
+    // Segregation of Duties
+    cfg.service(
+        web::scope("/api/v1/governance/sod")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "",
+                web::post().to(not_implemented_handler),
+            ),
+    );
+
+    // Approval Workflows
+    cfg.service(
+        web::scope("/api/v1/governance/workflows")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(not_implemented_handler),
+            ),
+    );
+
+    // Power Delegations
+    cfg.service(
+        web::scope("/api/v1/governance/delegations")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(not_implemented_handler),
+            ),
+    );
+
+    // Access Reviews
+    cfg.service(
+        web::scope("/api/v1/governance/access-reviews")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(not_implemented_handler),
+            ),
+    );
+}
+
+pub fn configure_identity_enhanced_routes(cfg: &mut web::ServiceConfig) {
+    // FIDO2/WebAuthn
+    cfg.service(
+        web::scope("/api/v1/identity/webauthn")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/{id}/register",
+                web::post().to(not_implemented_handler),
+            ),
+    );
+
+    // API Key Management
+    cfg.service(
+        web::scope("/api/v1/identity/api-keys")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/{id}",
+                web::delete().to(not_implemented_handler),
+            ),
+    );
+
+    // OAuth2 Endpoints
+    cfg.service(
+        web::scope("/api/v1/identity/oauth")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/authorize",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/token",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/revoke",
+                web::post().to(not_implemented_handler),
+            ),
+    );
+}
+
+pub fn configure_reporting_enhanced_routes(cfg: &mut web::ServiceConfig) {
+    // Scheduled Reports
+    cfg.service(
+        web::scope("/api/v1/reporting/scheduled")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(not_implemented_handler),
+            ),
+    );
+
+    // Report Archives
+    cfg.service(
+        web::scope("/api/v1/reporting/archives")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(not_implemented_handler),
+            ),
+    );
+
+    // Ad-hoc Reports
+    cfg.service(
+        web::scope("/api/v1/reporting/adhoc")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(not_implemented_handler),
+            ),
+    );
+
+    // Tax Reports
+    cfg.service(
+        web::scope("/api/v1/reporting/tax")
+            .route(
+                "",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "",
+                web::post().to(not_implemented_handler),
+            )
+            .route(
+                "/{id}",
+                web::get().to(not_implemented_handler),
+            ),
+    );
+}
+
+pub fn configure_reference_data_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/reference-data")
+            .route(
+                "/countries",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/currencies",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/banks",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/branches",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/holidays",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/parameters",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/parameters/{key}",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/regulatory-codes",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/fee-schedules",
+                web::get().to(not_implemented_handler),
+            )
+            .route(
+                "/fee-schedules",
+                web::post().to(not_implemented_handler),
+            ),
+    );
+}
+
+/// Placeholder handler for endpoints not yet implemented.
+/// Returns 501 Not Implemented.
+async fn not_implemented_handler() -> actix_web::HttpResponse {
+    actix_web::HttpResponse::NotImplemented().json(json!({
+        "error": "Endpoint not yet implemented",
+        "status": 501
+    }))
 }

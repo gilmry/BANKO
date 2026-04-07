@@ -14,6 +14,7 @@ pub mod payment;
 pub mod ports;
 pub mod product;
 pub mod prudential;
+pub mod reference_data;
 pub mod reporting;
 pub mod saga;
 pub mod sanctions;

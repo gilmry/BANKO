@@ -15,6 +15,11 @@ use banko_infrastructure::web::routes::{
     configure_analytics_routes, configure_admin_backup_routes,
     configure_retention_routes, configure_bct_audit_routes,
     configure_admin_pricing_routes,
+    configure_compliance_routes, configure_credit_enhanced_routes,
+    configure_prudential_enhanced_routes, configure_payment_enhanced_routes,
+    configure_fx_enhanced_routes, configure_governance_enhanced_routes,
+    configure_identity_enhanced_routes, configure_reporting_enhanced_routes,
+    configure_reference_data_routes,
 };
 
 #[actix_web::main]
@@ -51,6 +56,7 @@ async fn main() -> std::io::Result<()> {
             .route("/metrics", web::get().to(metrics_handler))
             .configure(configure_auth_routes)
             .configure(configure_api_routes)
+            // Core bounded contexts
             .configure(configure_customer_routes)
             .configure(configure_account_routes)
             .configure(configure_credit_routes)
@@ -68,6 +74,16 @@ async fn main() -> std::io::Result<()> {
             .configure(configure_retention_routes)
             .configure(configure_bct_audit_routes)
             .configure(configure_admin_pricing_routes)
+            // Enhanced bounded contexts
+            .configure(configure_compliance_routes)
+            .configure(configure_credit_enhanced_routes)
+            .configure(configure_prudential_enhanced_routes)
+            .configure(configure_payment_enhanced_routes)
+            .configure(configure_fx_enhanced_routes)
+            .configure(configure_governance_enhanced_routes)
+            .configure(configure_identity_enhanced_routes)
+            .configure(configure_reporting_enhanced_routes)
+            .configure(configure_reference_data_routes)
     })
     .bind("0.0.0.0:8080")?
     .run()
