@@ -355,6 +355,7 @@ dependencies = [
  "num-traits",
  "rand 0.8.5",
  "rust_decimal",
+ "rust_decimal_macros",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -371,6 +372,7 @@ dependencies = [
  "chrono",
  "num-traits",
  "rust_decimal",
+ "rust_decimal_macros",
  "serde",
  "serde_json",
  "sha2",
@@ -2389,6 +2391,16 @@ dependencies = [
  "serde",
  "serde_json",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "rust_decimal_macros"
+version = "1.40.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74a5a6f027e892c7a035c6fddb50435a1fbf5a734ffc0c2a9fed4d0221440519"
+dependencies = [
+ "quote",
+ "syn 2.0.117",
 ]
 
 [[package]]
