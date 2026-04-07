@@ -117,9 +117,25 @@ test-bdd: ## 🥒 Tests BDD/Cucumber (backend)
 	@echo "$(GREEN)🥒 Tests BDD...$(NC)"
 	cd backend && SQLX_OFFLINE=true cargo test --test bdd
 
-test-e2e: ## 🌐 Tests E2E Playwright (frontend)
-	@echo "$(GREEN)🌐 Tests E2E...$(NC)"
-	cd frontend && PLAYWRIGHT_BASE_URL=http://localhost npm run test:e2e
+test-e2e: ## 🌐 Tests E2E Playwright (toutes les routes)
+	@echo "$(GREEN)🌐 Tests E2E Playwright...$(NC)"
+	cd e2e && npx playwright test
+
+test-e2e-smoke: ## 💨 Smoke test rapide (20 routes, <30s)
+	@echo "$(GREEN)💨 Smoke test...$(NC)"
+	cd e2e && npx playwright test tests/smoke.spec.ts --project=chromium
+
+test-e2e-debug: ## 🐛 Tests E2E en mode debug (headed + trace)
+	@echo "$(GREEN)🐛 E2E Debug mode...$(NC)"
+	cd e2e && npx playwright test --debug --project=chromium
+
+test-e2e-ui: ## 🖥️ Tests E2E avec UI Playwright
+	@echo "$(GREEN)🖥️ E2E UI mode...$(NC)"
+	cd e2e && npx playwright test --ui
+
+test-e2e-report: ## 📊 Ouvrir le rapport HTML Playwright
+	@echo "$(GREEN)📊 Rapport E2E...$(NC)"
+	cd e2e && npx playwright show-report
 
 test-watch: ## 👀 Tests en mode watch (auto-reload)
 	cd backend && cargo watch -x "test --lib"
