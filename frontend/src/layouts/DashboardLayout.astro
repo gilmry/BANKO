@@ -1,37 +1,25 @@
 ---
 import Base from './Base.astro';
 import Sidebar from '../components/common/Sidebar.svelte';
-import Header from '../components/Header.svelte';
 
 interface Props {
   title: string;
-  breadcrumb?: Array<{ label: string; href?: string }>;
   dir?: 'ltr' | 'rtl';
   lang?: string;
 }
 
-const { title, breadcrumb = [], dir = 'ltr', lang = 'fr' } = Astro.props;
-
-// Build breadcrumb with home
-const fullBreadcrumb = [
-  { label: 'Accueil', href: '/' },
-  ...breadcrumb,
-];
+const { title, dir = 'ltr', lang = 'fr' } = Astro.props;
 ---
 
 <Base title={title} dir={dir} lang={lang}>
   <div class="flex min-h-screen bg-gray-50">
-    <!-- Sidebar Navigation -->
     <Sidebar client:load />
 
-    <!-- Main content area -->
     <div class="flex flex-1 flex-col">
-      <!-- Top header -->
       <header class="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 shadow-sm sm:px-6 lg:px-8">
-        <!-- Mobile menu button -->
         <button
           type="button"
-          class="lg:hidden rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+          class="lg:hidden rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
           aria-label="Ouvrir le menu de navigation"
           id="mobile-menu-btn"
         >
@@ -40,33 +28,19 @@ const fullBreadcrumb = [
           </svg>
         </button>
 
-        <!-- Page title and breadcrumb -->
         <div class="hidden flex-1 lg:block">
           <nav class="flex items-center space-x-2 text-sm text-gray-500">
-            {#each fullBreadcrumb as item, index}
-              {#if item.href}
-                <a href={item.href} class="hover:text-gray-700">
-                  {item.label}
-                </a>
-              {:else}
-                <span class="text-gray-900 font-medium">
-                  {item.label}
-                </span>
-              {/if}
-              {#if index < fullBreadcrumb.length - 1}
-                <span aria-hidden="true">/</span>
-              {/if}
-            {/each}
+            <a href="/" class="hover:text-gray-700">Accueil</a>
+            <span aria-hidden="true">/</span>
+            <span class="text-gray-900 font-medium">{title}</span>
           </nav>
           <h1 class="mt-2 text-2xl font-bold text-gray-900">{title}</h1>
         </div>
 
-        <!-- Right-side header items -->
         <div class="flex items-center gap-4">
-          <!-- Notification bell -->
           <button
             type="button"
-            class="relative p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            class="relative p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 rounded-lg"
             aria-label="Notifications"
           >
             <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -80,33 +54,23 @@ const fullBreadcrumb = [
             <span class="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500"></span>
           </button>
 
-          <!-- User menu -->
           <div class="flex items-center gap-3 pl-3 border-l border-gray-200">
-            <button
-              type="button"
-              class="relative inline-flex items-center justify-center h-10 w-10 rounded-full bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-              aria-label="Menu utilisateur"
-            >
+            <span class="relative inline-flex items-center justify-center h-10 w-10 rounded-full bg-blue-600 text-white text-sm font-medium">
               U
-            </button>
-            <a
-              href="/login"
-              class="text-sm font-medium text-gray-600 hover:text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-            >
-              Déconnexion
+            </span>
+            <a href="/login" class="text-sm font-medium text-gray-600 hover:text-gray-900">
+              Connexion
             </a>
           </div>
         </div>
       </header>
 
-      <!-- Page content -->
       <main id="main-content" class="flex-1 overflow-auto px-4 py-8 sm:px-6 lg:px-8" role="main">
         <slot />
       </main>
 
-      <!-- Footer -->
       <footer class="border-t border-gray-200 bg-white px-4 py-4 sm:px-6 lg:px-8 text-xs text-gray-500">
-        <p>© 2026 BANKO Banking Platform. Tous droits réservés.</p>
+        <p>&copy; 2026 BANKO Banking Platform. Tous droits reserves.</p>
       </footer>
     </div>
   </div>

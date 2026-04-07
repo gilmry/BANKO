@@ -2,14 +2,14 @@
   import { onMount } from 'svelte';
 
   let isMobileOpen = $state(false);
-  const currentPath = new URL(globalThis.location?.href || '').pathname;
+  const currentPath = typeof globalThis.location !== 'undefined' ? globalThis.location.pathname : '/';
 
   const navigationItems = [
     {
       section: 'Principal',
       items: [
-        { icon: '📊', label: 'Tableau de bord', href: '/' },
-        { icon: '👥', label: 'Clients', href: '/customer/onboarding' },
+        { icon: '📊', label: 'Tableau de bord', href: '/dashboard' },
+        { icon: '👥', label: 'Clients', href: '/customers' },
         { icon: '💳', label: 'Comptes', href: '/accounts' },
       ],
     },
