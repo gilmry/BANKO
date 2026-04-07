@@ -274,7 +274,8 @@ impl Account {
         self.updated_at = Utc::now();
     }
 
-    /// Close the account. Only allowed if balance is zero.
+    /// Close the account. Only allowed if balance is zero (FR-017).
+    /// Per BMAD: "Clôture de compte (solde zéro, aucun engagement en cours)"
     pub fn close(&mut self) -> Result<(), DomainError> {
         if !self.balance.is_zero() {
             return Err(DomainError::InvalidMovement(
@@ -284,6 +285,12 @@ impl Account {
         self.status = AccountStatus::Closed;
         self.updated_at = Utc::now();
         Ok(())
+    }
+
+    /// Check if account can be closed (balance is zero, no pending operations).
+    /// Returns true if account is eligible for closure.
+    pub fn can_close(&self) -> bool {
+        self.balance.is_zero()
     }
 
     /// Reduce available_balance by hold amount (e.g., pending transaction).
@@ -525,6 +532,21 @@ mod tests {
         account.deposit(tnd(100.0), "Deposit").unwrap();
         let result = account.close();
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_can_close_zero_balance() {
+        let account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        assert!(account.can_close());
+    }
+
+    #[test]
+    fn test_can_close_non_zero_balance() {
+        let mut account =
+            Account::new(valid_customer_id(), valid_rib(), AccountType::Current, true).unwrap();
+        account.deposit(tnd(100.0), "Deposit").unwrap();
+        assert!(!account.can_close());
     }
 
     #[test]
