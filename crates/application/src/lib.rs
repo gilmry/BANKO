@@ -1,6 +1,8 @@
 pub mod account;
 pub mod accounting;
 pub mod aml;
+pub mod cash_management;
+pub mod collateral;
 pub mod compliance;
 pub mod credit;
 pub mod customer;
@@ -9,6 +11,8 @@ pub mod events;
 pub mod fx;
 pub mod governance;
 pub mod identity;
+pub mod insurance;
+pub mod islamic_banking;
 pub mod notification;
 pub mod payment;
 pub mod ports;
@@ -18,6 +22,7 @@ pub mod reference_data;
 pub mod reporting;
 pub mod saga;
 pub mod sanctions;
+pub mod trade_finance;
 pub mod use_cases;
 
 #[cfg(test)]
