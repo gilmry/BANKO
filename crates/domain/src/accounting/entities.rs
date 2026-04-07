@@ -507,20 +507,431 @@ impl LedgerAccount {
     }
 }
 
+// --- ChartOfAccounts (FR-082: NCT Tunisian classification) ---
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum AccountClass {
+    Class1, // Equity & liabilities
+    Class2, // Liabilities
+    Class3, // Assets
+    Class4, // Liabilities (current)
+    Class5, // Assets (current)
+    Class6, // Expenses
+    Class7, // Revenue
+}
+
+impl AccountClass {
+    pub fn from_digit(d: u8) -> Result<Self, DomainError> {
+        match d {
+            1 => Ok(AccountClass::Class1),
+            2 => Ok(AccountClass::Class2),
+            3 => Ok(AccountClass::Class3),
+            4 => Ok(AccountClass::Class4),
+            5 => Ok(AccountClass::Class5),
+            6 => Ok(AccountClass::Class6),
+            7 => Ok(AccountClass::Class7),
+            _ => Err(DomainError::InvalidAccountCode(
+                "Invalid account class (must be 1-7)".to_string(),
+            )),
+        }
+    }
+
+    pub fn as_str(&self) -> &str {
+        match self {
+            AccountClass::Class1 => "Class1",
+            AccountClass::Class2 => "Class2",
+            AccountClass::Class3 => "Class3",
+            AccountClass::Class4 => "Class4",
+            AccountClass::Class5 => "Class5",
+            AccountClass::Class6 => "Class6",
+            AccountClass::Class7 => "Class7",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ChartOfAccounts {
+    account_code: AccountCode,
+    label: String,
+    account_class: AccountClass,
+    account_type: AccountType,
+    nct_ref: Option<String>,
+    parent_code: Option<AccountCode>,
+    is_active: bool,
+}
+
+impl ChartOfAccounts {
+    pub fn new(
+        account_code: AccountCode,
+        label: String,
+        account_class: AccountClass,
+        account_type: AccountType,
+        nct_ref: Option<String>,
+        parent_code: Option<AccountCode>,
+    ) -> Result<Self, DomainError> {
+        if label.trim().is_empty() {
+            return Err(DomainError::InvalidAccountCode(
+                "Account label cannot be empty".to_string(),
+            ));
+        }
+
+        // Validate that account class matches account code first digit
+        let account_class_from_code = AccountClass::from_digit(account_code.class())?;
+        if account_class != account_class_from_code {
+            return Err(DomainError::InvalidAccountCode(format!(
+                "Account class mismatch: code implies {:?}, but {:?} specified",
+                account_class_from_code, account_class
+            )));
+        }
+
+        Ok(ChartOfAccounts {
+            account_code,
+            label,
+            account_class,
+            account_type,
+            nct_ref,
+            parent_code,
+            is_active: true,
+        })
+    }
+
+    pub fn from_raw(
+        account_code: AccountCode,
+        label: String,
+        account_class: AccountClass,
+        account_type: AccountType,
+        nct_ref: Option<String>,
+        parent_code: Option<AccountCode>,
+        is_active: bool,
+    ) -> Self {
+        ChartOfAccounts {
+            account_code,
+            label,
+            account_class,
+            account_type,
+            nct_ref,
+            parent_code,
+            is_active,
+        }
+    }
+
+    pub fn account_code(&self) -> &AccountCode {
+        &self.account_code
+    }
+    pub fn label(&self) -> &str {
+        &self.label
+    }
+    pub fn account_class(&self) -> AccountClass {
+        self.account_class
+    }
+    pub fn account_type(&self) -> AccountType {
+        self.account_type
+    }
+    pub fn nct_ref(&self) -> Option<&str> {
+        self.nct_ref.as_deref()
+    }
+    pub fn parent_code(&self) -> Option<&AccountCode> {
+        self.parent_code.as_ref()
+    }
+    pub fn is_active(&self) -> bool {
+        self.is_active
+    }
+
+    pub fn deactivate(&mut self) {
+        self.is_active = false;
+    }
+}
+
+// --- PeriodClosing (FR-093/094/095: Daily, Monthly, Annual closings) ---
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum PeriodType {
+    Daily,
+    Monthly,
+    Annual,
+}
+
+impl PeriodType {
+    pub fn as_str(&self) -> &str {
+        match self {
+            PeriodType::Daily => "Daily",
+            PeriodType::Monthly => "Monthly",
+            PeriodType::Annual => "Annual",
+        }
+    }
+
+    pub fn from_str_value(s: &str) -> Result<Self, DomainError> {
+        match s {
+            "Daily" => Ok(PeriodType::Daily),
+            "Monthly" => Ok(PeriodType::Monthly),
+            "Annual" => Ok(PeriodType::Annual),
+            _ => Err(DomainError::InvalidJournalEntry(format!(
+                "Unknown period type: {s}"
+            ))),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum ClosingStatus {
+    Open,
+    InProgress,
+    Closed,
+    Archived,
+}
+
+impl ClosingStatus {
+    pub fn as_str(&self) -> &str {
+        match self {
+            ClosingStatus::Open => "Open",
+            ClosingStatus::InProgress => "InProgress",
+            ClosingStatus::Closed => "Closed",
+            ClosingStatus::Archived => "Archived",
+        }
+    }
+
+    pub fn from_str_value(s: &str) -> Result<Self, DomainError> {
+        match s {
+            "Open" => Ok(ClosingStatus::Open),
+            "InProgress" => Ok(ClosingStatus::InProgress),
+            "Closed" => Ok(ClosingStatus::Closed),
+            "Archived" => Ok(ClosingStatus::Archived),
+            _ => Err(DomainError::InvalidJournalEntry(format!(
+                "Unknown closing status: {s}"
+            ))),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PeriodClosing {
+    period_id: Uuid,
+    period: String, // YYYY, YYYY-MM, or YYYY-MM-DD
+    period_type: PeriodType,
+    status: ClosingStatus,
+    entries_count: i64,
+    total_debits: i64,
+    total_credits: i64,
+    variance: i64,
+    closed_at: Option<DateTime<Utc>>,
+    created_at: DateTime<Utc>,
+}
+
+impl PeriodClosing {
+    pub fn new(
+        period: String,
+        period_type: PeriodType,
+    ) -> Result<Self, DomainError> {
+        if period.trim().is_empty() {
+            return Err(DomainError::InvalidJournalEntry(
+                "Period cannot be empty".to_string(),
+            ));
+        }
+
+        Ok(PeriodClosing {
+            period_id: Uuid::new_v4(),
+            period,
+            period_type,
+            status: ClosingStatus::Open,
+            entries_count: 0,
+            total_debits: 0,
+            total_credits: 0,
+            variance: 0,
+            closed_at: None,
+            created_at: Utc::now(),
+        })
+    }
+
+    pub fn from_raw(
+        period_id: Uuid,
+        period: String,
+        period_type: PeriodType,
+        status: ClosingStatus,
+        entries_count: i64,
+        total_debits: i64,
+        total_credits: i64,
+        variance: i64,
+        closed_at: Option<DateTime<Utc>>,
+        created_at: DateTime<Utc>,
+    ) -> Self {
+        PeriodClosing {
+            period_id,
+            period,
+            period_type,
+            status,
+            entries_count,
+            total_debits,
+            total_credits,
+            variance,
+            closed_at,
+            created_at,
+        }
+    }
+
+    // --- Getters ---
+
+    pub fn period_id(&self) -> Uuid {
+        self.period_id
+    }
+    pub fn period(&self) -> &str {
+        &self.period
+    }
+    pub fn period_type(&self) -> PeriodType {
+        self.period_type
+    }
+    pub fn status(&self) -> ClosingStatus {
+        self.status
+    }
+    pub fn entries_count(&self) -> i64 {
+        self.entries_count
+    }
+    pub fn total_debits(&self) -> i64 {
+        self.total_debits
+    }
+    pub fn total_credits(&self) -> i64 {
+        self.total_credits
+    }
+    pub fn variance(&self) -> i64 {
+        self.variance
+    }
+    pub fn closed_at(&self) -> Option<DateTime<Utc>> {
+        self.closed_at
+    }
+    pub fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
+
+    // --- State transitions ---
+
+    pub fn start_closing(&mut self) -> Result<(), DomainError> {
+        if self.status != ClosingStatus::Open {
+            return Err(DomainError::InvalidJournalEntry(
+                "Period must be Open to start closing".to_string(),
+            ));
+        }
+        self.status = ClosingStatus::InProgress;
+        Ok(())
+    }
+
+    pub fn complete_closing(
+        &mut self,
+        total_debits: i64,
+        total_credits: i64,
+        entries_count: i64,
+    ) -> Result<(), DomainError> {
+        if self.status != ClosingStatus::InProgress {
+            return Err(DomainError::InvalidJournalEntry(
+                "Period must be InProgress to complete closing".to_string(),
+            ));
+        }
+        self.total_debits = total_debits;
+        self.total_credits = total_credits;
+        self.entries_count = entries_count;
+        self.variance = (total_debits - total_credits).abs();
+        self.status = ClosingStatus::Closed;
+        self.closed_at = Some(Utc::now());
+        Ok(())
+    }
+
+    pub fn archive(&mut self) -> Result<(), DomainError> {
+        if self.status != ClosingStatus::Closed {
+            return Err(DomainError::InvalidJournalEntry(
+                "Period must be Closed to archive".to_string(),
+            ));
+        }
+        self.status = ClosingStatus::Archived;
+        Ok(())
+    }
+
+    pub fn is_balanced(&self) -> bool {
+        self.total_debits == self.total_credits
+    }
+}
+
+// --- DualPosting (FR-090: Dual engine NCT + IFRS 9) ---
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum PostingEngine {
+    NCT,     // Tunisian accounting standard
+    IFRS9,   // IFRS 9 for IFRS compliance
+}
+
+impl PostingEngine {
+    pub fn as_str(&self) -> &str {
+        match self {
+            PostingEngine::NCT => "NCT",
+            PostingEngine::IFRS9 => "IFRS9",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DualPosting {
+    entry_id: EntryId,
+    nct_entry: JournalEntry,
+    ifrs9_entry: Option<JournalEntry>, // Alternative IFRS 9 posting
+    posting_engines: Vec<PostingEngine>,
+    created_at: DateTime<Utc>,
+}
+
+impl DualPosting {
+    pub fn new(
+        entry_id: EntryId,
+        nct_entry: JournalEntry,
+        ifrs9_entry: Option<JournalEntry>,
+    ) -> Self {
+        let mut engines = vec![PostingEngine::NCT];
+        if ifrs9_entry.is_some() {
+            engines.push(PostingEngine::IFRS9);
+        }
+
+        DualPosting {
+            entry_id,
+            nct_entry,
+            ifrs9_entry,
+            posting_engines: engines,
+            created_at: Utc::now(),
+        }
+    }
+
+    pub fn entry_id(&self) -> &EntryId {
+        &self.entry_id
+    }
+    pub fn nct_entry(&self) -> &JournalEntry {
+        &self.nct_entry
+    }
+    pub fn ifrs9_entry(&self) -> Option<&JournalEntry> {
+        self.ifrs9_entry.as_ref()
+    }
+    pub fn posting_engines(&self) -> &[PostingEngine] {
+        &self.posting_engines
+    }
+    pub fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
+
+    pub fn has_dual_posting(&self) -> bool {
+        self.posting_engines.len() > 1
+    }
+}
+
 // --- ExpectedCreditLoss (IFRS 9 preparation) ---
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ExpectedCreditLoss {
     loan_id: Uuid,
     stage: EclStage,
-    probability_of_default: f64,
+    probability_of_default_12m: f64, // 12-month PD (Stage 1)
+    probability_of_default_lifetime: f64, // Lifetime PD (Stage 2/3)
     loss_given_default: f64,
     exposure_at_default: i64,
-    ecl_amount: i64,
+    ecl_amount_12m: i64,
+    ecl_amount_lifetime: i64,
     calculated_at: DateTime<Utc>,
 }
 
 impl ExpectedCreditLoss {
+    /// Create ECL with both 12-month and lifetime PDs (FR-089: IFRS 9)
     pub fn new(
         loan_id: Uuid,
         stage: EclStage,
@@ -528,15 +939,28 @@ impl ExpectedCreditLoss {
         loss_given_default: f64,
         exposure_at_default: i64,
     ) -> Self {
-        let ecl_amount =
+        // For backward compatibility, use PD for 12m
+        let ecl_amount_12m =
             (probability_of_default * loss_given_default * exposure_at_default as f64) as i64;
+
+        // Lifetime PD is higher (approximation)
+        let pd_lifetime = match stage {
+            EclStage::Stage1 => probability_of_default * 2.0,
+            EclStage::Stage2 => probability_of_default * 3.0,
+            EclStage::Stage3 => 1.0,
+        };
+        let ecl_amount_lifetime =
+            (pd_lifetime * loss_given_default * exposure_at_default as f64) as i64;
+
         ExpectedCreditLoss {
             loan_id,
             stage,
-            probability_of_default,
+            probability_of_default_12m: probability_of_default,
+            probability_of_default_lifetime: pd_lifetime,
             loss_given_default,
             exposure_at_default,
-            ecl_amount,
+            ecl_amount_12m,
+            ecl_amount_lifetime,
             calculated_at: Utc::now(),
         }
     }
@@ -548,7 +972,13 @@ impl ExpectedCreditLoss {
         self.stage
     }
     pub fn probability_of_default(&self) -> f64 {
-        self.probability_of_default
+        self.probability_of_default_12m
+    }
+    pub fn probability_of_default_12m(&self) -> f64 {
+        self.probability_of_default_12m
+    }
+    pub fn probability_of_default_lifetime(&self) -> f64 {
+        self.probability_of_default_lifetime
     }
     pub fn loss_given_default(&self) -> f64 {
         self.loss_given_default
@@ -557,7 +987,14 @@ impl ExpectedCreditLoss {
         self.exposure_at_default
     }
     pub fn ecl_amount(&self) -> i64 {
-        self.ecl_amount
+        // Return 12m ECL for backward compatibility
+        self.ecl_amount_12m
+    }
+    pub fn ecl_amount_12m(&self) -> i64 {
+        self.ecl_amount_12m
+    }
+    pub fn ecl_amount_lifetime(&self) -> i64 {
+        self.ecl_amount_lifetime
     }
     pub fn calculated_at(&self) -> DateTime<Utc> {
         self.calculated_at
@@ -897,5 +1334,258 @@ mod tests {
         let id = EntryId::new();
         let s = format!("{id}");
         assert!(!s.is_empty());
+    }
+
+    // --- AccountClass & ChartOfAccounts ---
+
+    #[test]
+    fn test_account_class_from_digit() {
+        assert_eq!(AccountClass::from_digit(1).unwrap(), AccountClass::Class1);
+        assert_eq!(AccountClass::from_digit(7).unwrap(), AccountClass::Class7);
+        assert!(AccountClass::from_digit(0).is_err());
+        assert!(AccountClass::from_digit(8).is_err());
+    }
+
+    #[test]
+    fn test_chart_of_accounts_new_valid() {
+        let coa = ChartOfAccounts::new(
+            AccountCode::new("31").unwrap(),
+            "Créances sur la clientèle".into(),
+            AccountClass::Class3,
+            AccountType::Asset,
+            Some("NCT-24".into()),
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(coa.label(), "Créances sur la clientèle");
+        assert_eq!(coa.account_class(), AccountClass::Class3);
+        assert!(coa.is_active());
+    }
+
+    #[test]
+    fn test_chart_of_accounts_class_mismatch() {
+        // Code 31 implies Class 3, but specifying Class 1 should fail
+        let result = ChartOfAccounts::new(
+            AccountCode::new("31").unwrap(),
+            "Bad class".into(),
+            AccountClass::Class1,
+            AccountType::Asset,
+            None,
+            None,
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_chart_of_accounts_empty_label() {
+        let result = ChartOfAccounts::new(
+            AccountCode::new("31").unwrap(),
+            "".into(),
+            AccountClass::Class3,
+            AccountType::Asset,
+            None,
+            None,
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_chart_of_accounts_deactivate() {
+        let mut coa = ChartOfAccounts::new(
+            AccountCode::new("31").unwrap(),
+            "Test".into(),
+            AccountClass::Class3,
+            AccountType::Asset,
+            None,
+            None,
+        )
+        .unwrap();
+
+        assert!(coa.is_active());
+        coa.deactivate();
+        assert!(!coa.is_active());
+    }
+
+    // --- PeriodClosing ---
+
+    #[test]
+    fn test_period_closing_new_daily() {
+        let pc = PeriodClosing::new("2026-04-07".into(), PeriodType::Daily).unwrap();
+        assert_eq!(pc.period_type(), PeriodType::Daily);
+        assert_eq!(pc.status(), ClosingStatus::Open);
+        assert!(!pc.is_balanced());
+    }
+
+    #[test]
+    fn test_period_closing_new_monthly() {
+        let pc = PeriodClosing::new("2026-04".into(), PeriodType::Monthly).unwrap();
+        assert_eq!(pc.period_type(), PeriodType::Monthly);
+    }
+
+    #[test]
+    fn test_period_closing_new_annual() {
+        let pc = PeriodClosing::new("2026".into(), PeriodType::Annual).unwrap();
+        assert_eq!(pc.period_type(), PeriodType::Annual);
+    }
+
+    #[test]
+    fn test_period_closing_empty_period() {
+        let result = PeriodClosing::new("".into(), PeriodType::Daily);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_period_closing_state_transitions() {
+        let mut pc = PeriodClosing::new("2026-04".into(), PeriodType::Monthly).unwrap();
+
+        assert_eq!(pc.status(), ClosingStatus::Open);
+
+        pc.start_closing().unwrap();
+        assert_eq!(pc.status(), ClosingStatus::InProgress);
+
+        pc.complete_closing(5000, 5000, 10).unwrap();
+        assert_eq!(pc.status(), ClosingStatus::Closed);
+        assert!(pc.is_balanced());
+
+        pc.archive().unwrap();
+        assert_eq!(pc.status(), ClosingStatus::Archived);
+    }
+
+    #[test]
+    fn test_period_closing_invalid_transition() {
+        let mut pc = PeriodClosing::new("2026-04".into(), PeriodType::Monthly).unwrap();
+        let result = pc.complete_closing(5000, 5000, 10);
+        assert!(matches!(result, Err(DomainError::InvalidJournalEntry(_))));
+    }
+
+    #[test]
+    fn test_period_closing_variance_calculation() {
+        let mut pc = PeriodClosing::new("2026-04".into(), PeriodType::Monthly).unwrap();
+        pc.start_closing().unwrap();
+        pc.complete_closing(10000, 9500, 20).unwrap();
+
+        assert_eq!(pc.variance(), 500);
+        assert!(!pc.is_balanced());
+    }
+
+    #[test]
+    fn test_period_type_roundtrip() {
+        for pt in [PeriodType::Daily, PeriodType::Monthly, PeriodType::Annual] {
+            assert_eq!(PeriodType::from_str_value(pt.as_str()).unwrap(), pt);
+        }
+    }
+
+    #[test]
+    fn test_closing_status_roundtrip() {
+        for cs in [
+            ClosingStatus::Open,
+            ClosingStatus::InProgress,
+            ClosingStatus::Closed,
+            ClosingStatus::Archived,
+        ] {
+            assert_eq!(ClosingStatus::from_str_value(cs.as_str()).unwrap(), cs);
+        }
+    }
+
+    // --- DualPosting ---
+
+    #[test]
+    fn test_dual_posting_nct_only() {
+        let lines = vec![make_line("31", 1000, 0), make_line("42", 0, 1000)];
+        let entry = JournalEntry::new(
+            JournalCode::OD,
+            NaiveDate::from_ymd_opt(2026, 4, 7).unwrap(),
+            "Test dual posting".into(),
+            lines,
+        )
+        .unwrap();
+
+        let entry_id = entry.entry_id().clone();
+        let dual = DualPosting::new(entry_id.clone(), entry, None);
+
+        assert_eq!(dual.posting_engines().len(), 1);
+        assert_eq!(dual.posting_engines()[0], PostingEngine::NCT);
+        assert!(!dual.has_dual_posting());
+    }
+
+    #[test]
+    fn test_dual_posting_with_ifrs9() {
+        let lines1 = vec![make_line("31", 1000, 0), make_line("42", 0, 1000)];
+        let entry1 = JournalEntry::new(
+            JournalCode::OD,
+            NaiveDate::from_ymd_opt(2026, 4, 7).unwrap(),
+            "NCT posting".into(),
+            lines1,
+        )
+        .unwrap();
+
+        let lines2 = vec![make_line("31", 950, 0), make_line("42", 0, 950), make_line("69", 50, 0), make_line("39", 0, 50)];
+        let entry2 = JournalEntry::new(
+            JournalCode::OD,
+            NaiveDate::from_ymd_opt(2026, 4, 7).unwrap(),
+            "IFRS 9 posting".into(),
+            lines2,
+        )
+        .unwrap();
+
+        let entry_id = entry1.entry_id().clone();
+        let dual = DualPosting::new(entry_id.clone(), entry1, Some(entry2));
+
+        assert_eq!(dual.posting_engines().len(), 2);
+        assert!(dual.posting_engines().contains(&PostingEngine::NCT));
+        assert!(dual.posting_engines().contains(&PostingEngine::IFRS9));
+        assert!(dual.has_dual_posting());
+    }
+
+    // --- ECL 12m vs Lifetime ---
+
+    #[test]
+    fn test_ecl_12m_vs_lifetime() {
+        let ecl = ExpectedCreditLoss::new(
+            Uuid::new_v4(),
+            EclStage::Stage1,
+            0.02,      // 2% PD (12m)
+            0.45,      // 45% LGD
+            1_000_000, // 1M EAD
+        );
+
+        let ecl_12m = ecl.ecl_amount_12m();
+        let ecl_lifetime = ecl.ecl_amount_lifetime();
+
+        // Lifetime ECL should be higher than 12m
+        assert!(ecl_lifetime > ecl_12m);
+        assert_eq!(ecl_12m, 9000); // 0.02 * 0.45 * 1M
+        assert!(ecl_lifetime > 9000);
+    }
+
+    #[test]
+    fn test_ecl_stage2_higher_pd_lifetime() {
+        let ecl = ExpectedCreditLoss::new(
+            Uuid::new_v4(),
+            EclStage::Stage2,
+            0.05,
+            0.45,
+            1_000_000,
+        );
+
+        let pd_12m = ecl.probability_of_default_12m();
+        let pd_lifetime = ecl.probability_of_default_lifetime();
+
+        assert_eq!(pd_12m, 0.05);
+        assert!(pd_lifetime > 0.05);
+    }
+
+    #[test]
+    fn test_ecl_stage3_pd_100_percent() {
+        let ecl = ExpectedCreditLoss::new(
+            Uuid::new_v4(),
+            EclStage::Stage3,
+            1.0,
+            0.45,
+            1_000_000,
+        );
+
+        assert_eq!(ecl.probability_of_default_lifetime(), 1.0);
     }
 }

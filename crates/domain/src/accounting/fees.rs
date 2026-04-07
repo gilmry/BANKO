@@ -154,6 +154,20 @@ impl FeeDefinition {
         })
     }
 
+    /// FR-092: Calculate VAT on fees (19% in Tunisia)
+    pub fn calculate_vat(&self, fee_amount: Decimal) -> Decimal {
+        // VAT rate for Tunisia: 19%
+        fee_amount * Decimal::new(19, 2) / Decimal::from(100)
+    }
+
+    /// FR-092: Calculate total fee including VAT
+    pub fn calculate_with_vat(&self, base_amount: Decimal) -> (Decimal, Decimal, Decimal) {
+        let fee = self.calculate(base_amount);
+        let vat = self.calculate_vat(fee);
+        let total = fee + vat;
+        (fee, vat, total)
+    }
+
     pub fn id(&self) -> Uuid {
         self.id
     }
@@ -827,5 +841,72 @@ mod tests {
         grid.deactivate();
         assert!(!grid.active());
         assert!(!grid.is_effective_at(Utc::now()));
+    }
+
+    // --- VAT on Fees (FR-092) ---
+
+    #[test]
+    fn test_fee_vat_calculation_19_percent() {
+        let def = FeeDefinition::new(
+            "Fee with VAT".to_string(),
+            FeeCategory::TransactionFee,
+            Some(Decimal::from(100)),
+            None,
+            None,
+            None,
+            FeeCondition::Always,
+            vec![],
+            "TND".to_string(),
+        )
+        .unwrap();
+
+        let vat = def.calculate_vat(Decimal::from(100));
+        // 100 * 19% = 19
+        assert_eq!(vat, Decimal::from(19));
+    }
+
+    #[test]
+    fn test_fee_with_vat_calculation() {
+        let def = FeeDefinition::new(
+            "Transfer Fee".to_string(),
+            FeeCategory::TransferFee,
+            Some(Decimal::from(50)),
+            None,
+            None,
+            None,
+            FeeCondition::Always,
+            vec![],
+            "TND".to_string(),
+        )
+        .unwrap();
+
+        let (fee, vat, total) = def.calculate_with_vat(Decimal::from(1000));
+        assert_eq!(fee, Decimal::from(50));
+        assert_eq!(vat, Decimal::new(950, 2)); // 50 * 0.19
+        assert_eq!(total, Decimal::new(5950, 2)); // 50 + 9.5
+    }
+
+    #[test]
+    fn test_fee_vat_on_percentage_rate() {
+        let def = FeeDefinition::new(
+            "Percentage Fee".to_string(),
+            FeeCategory::TransactionFee,
+            None,
+            Some(Decimal::from(2)), // 2% rate
+            None,
+            None,
+            FeeCondition::Always,
+            vec![],
+            "TND".to_string(),
+        )
+        .unwrap();
+
+        let (fee, vat, total) = def.calculate_with_vat(Decimal::from(1000));
+        // Fee = 1000 * 2% = 20
+        assert_eq!(fee, Decimal::from(20));
+        // VAT = 20 * 19% = 3.8
+        assert_eq!(vat, Decimal::new(380, 2));
+        // Total = 20 + 3.8 = 23.8
+        assert_eq!(total, Decimal::new(2380, 2));
     }
 }

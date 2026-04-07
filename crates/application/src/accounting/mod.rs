@@ -5,6 +5,9 @@ mod service;
 mod fee_service;
 mod interest_accrual_service;
 mod reconciliation_service;
+mod trial_balance_service;
+mod period_closing_service;
+mod export_service;
 
 pub use dto::*;
 pub use errors::*;
@@ -13,3 +16,6 @@ pub use service::*;
 pub use fee_service::*;
 pub use interest_accrual_service::*;
 pub use reconciliation_service::*;
+pub use trial_balance_service::*;
+pub use period_closing_service::*;
+pub use export_service::*;
