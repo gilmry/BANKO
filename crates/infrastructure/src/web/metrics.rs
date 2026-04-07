@@ -72,4 +72,6 @@ pub async fn metrics_handler() -> HttpResponse {
 
 pub fn configure_metrics_routes(cfg: &mut web::ServiceConfig) {
     cfg.route("/health", web::get().to(health_handler))
-        .route("/metrics"
+        .route("/metrics", web::get().to(metrics_handler))
+        .route("/api/v1/info", web::get().to(api_info_handler));
+}
