@@ -30,8 +30,13 @@ pub fn configure_auth_routes(cfg: &mut web::ServiceConfig) {
 }
 
 pub fn configure_api_routes(cfg: &mut web::ServiceConfig) {
+    // Root-level health check (accessible without /api/v1 prefix)
+    cfg.route("/health", web::get().to(metrics::health_handler));
+
     cfg.service(
         web::scope("/api/v1")
+            .route("", web::get().to(metrics::api_info_handler))
+            .route("/", web::get().to(metrics::api_info_handler))
             .route("/health", web::get().to(metrics::health_handler))
             .route("/profile", web::get().to(profile_handlers::get_profile))
             .route("/users", web::post().to(user_handlers::create_user_handler))
