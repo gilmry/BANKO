@@ -594,26 +594,4 @@ mod tests {
         }
         async fn find_by_policy(
             &self,
-            _policy_id: &InsurancePolicyId,
-        ) -> Result<Vec<InsuranceCommission>, String> {
-            Ok(vec![])
-        }
-        async fn delete(&self, _id: &InsuranceCommissionId) -> Result<(), String> {
-            Ok(())
-        }
-    }
-
-    fn create_service() -> InsuranceService {
-        InsuranceService::new(
-            Arc::new(MockPolicyRepository),
-            Arc::new(MockClaimRepository),
-            Arc::new(MockProductRepository),
-            Arc::new(MockCommissionRepository),
-        )
-    }
-
-    #[test]
-    fn test_service_creation() {
-        let _service = create_service();
-    }
-}
+            _policy_id: &

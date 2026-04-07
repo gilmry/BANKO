@@ -960,27 +960,4 @@ mod tests {
     }
 
     #[test]
-    fn test_trade_finance_limit_exceed_fails() {
-        let customer = CustomerId::from_uuid(uuid::Uuid::new_v4());
-        let limit = Money::from_cents(5000000, Currency::try_from("TND").unwrap());
-        let exceed = Money::from_cents(6000000, Currency::try_from("TND").unwrap());
-
-        let mut tfl = TradeFinanceLimit::new(customer, LimitType::Collection, limit).unwrap();
-
-        let result = tfl.utilize(&exceed);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_trade_finance_limit_utilization_rate() {
-        let customer = CustomerId::from_uuid(uuid::Uuid::new_v4());
-        let limit = Money::from_cents(10000000, Currency::try_from("TND").unwrap());
-        let utilize = Money::from_cents(5000000, Currency::try_from("TND").unwrap());
-
-        let mut tfl = TradeFinanceLimit::new(customer, LimitType::LC, limit).unwrap();
-        tfl.utilize(&utilize).unwrap();
-
-        let rate = tfl.utilization_rate().unwrap();
-        assert!((rate - 0.5).abs() < 0.001);
-    }
-}
+    fn test_trade_finance_limit_exceed_fail

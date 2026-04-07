@@ -54,5 +54,4 @@ pub trait IInsuranceCommissionRepository: Send + Sync {
         &self,
         policy_id: &InsurancePolicyId,
     ) -> Result<Vec<InsuranceCommission>, String>;
-    async fn delete(&self, id: &InsuranceCommissionId) -> Result<(), String>;
-}
+    async fn delete(&sel

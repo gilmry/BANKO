@@ -287,10 +287,4 @@ Feature: Cash Management (P1-BC3)
       | Trigger Event | Large customer withdrawal + market stress |
       | Funding Gap | 5000000 TND |
       | Contingency Plan | Activated |
-    Then contingency funding is executed:
-      | Central Bank Emergency Lending | 3000000 TND |
-      | Asset Sales (securities) | 2000000 TND |
-      | Deposit Rate Incentive Program | Launch |
-    And funding gap is closed
-    And continuity of operations is maintained
-    And stress event is documented for analysis
+    Then contingency funding is 

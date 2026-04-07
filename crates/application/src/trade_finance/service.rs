@@ -597,26 +597,4 @@ mod tests {
         }
         async fn find_by_customer(
             &self,
-            _customer_id: &CustomerId,
-        ) -> Result<Vec<TradeFinanceLimit>, String> {
-            Ok(vec![])
-        }
-        async fn delete(&self, _id: &TradeFinanceLimitId) -> Result<(), String> {
-            Ok(())
-        }
-    }
-
-    fn create_service() -> TradeFinanceService {
-        TradeFinanceService::new(
-            Arc::new(MockLcRepository),
-            Arc::new(MockGuaranteeRepository),
-            Arc::new(MockCollectionRepository),
-            Arc::new(MockLimitRepository),
-        )
-    }
-
-    #[test]
-    fn test_service_creation() {
-        let _service = create_service();
-    }
-}
+            _cust

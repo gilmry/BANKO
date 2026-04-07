@@ -441,19 +441,3 @@ mod tests {
     fn test_insurance_policy_id_new() {
         let id = InsurancePolicyId::new();
         assert!(!id.as_uuid().to_string().is_empty());
-    }
-
-    #[test]
-    fn test_insurance_claim_id_parse() {
-        let uuid = Uuid::new_v4();
-        let uuid_str = uuid.to_string();
-        let parsed = InsuranceClaimId::parse(&uuid_str).unwrap();
-        assert_eq!(parsed.as_uuid(), &uuid);
-    }
-
-    #[test]
-    fn test_commission_status_as_str() {
-        assert_eq!(CommissionStatus::Pending.as_str(), "Pending");
-        assert_eq!(CommissionStatus::Paid.as_str(), "Paid");
-    }
-}

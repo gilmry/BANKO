@@ -523,22 +523,4 @@ mod tests {
     #[test]
     fn test_product_type_conversion() {
         let product = ProductType::Murabaha;
-        assert_eq!(product.as_str(), "Murabaha");
-        assert_eq!(ProductType::from_str("Murabaha").unwrap(), product);
-    }
-
-    #[test]
-    fn test_maintenance_responsibility_conversion() {
-        let resp = MaintenanceResponsibility::Lessor;
-        assert_eq!(resp.as_str(), "Lessor");
-        assert_eq!(
-            MaintenanceResponsibility::from_str("Lessor").unwrap(),
-            resp
-        );
-    }
-
-    #[test]
-    fn test_invalid_status_conversion() {
-        assert!(MurabahaStatus::from_str("InvalidStatus").is_err());
-    }
-}
+        assert_eq!(produ

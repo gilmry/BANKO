@@ -117,7 +117,4 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_collateral_allocation_repository_trait() {
-        // This test ensures the trait is properly defined
-    }
-}
+    async

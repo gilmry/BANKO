@@ -518,22 +518,4 @@ impl IInsuranceCommissionRepository for PgInsuranceCommissionRepository {
         .bind(policy_id.as_uuid())
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| format!("Failed to find insurance commissions: {e}"))?;
-
-        let mut commissions = Vec::new();
-        for row in rows {
-            commissions.push(row.into_domain()?);
-        }
-        Ok(commissions)
-    }
-
-    async fn delete(&self, id: &InsuranceCommissionId) -> Result<(), String> {
-        sqlx::query("DELETE FROM insurance.insurance_commissions WHERE id = $1")
-            .bind(id.as_uuid())
-            .execute(&self.pool)
-            .await
-            .map_err(|e| format!("Failed to delete insurance commission: {e}"))?;
-
-        Ok(())
-    }
-}
+        .map_err(|e| format!("Failed to find insurance commissions:

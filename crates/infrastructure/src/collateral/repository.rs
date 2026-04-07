@@ -621,27 +621,4 @@ impl ICollateralAllocationRepository for PostgresCollateralAllocationRepository 
                 )
                 .unwrap_or_else(|_| {
                     CollateralAllocation::new(
-                        CollateralId::from_uuid(r.get("collateral_id")),
-                        r.get("loan_id"),
-                        allocated_amount,
-                        r.get("allocation_date"),
-                    )
-                    .unwrap()
-                })
-            })
-            .collect())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_repository_types() {
-        // Type checks to ensure implementations compile
-        let _: &dyn ICollateralRepository;
-        let _: &dyn ICollateralValuationRepository;
-        let _: &dyn ICollateralAllocationRepository;
-    }
-}
+     

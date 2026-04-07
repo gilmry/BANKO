@@ -564,22 +564,4 @@ mod tests {
             Ok(true)
         }
 
-        async fn is_compliant(&self, _calculation: &LtvCalculation) -> Result<bool, String> {
-            Ok(true)
-        }
-    }
-
-    #[tokio::test]
-    async fn test_service_creation() {
-        let service = CollateralService::new(
-            std::sync::Arc::new(MockCollateralRepository),
-            std::sync::Arc::new(MockValuationRepository),
-            std::sync::Arc::new(MockAllocationRepository),
-            std::sync::Arc::new(MockLtvCalculator),
-        );
-
-        // Verify service is created (minimal test)
-        let result = service.find_revaluation_due().await;
-        assert!(result.is_ok());
-    }
-}
+        async fn is_compliant(&self, _calculation: &LtvCalcula

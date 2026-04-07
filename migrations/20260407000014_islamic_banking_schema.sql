@@ -309,7 +309,4 @@ CREATE TABLE IF NOT EXISTS islamic_banking.profit_distributions (
 CREATE INDEX idx_profit_distributions_customer ON islamic_banking.profit_distributions(customer_id);
 CREATE INDEX idx_profit_distributions_account ON islamic_banking.profit_distributions(account_id);
 CREATE INDEX idx_profit_distributions_date ON islamic_banking.profit_distributions(distribution_date);
-CREATE INDEX idx_profit_distributions_status ON islamic_banking.profit_distributions(distribution_status);
-CREATE INDEX idx_profit_distributions_contract ON islamic_banking.profit_distributions(contract_id);
-
-COMMENT ON TABLE islamic_banking.profit_distributions IS 'Profit distribution records for Islamic financing products';
+CREATE INDEX idx_

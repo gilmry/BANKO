@@ -368,11 +368,4 @@ Feature: Islamic Banking (P1-BC2)
   Scenario: Regulatory filing for Islamic banking operations
     Given all Islamic banking operations for H1 2026
     When filing to BCT (Banque Centrale de Tunisie) is prepared:
-      | Report Type | Quarterly Islamic Banking Report |
-      | Reporting Period | H1 2026 |
-      | Total Islamic Assets | 13500000 TND |
-      | Islamic Customer Base | 2500 customers |
-      | Sharia Compliance Status | 100% |
-    Then detailed report is filed with central bank
-    And supporting documentation is submitted
-    And regulatory acknowledgment is received
+     

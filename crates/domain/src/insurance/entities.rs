@@ -847,30 +847,4 @@ mod tests {
     fn test_insurance_commission_new() {
         let policy_id = InsurancePolicyId::new();
         let product_id = BancassuranceProductId::new();
-        let amount = Money::from_cents(10000, Currency::try_from("TND").unwrap());
-
-        let commission = InsuranceCommission::new(
-            policy_id,
-            product_id,
-            amount,
-            Utc::now(),
-        );
-
-        assert!(commission.is_ok());
-        let c = commission.unwrap();
-        assert_eq!(c.status(), CommissionStatus::Pending);
-    }
-
-    #[test]
-    fn test_insurance_commission_mark_paid() {
-        let policy_id = InsurancePolicyId::new();
-        let product_id = BancassuranceProductId::new();
-        let amount = Money::from_cents(10000, Currency::try_from("TND").unwrap());
-
-        let mut commission =
-            InsuranceCommission::new(policy_id, product_id, amount, Utc::now()).unwrap();
-
-        commission.mark_paid().unwrap();
-        assert_eq!(commission.status(), CommissionStatus::Paid);
-    }
-}
+        let 

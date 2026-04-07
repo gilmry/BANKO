@@ -422,17 +422,3 @@ mod tests {
     }
 
     #[test]
-    fn test_cash_forecast_id_display() {
-        let id = CashForecastId::new();
-        let display_str = id.to_string();
-        assert!(!display_str.is_empty());
-    }
-
-    #[test]
-    fn test_funding_strategy_id_parse() {
-        let uuid = Uuid::new_v4();
-        let uuid_str = uuid.to_string();
-        let parsed = FundingStrategyId::parse(&uuid_str).unwrap();
-        assert_eq!(parsed.as_uuid(), &uuid);
-    }
-}

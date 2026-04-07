@@ -130,10 +130,4 @@ pub struct InsuranceCommissionResponse {
     pub calculation_date: DateTime<Utc>,
     pub status: String,
     pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct PayCommissionRequest {
-    pub id: String,
-}
+   

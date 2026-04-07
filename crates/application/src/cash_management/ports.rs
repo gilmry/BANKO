@@ -69,5 +69,4 @@ pub trait IFundingStrategyRepository: Send + Sync {
     async fn save(&self, strategy: &FundingStrategy) -> Result<(), String>;
     async fn find_by_id(&self, id: &FundingStrategyId) -> Result<Option<FundingStrategy>, String>;
     async fn find_all_active(&self) -> Result<Vec<FundingStrategy>, String>;
-    async fn delete(&self, id: &FundingStrategyId) -> Result<(), String>;
-}
+    a

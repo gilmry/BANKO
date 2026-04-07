@@ -478,21 +478,4 @@ impl IslamicBankingService {
     pub async fn get_distributions_for_period(
         &self,
         period: u32,
-    ) -> Result<Vec<ProfitDistribution>, IslamicBankingServiceError> {
-        self.repository
-            .find_profit_distributions_by_period(period)
-            .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_service_creation() {
-        // Tests would require mock implementations of ports
-        // This is a compile-time verification that the service is properly structured
-    }
-}
+    ) -> Result<Ve

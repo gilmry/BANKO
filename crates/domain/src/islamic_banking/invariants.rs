@@ -124,9 +124,4 @@ mod tests {
     }
 
     #[test]
-    fn test_zakat_below_nisab() {
-        let wealth = 100.0;
-        let nisab = 1000.0;
-        assert!(wealth < nisab, "below nisab threshold");
-    }
-}
+    fn test_zakat_below_nisab(

@@ -218,6 +218,4 @@ CREATE TABLE IF NOT EXISTS trade_finance.trade_finance_limits (
 CREATE INDEX idx_tf_limits_customer ON trade_finance.trade_finance_limits(customer_id);
 CREATE INDEX idx_tf_limits_status ON trade_finance.trade_finance_limits(limit_status);
 CREATE INDEX idx_tf_limits_type ON trade_finance.trade_finance_limits(limit_type);
-CREATE INDEX idx_tf_limits_expiry ON trade_finance.trade_finance_limits(limit_expiry_date);
-
-COMMENT ON TABLE trade_finance.trade_finance_limits IS 'Trade finance limits for LC, guarantees, and collections per customer';
+C

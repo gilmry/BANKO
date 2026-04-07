@@ -144,11 +144,3 @@ pub struct ReleaseTradeFinanceLimitRequest {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IncreaseLimitRequest {
     pub id: String,
-    pub increase: f64,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct DecreaseLimitRequest {
-    pub id: String,
-    pub decrease: f64,
-}

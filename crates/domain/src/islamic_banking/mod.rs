@@ -24,4 +24,4 @@ pub mod errors;
 
 pub use entities::*;
 pub use value_objects::*;
-pub use errors::IslamicBankingError;
+pub use err

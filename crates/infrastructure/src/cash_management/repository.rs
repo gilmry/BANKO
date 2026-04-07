@@ -677,26 +677,4 @@ impl IFundingStrategyRepository for PgFundingStrategyRepository {
 
     async fn find_all_active(&self) -> Result<Vec<FundingStrategy>, String> {
         let rows = sqlx::query_as::<_, FundingStrategyRow>(
-            "SELECT * FROM cash_management.funding_strategies WHERE is_active = true",
-        )
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| format!("Failed to find funding strategies: {e}"))?;
-
-        let mut strategies = Vec::new();
-        for row in rows {
-            strategies.push(row.into_domain()?);
-        }
-        Ok(strategies)
-    }
-
-    async fn delete(&self, id: &FundingStrategyId) -> Result<(), String> {
-        sqlx::query("DELETE FROM cash_management.funding_strategies WHERE id = $1")
-            .bind(id.as_uuid())
-            .execute(&self.pool)
-            .await
-            .map_err(|e| format!("Failed to delete funding strategy: {e}"))?;
-
-        Ok(())
-    }
-}
+            "SELECT * FROM cash_manageme

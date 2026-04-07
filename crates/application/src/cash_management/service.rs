@@ -631,26 +631,4 @@ mod tests {
         async fn find_by_id(&self, _id: &FundingStrategyId) -> Result<Option<FundingStrategy>, String> {
             Ok(None)
         }
-        async fn find_all_active(&self) -> Result<Vec<FundingStrategy>, String> {
-            Ok(vec![])
-        }
-        async fn delete(&self, _id: &FundingStrategyId) -> Result<(), String> {
-            Ok(())
-        }
-    }
-
-    fn create_service() -> CashManagementService {
-        CashManagementService::new(
-            Arc::new(MockSweepRepository),
-            Arc::new(MockPoolRepository),
-            Arc::new(MockForecastRepository),
-            Arc::new(MockLiquidityRepository),
-            Arc::new(MockStrategyRepository),
-        )
-    }
-
-    #[test]
-    fn test_service_creation() {
-        let _service = create_service();
-    }
-}
+        async fn fin

@@ -278,12 +278,4 @@ mod tests {
     }
 
     #[test]
-    fn test_error_response() {
-        let err = ErrorResponse {
-            error: "Contract not found".to_string(),
-            details: Some("No contract with ID muraba-999".to_string()),
-        };
-        let json = serde_json::to_string(&err);
-        assert!(json.is_ok());
-    }
-}
+    fn te

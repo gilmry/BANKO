@@ -1036,39 +1036,4 @@ mod tests {
 
     #[test]
     fn test_funding_strategy_invalid_ratio() {
-        let instruments = vec![InstrumentType::Deposits];
-
-        let strategy = FundingStrategy::new("Bad Strategy", 1.5, instruments);
-
-        assert!(strategy.is_err());
-    }
-
-    #[test]
-    fn test_funding_strategy_empty_instruments() {
-        let strategy = FundingStrategy::new("Bad Strategy", 0.5, vec![]);
-
-        assert!(strategy.is_err());
-    }
-
-    #[test]
-    fn test_funding_strategy_add_instrument() {
-        let instruments = vec![InstrumentType::Deposits];
-        let mut strategy = FundingStrategy::new("Strategy", 0.6, instruments).unwrap();
-
-        strategy
-            .add_instrument(InstrumentType::CentralBank)
-            .unwrap();
-
-        assert_eq!(strategy.instruments().len(), 2);
-    }
-
-    #[test]
-    fn test_funding_strategy_remove_last_instrument_fails() {
-        let instruments = vec![InstrumentType::Deposits];
-        let mut strategy = FundingStrategy::new("Strategy", 0.6, instruments).unwrap();
-
-        let result = strategy.remove_instrument(InstrumentType::Deposits);
-
-        assert!(result.is_err());
-    }
-}
+        let instruments = vec

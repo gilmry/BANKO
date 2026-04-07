@@ -292,9 +292,4 @@ Feature: Trade Finance (P1-BC4)
     When credit exposure analysis is performed:
       | Total Outstanding LC | 8000000 TND |
       | Total Outstanding Guarantees | 4500000 TND |
-      | Country Concentration | Egypt 25%, Libya 20%, Germany 15%, Others 40% |
-      | Tenor Distribution | 0-30 days: 30%, 30-90: 45%, 90-180: 25% |
-      | Risk Rating | Diversified, Low concentration risk |
-    Then exposure is monitored for limits compliance
-    And concentration limits are maintained
-    And country risk is monitored and reported
+      | Country Concentration | Egypt 25%, Libya 20%, Germany

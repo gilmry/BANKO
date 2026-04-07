@@ -1009,38 +1009,4 @@ mod tests {
 
         let mut collateral = Collateral::new(
             CollateralType::RealEstate,
-            "Residential property".to_string(),
-            market_value,
-            0.0,
-            NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
-            customer_id,
-            Some("POL-001".to_string()),
-        )
-        .unwrap();
-
-        collateral
-            .update_insurance_policy("POL-002".to_string())
-            .unwrap();
-        assert_eq!(collateral.insurance_policy_id(), Some("POL-002"));
-    }
-
-    #[test]
-    fn test_collateral_update_insurance_non_real_estate() {
-        let customer_id = CustomerId::new();
-        let market_value = Money::new(50_000.0, Currency::TND).unwrap();
-
-        let mut collateral = Collateral::new(
-            CollateralType::Securities,
-            "Bond portfolio".to_string(),
-            market_value,
-            0.2,
-            NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
-            customer_id,
-            None,
-        )
-        .unwrap();
-
-        let result = collateral.update_insurance_policy("POL-001".to_string());
-        assert!(result.is_err());
-    }
-}
+            "Residential prop

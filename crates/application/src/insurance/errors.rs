@@ -44,6 +44,4 @@ pub enum InsuranceError {
     #[error("Domain error: {0}")]
     DomainError(String),
 
-    #[error("Internal error: {0}")]
-    Internal(String),
-}
+    #[error("I

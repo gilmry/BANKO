@@ -1,3 +1,3 @@
 pub mod repository;
 
-pub use repository::*;
+pub use repository::*

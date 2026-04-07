@@ -800,34 +800,4 @@ impl IIslamicBankingRepository for PgIslamicBankingRepository {
         .bind(id.as_uuid())
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e| format!("Failed to find profit distribution: {}", e))?;
-
-        row.map(|r| r.into_domain()).transpose()
-    }
-
-    async fn find_profit_distributions_by_period(
-        &self,
-        period: u32,
-    ) -> Result<Vec<ProfitDistribution>, String> {
-        let rows = sqlx::query_as::<_, ProfitDistributionRow>(
-            "SELECT * FROM islamic_banking_profit_distributions WHERE period = $1",
-        )
-        .bind(period as i32)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| format!("Failed to find distributions: {}", e))?;
-
-        rows.into_iter().map(|r| r.into_domain()).collect()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_murabaha_row_serialization() {
-        // Tests would require database setup
-        // This is a compile-time verification
-    }
-}
+        .map_err(|e| format!("Failed to fi

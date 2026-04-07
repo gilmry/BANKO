@@ -129,10 +129,4 @@ pub struct FundingStrategyResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UpdateTargetRatioRequest {
-    pub new_ratio: f64,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct AddInstrumentRequest {
-    pub instrument: String,
-}
+ 
