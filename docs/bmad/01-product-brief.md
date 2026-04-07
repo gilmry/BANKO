@@ -2,7 +2,7 @@
 
 ## Méthode Maury — Phase TOGAF A (Vision)
 
-> **Version** : 4.0.0 — 7 avril 2026
+> **Version** : 4.0.1 — 7 avril 2026 (itération post-validation Phase F)
 > **Auteur** : GILMRY / Projet BANKO
 > **Référentiel légal** : [REFERENTIEL_LEGAL_ET_NORMATIF.md](../legal/REFERENTIEL_LEGAL_ET_NORMATIF.md)
 > **Benchmark Temenos** : https://developer.temenos.com/transact-apis (550-700+ endpoints, 17 catégories)
@@ -13,9 +13,14 @@
 
 Fournir aux banques tunisiennes un **système bancaire open source** (Core Banking System) sous licence AGPL-3.0, conçu pour être **irréfutable, transparent et légal**, avec **parité fonctionnelle Temenos Transact** (550-700+ endpoints, 17 catégories). BANKO implémente à la perfection les normes réglementaires tunisiennes (BCT, CTAF, INPDP, BVMT) et internationales (Bâle III, GAFI R.16, IFRS 9, ISO 27001:2022, PCI DSS v4.0.1).
 
-BANKO est au secteur bancaire tunisien ce que KoproGo est à la copropriété belge : un système où **une action illégale en droit bancaire tunisien ne compile tout simplement pas**. Avec la v4.0, BANKO rattrape les 15-20 ans de développement de Temenos tout en restant souverain, auditable et gratuit.
+BANKO est au secteur bancaire tunisien ce que KoproGo est à la copropriété belge : un système où **une action illégale en droit bancaire tunisien ne compile tout simplement pas**. Avec la v4.0, BANKO pose les fondations d'une parité progressive avec Temenos tout en restant souverain, auditable et gratuit.
 
-**Promesse clé v4.0** : Les banques tunisiennes ne sont plus prisonnières des coûts de licence Temenos (100 k€-500 k€/an). BANKO offre une alternative fonctionnelle équivalente, maîtrisée, transparente — et gratuite.
+**Promesse clé v4.0** : Les banques tunisiennes ne sont plus prisonnières des coûts de licence Temenos (100 k€-500 k€/an). BANKO offre une alternative fonctionnelle croissante, maîtrisée, transparente — et gratuite.
+
+**Roadmap parité Temenos (phased)** :
+- **v4.0 MVP** : 13 BCs P0 → ~300-350 endpoints = **50% Temenos** (Core Banking Ready)
+- **v4.1** : +5 BCs P1 → ~450 endpoints = **70% Temenos** (Extended Banking)
+- **v4.2** : +4 BCs P2 → ~550-600 endpoints = **85%+ Temenos** (Full Parity)
 
 ---
 
@@ -326,27 +331,33 @@ Ces règles seront codées dans constructeurs entités Domain (`::new() → Resu
 
 ## 11. Mapping Temenos → BANKO Bounded Contexts (17 catégories → 22 BC)
 
-**Couverture cible v4.0 : 85-90% des endpoints Temenos (450+ sur 550-700)**
+**Couverture cible phased (post-validation Phase F — réaliste)** :
+- v4.0 MVP : ~300-350 endpoints = **50%** (13 BCs P0)
+- v4.1 : ~450 endpoints = **70%** (+5 BCs P1)
+- v4.2 : ~550-600 endpoints = **85%+** (+4 BCs P2)
 
-| Temenos Category | Endpoints cible | BANKO BCs | v4.0 Coverage |
-|---|---|---|---|
-| **Party** | ~80 (customer, beneficiary, identifier) | BC1 Customer + BC19 ReferenceData | 85% |
-| **Holdings** | ~90 (account, deposit, investment) | BC2 Account + BC13 Arrangement + BC20 Securities | 80% |
-| **Order** | ~110 (payment, transfer, arrangement) | BC9 Payment + BC13 Arrangement + BC15 TradeFinance | 85% |
-| **Product** | ~60 (product catalog, product reference) | BC19 ReferenceData + BC21 Insurance | 90% |
-| **Credit** | ~100 (loan, facility, credit line) | BC3 Credit + BC14 Collateral + BC15 TradeFinance | 80% |
-| **Collateral** | ~50 (pledge, valuation, pool) | BC14 Collateral | 90% |
-| **FX** | ~40 (FX operation, FX position, forward) | BC10 ForeignExchange + BC16 CashManagement | 85% |
-| **Risk** | ~70 (prudential ratio, concentration, RWA) | BC6 Prudential | 80% |
-| **AML** | ~60 (KYC, transaction screening, DOS) | BC4 AML + BC5 Sanctions + BC1 Customer | 90% |
-| **Enterprise** | ~80 (common reference, inter-bank, clearing) | BC11 Governance + BC15 TradeFinance + BC21 Insurance | 75% |
-| **Accounting** | ~100 (journal, ledger, reconciliation) | BC7 Accounting (NCT + IFRS 9) | 85% |
-| **Analytics** | ~50 (reporting, dashboard, data lake) | BC8 Reporting + BC18 DataHub | 80% |
-| **Islamic Banking** | ~40 (murabaha, ijara, waqf) | BC17 IslamicBanking | 90% |
-| **Cash Management** | ~50 (sweep, liquidity, FX forward) | BC16 CashManagement | 85% |
-| **Securities** | ~60 (security, portfolio, depository) | BC20 Securities | 80% |
-| **Microservices** | ~30 (API framework, middleware, service registry) | BC11 Governance + BC19 ReferenceData | 80% |
-| **System** | ~50 (authentication, authorization, configuration) | BC12 Identity + BC11 Governance | 90% |
+| Temenos Category | Endpoints Temenos | BANKO BCs | v4.0 MVP | v4.1 | v4.2 |
+|---|---|---|---|---|---|
+| **Party** | ~80 | BC1 Customer + BC19 ReferenceData | 30% (25) | 60% (48) | 85% (68) |
+| **Holdings** | ~90 | BC2 Account + BC13 Arrangement + BC20 Securities | 25% (22) | 55% (50) | 80% (72) |
+| **Order** | ~110 | BC9 Payment + BC13 Arrangement + BC15 TradeFinance | 15% (16) | 50% (55) | 85% (94) |
+| **Product** | ~60 | BC19 ReferenceData + BC21 Insurance | 25% (15) | 50% (30) | 90% (54) |
+| **Credit** | ~100 | BC3 Credit + BC14 Collateral + BC15 TradeFinance | 50% (50) | 70% (70) | 80% (80) |
+| **Collateral** | ~50 | BC14 Collateral | 0% (0) | 60% (30) | 90% (45) |
+| **FX** | ~40 | BC10 ForeignExchange + BC16 CashManagement | 20% (8) | 60% (24) | 85% (34) |
+| **Risk** | ~70 | BC6 Prudential | 35% (25) | 60% (42) | 80% (56) |
+| **AML** | ~60 | BC4 AML + BC5 Sanctions + BC1 Customer | 70% (42) | 80% (48) | 90% (54) |
+| **Enterprise** | ~80 | BC11 Governance + BC15 TradeFinance + BC21 Insurance | 50% (40) | 65% (52) | 75% (60) |
+| **Accounting** | ~100 | BC7 Accounting (NCT + IFRS 9) | 45% (45) | 65% (65) | 85% (85) |
+| **Analytics** | ~50 | BC8 Reporting + BC18 DataHub | 30% (15) | 50% (25) | 80% (40) |
+| **Islamic Banking** | ~40 | BC17 IslamicBanking | 0% (0) | 50% (20) | 90% (36) |
+| **Cash Management** | ~50 | BC16 CashManagement | 0% (0) | 40% (20) | 85% (43) |
+| **Securities** | ~60 | BC20 Securities | 0% (0) | 15% (9) | 80% (48) |
+| **Microservices** | ~30 | BC11 Governance + BC19 ReferenceData | 50% (15) | 70% (21) | 80% (24) |
+| **System** | ~50 | BC12 Identity + BC11 Governance | 60% (30) | 75% (38) | 90% (45) |
+| **TOTAL** | **~1070** | | **~348 (33%)** | **~647 (60%)** | **~938 (88%)** |
+
+> **Note** : Les chiffres endpoints Temenos sont estimatifs (basés sur developer.temenos.com). Le total réel Temenos oscille entre 550-700 endpoints uniques (hors variantes GET/POST/PUT/PATCH). Les pourcentages v4.0 sont conservateurs et seront ajustés après Sprint 0.
 
 **Total couverture v4.0 estimée : ~1 400 endpoints BANKO sur ~1 650 endpoints Temenos = 85%**
 

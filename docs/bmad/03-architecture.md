@@ -3,10 +3,10 @@
 ## Méthode Maury — Phase TOGAF C-D (SI + Technique)
 
 **Disciplines** : SOLID + DDD + Hexagonal + BDD + TDD
-**Version** : 4.0.0 — 7 avril 2026
+**Version** : 4.0.1 — 7 avril 2026 (itération post-validation Phase F)
 **Stack** : Rust + Actix-web 4.9 + PostgreSQL 16 + Astro 6 + Svelte 5
-**Bounded Contexts** : 22 (13 v3.0 + 9 nouveaux v4.0)
-**API Target** : 550-700+ endpoints (parité Temenos)
+**Bounded Contexts** : 22 (13 v3.0 + 9 nouveaux v4.0) — MVP = 13 BCs P0
+**API Target** : v4.0 MVP ~350 endpoints (50%), v4.1 ~450 (70%), v4.2 ~550+ (85%+)
 **Compliance** : BCT, CTAF, INPDP, ANCS, BVMT, ISO 27001:2022, PCI DSS v4.0.1, GAFI R.16
 
 ---
@@ -2699,7 +2699,7 @@ CONSENT (Compliance Layer)
 
 ## 12. Métriques de Succès v4.0
 
-✓ **Couverture Temenos** : 85%+ (450+ endpoints v4.0)
+✓ **Couverture Temenos** : v4.0 MVP ~50% (350 endpoints), v4.1 ~70%, v4.2 85%+
 ✓ **Conformité BCT** : 100% P0 exigences
 ✓ **Coverage code** : 95%+ (domain + app layers)
 ✓ **BDD scenarios** : ≥400 gherkin (Cucumber)
@@ -2715,4 +2715,241 @@ CONSENT (Compliance Layer)
 
 ---
 
-**Architecture v4.0.0 — 7 avril 2026 — BANKO Core Banking System**
+---
+
+## 13. Anti-Corruption Layer (ACL) — Systèmes externes (post-validation Phase F)
+
+> **Warning résolu** : La validation Phase F identifiait l'absence d'ACL pour goAML, SWIFT, BVMT, Sanctions.
+
+### Architecture ACL
+
+```
+Domain Layer (pure)          Application Layer            Infrastructure ACL
+┌─────────────────┐    ┌──────────────────────┐    ┌──────────────────────────┐
+│ SuspicionReport │←───│ SubmitDosUseCase     │←───│ GoAmlAdapter             │
+│ (domain struct) │    │ (orchestration)      │    │ ├─ XML serialization     │
+│                 │    │                      │    │ ├─ CTAF API client       │
+│ PaymentOrder    │←───│ ExecuteTransferUC    │←───│ SwiftAdapter             │
+│ (domain struct) │    │                      │    │ ├─ ISO 20022 parser      │
+│                 │    │                      │    │ ├─ MT103/MT940 mapping   │
+│ SanctionList    │←───│ ScreenSanctionsUC    │←───│ SanctionsListAdapter     │
+│ (domain enum)   │    │                      │    │ ├─ OFAC CSV parser       │
+│                 │    │                      │    │ ├─ EU XML parser         │
+│ SecurityOrder   │←───│ ExecuteOrderUC       │←───│ BvmtAdapter              │
+│ (domain struct) │    │                      │    │ ├─ Protocol TBD          │
+└─────────────────┘    └──────────────────────┘    └──────────────────────────┘
+```
+
+### Ports ACL (traits)
+
+```rust
+// Port — le domaine définit ce qu'il attend
+#[async_trait]
+pub trait ExternalAmlSubmitter {
+    async fn submit_sar(&self, report: &SuspicionReport) -> Result<SubmissionId, DomainError>;
+    async fn get_status(&self, id: &SubmissionId) -> Result<SarStatus, DomainError>;
+}
+
+#[async_trait]
+pub trait ExternalPaymentGateway {
+    async fn send_swift(&self, order: &PaymentOrder) -> Result<SwiftReference, DomainError>;
+    async fn parse_incoming(&self, raw: &[u8]) -> Result<PaymentOrder, DomainError>;
+}
+
+#[async_trait]
+pub trait ExternalSanctionsProvider {
+    async fn fetch_lists(&self) -> Result<Vec<SanctionEntry>, DomainError>;
+    async fn last_update(&self) -> Result<DateTime<Utc>, DomainError>;
+}
+
+#[async_trait]
+pub trait ExternalSecuritiesExchange {
+    async fn submit_order(&self, order: &SecurityOrder) -> Result<OrderReference, DomainError>;
+    async fn get_positions(&self, portfolio_id: &PortfolioId) -> Result<Vec<SecurityPosition>, DomainError>;
+}
+```
+
+### Fichier cible
+`crates/infrastructure/src/external/acl/mod.rs` avec sous-modules :
+- `goaml_adapter.rs` — XML CTAF ↔ SuspicionReport
+- `swift_adapter.rs` — ISO 20022 MT103/MT940 ↔ PaymentOrder
+- `sanctions_adapter.rs` — CSV/XML OFAC/UE ↔ SanctionEntry
+- `bvmt_adapter.rs` — Protocol BVMT ↔ SecurityOrder
+
+---
+
+## 14. Event Store — Audit Trail immutable (post-validation Phase F)
+
+> **Warning résolu** : La validation Phase F identifiait l'absence de design Event Store.
+
+### Décision : Event-sourced audit trail avec snapshots
+
+```rust
+/// Événement domaine générique — stocké immutablement
+pub struct DomainEvent {
+    pub id: EventId,
+    pub aggregate_type: String,      // "Customer", "Account", "Loan"...
+    pub aggregate_id: String,        // UUID de l'agrégat
+    pub event_type: String,          // "CustomerCreated", "LoanDisbursed"...
+    pub payload: serde_json::Value,  // Données événement sérialisées
+    pub metadata: EventMetadata,
+    pub created_at: DateTime<Utc>,
+    pub hash: String,                // SHA256(previous_hash + payload)
+    pub previous_hash: String,       // Chain linking
+}
+
+pub struct EventMetadata {
+    pub user_id: UserId,
+    pub ip_address: Option<String>,
+    pub session_id: Option<SessionId>,
+    pub correlation_id: Uuid,        // Pour tracer les chaînes de causalité
+}
+```
+
+### Schema SQL Event Store
+
+```sql
+CREATE TABLE domain_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    aggregate_type VARCHAR(64) NOT NULL,
+    aggregate_id UUID NOT NULL,
+    event_type VARCHAR(128) NOT NULL,
+    payload JSONB NOT NULL,
+    user_id UUID NOT NULL,
+    ip_address INET,
+    session_id UUID,
+    correlation_id UUID NOT NULL,
+    hash VARCHAR(64) NOT NULL,      -- SHA256 hex
+    previous_hash VARCHAR(64) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+) PARTITION BY RANGE (created_at);
+
+-- Partitions mensuelles (performance + archivage)
+CREATE TABLE domain_events_2026_04 PARTITION OF domain_events
+    FOR VALUES FROM ('2026-04-01') TO ('2026-05-01');
+
+-- Index pour requêtes audit
+CREATE INDEX idx_events_aggregate ON domain_events (aggregate_type, aggregate_id);
+CREATE INDEX idx_events_user ON domain_events (user_id);
+CREATE INDEX idx_events_correlation ON domain_events (correlation_id);
+CREATE INDEX idx_events_created ON domain_events (created_at);
+```
+
+### Politique rétention
+- **Hot** (0-12 mois) : PostgreSQL primary, index complets
+- **Warm** (12-36 mois) : PostgreSQL read-replica, index réduits
+- **Cold** (36-120 mois) : Archive S3 chiffrée GPG, requêtes sur demande
+- **Legal retention** : 10 ans minimum (Circ. 2025-17, Loi 2015-26)
+
+### Port Event Store
+
+```rust
+#[async_trait]
+pub trait EventStore {
+    async fn append(&self, event: &DomainEvent) -> Result<(), DomainError>;
+    async fn get_events(&self, aggregate_type: &str, aggregate_id: &Uuid) -> Result<Vec<DomainEvent>, DomainError>;
+    async fn verify_chain(&self, aggregate_type: &str, aggregate_id: &Uuid) -> Result<bool, DomainError>;
+}
+```
+
+---
+
+## 15. HSM Interface — Signatures cryptographiques (post-validation Phase F)
+
+> **Warning résolu** : La validation Phase F identifiait l'absence d'interface HSM.
+
+### Port HSM
+
+```rust
+#[async_trait]
+pub trait HsmSigner {
+    /// Signer un message avec clé privée stockée HSM
+    async fn sign(&self, key_id: &str, message: &[u8]) -> Result<Vec<u8>, HsmError>;
+    /// Vérifier signature
+    async fn verify(&self, key_id: &str, message: &[u8], signature: &[u8]) -> Result<bool, HsmError>;
+    /// Générer nouvelle paire de clés dans HSM
+    async fn generate_key_pair(&self, label: &str) -> Result<String, HsmError>;
+}
+
+pub enum HsmError {
+    ConnectionFailed,
+    KeyNotFound,
+    SignatureFailed,
+    Timeout,
+}
+```
+
+### Implémentations
+
+```rust
+// Production : PKCS#11 (Thales Luna, SoftHSM2)
+pub struct Pkcs11HsmSigner { /* ... */ }
+
+// Développement : Mock HSM (signatures en mémoire, clés éphémères)
+pub struct MockHsmSigner { /* ... */ }
+```
+
+### Fichier cible
+`crates/infrastructure/src/security/hsm.rs`
+
+---
+
+## 16. Invariants compilés — Fichier centralisé (post-validation Phase F)
+
+> **Warning résolu** : Invariants soft (SLA, timing) non compilés.
+
+### Fichier cible : `crates/domain/src/invariants.rs`
+
+```rust
+use rust_decimal::Decimal;
+use std::time::Duration;
+
+/// INV-02/06 : Solvabilité minimum (FPN/RWA ≥ 10%)
+pub const SOLVENCY_RATIO_MIN: Decimal = Decimal::from_parts(10, 0, 0, false, 0); // 10%
+pub const SOLVENCY_ALERT_THRESHOLD: Decimal = Decimal::from_parts(12, 0, 0, false, 0); // 12%
+
+/// INV-03/07 : Tier 1 minimum (CET1+AT1 ≥ 7%)
+pub const TIER1_RATIO_MIN: Decimal = Decimal::from_parts(7, 0, 0, false, 0);
+pub const TIER1_ALERT_THRESHOLD: Decimal = Decimal::from_parts(8, 0, 0, false, 0);
+
+/// INV-04/08 : C/D plafond (≤ 120%)
+pub const CD_RATIO_MAX: Decimal = Decimal::from_parts(120, 0, 0, false, 0);
+pub const CD_ALERT_THRESHOLD: Decimal = Decimal::from_parts(110, 0, 0, false, 0);
+
+/// INV-05 : Concentration (≤ 25% FPN)
+pub const CONCENTRATION_MAX_PCT: Decimal = Decimal::from_parts(25, 0, 0, false, 0);
+
+/// INV-09 : Provisions obligatoires par classe créance
+pub fn minimum_provision_rate(asset_class: u8) -> Decimal {
+    match asset_class {
+        0 => Decimal::ZERO,
+        1 => Decimal::from_parts(20, 0, 0, false, 0),
+        2 => Decimal::from_parts(50, 0, 0, false, 0),
+        3 => Decimal::from_parts(75, 0, 0, false, 0),
+        4 => Decimal::from_parts(100, 0, 0, false, 0),
+        _ => Decimal::from_parts(100, 0, 0, false, 0),
+    }
+}
+
+/// INV-08 : AML seuil espèces
+pub const AML_CASH_THRESHOLD_TND: Decimal = Decimal::from_parts(5000, 0, 0, false, 0);
+
+/// INV-10 : Rétention données KYC post-clôture
+pub const KYC_RETENTION_YEARS: u32 = 10;
+
+/// INV-15/17 : DOS CTAF SLA
+pub const DOS_SUBMISSION_SLA: Duration = Duration::from_secs(24 * 3600); // 24h
+
+/// INV-17 : Travel rule seuil
+pub const TRAVEL_RULE_THRESHOLD_TND: Decimal = Decimal::from_parts(250_000, 0, 0, false, 0);
+
+/// INV-24 : Breach notification INPDP SLA
+pub const BREACH_NOTIFICATION_SLA: Duration = Duration::from_secs(72 * 3600); // 72h
+
+/// INV-25 : Portabilité données SLA
+pub const DATA_PORTABILITY_SLA_DAYS: u32 = 30;
+```
+
+---
+
+**Architecture v4.0.1 — 7 avril 2026 — BANKO Core Banking System (itéré post-validation Phase F)**

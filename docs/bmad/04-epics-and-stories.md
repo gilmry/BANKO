@@ -6,7 +6,7 @@
 **Exécution** : Scrum → Nexus → SAFe
 **Production** : ITIL + IaC ISO 27001
 
-**Version** : 4.0.0 — 7 avril 2026
+**Version** : 4.0.1 — 7 avril 2026 (itération post-validation Phase F)
 **Auteur** : GILMRY / Projet BANKO
 **Référentiel légal** : [REFERENTIEL_LEGAL_ET_NORMATIF.md](../legal/REFERENTIEL_LEGAL_ET_NORMATIF.md)
 
@@ -3842,22 +3842,22 @@ Then :
 
 ---
 
-## Résumé des métriques v4.0
+## Résumé des métriques v4.0 (post-validation Phase F)
 
 | Métrique | Target | Status |
 |----------|--------|--------|
-| **Total stories** | 300-350 | 320+ |
-| **Bounded Contexts** | 22 | 22 ✓ |
-| **Sprints** | 15 (0 + 1-8 + 9-14 + E2E) | 15 ✓ |
-| **Jalon 0 (Fondations)** | Semaines 1-6 | 58 stories |
-| **Jalon 1 (Core Banking)** | Semaines 7-14 | 95+ stories |
-| **Jalon 2 (New BCs)** | Semaines 15-24 | 100+ stories |
-| **Jalon 3 (Analytics + Advanced)** | Semaines 25-32 | 60+ stories |
+| **Total stories** | ~320 (MVP 121 P0 + 100 P1 + 100 P2) | 320+ ✓ |
+| **Bounded Contexts** | 22 (13 MVP + 9 roadmap) | 22 ✓ |
+| **Sprints MVP** | ~15 (Sprint 0 + Jalons 0-3 + E2E) | 15 ✓ |
+| **Jalon 0 (Fondations)** | Semaines 1-8 | 58 stories |
+| **Jalon 1 (Core Banking)** | Semaines 9-22 | 95+ stories |
+| **Jalon 2 (Compliance+)** | Semaines 23-38 | 70+ stories |
+| **Buffer** | Semaines 39-46 | Stabilisation |
 | **Coverage domain testing** | 95%+ | En implémentation |
 | **Coverage application testing** | 90%+ | En implémentation |
 | **Coverage infrastructure** | 70%+ | En implémentation |
 | **Scénarios BDD Gherkin** | 400+ | En développement |
-| **Endpoints REST cible** | 550-700 | 400+ couverts (Jalon 1) |
+| **Endpoints REST cible** | v4.0: ~350, v4.1: ~450, v4.2: ~550+ | Phased |
 | **Conformité BCT P0** | 100% | Jalon 0 ✓ |
 | **Conformité ISO 27001:2022** | 93/93 contrôles | En certification |
 | **Conformité PCI DSS v4.0.1** | 100% P0/P1 | Jalon 0+ ✓ |
@@ -3990,17 +3990,146 @@ Then [résultat]
 
 ---
 
+## Matrice de Traçabilité FR → Story (post-validation Phase F)
+
+> **BLOQUEUR 2 résolu** : Cette matrice établit la traçabilité complète entre les 182 FRs du PRD et les stories Phase E.
+
+### BC1 — Customer (FR-001 à FR-015)
+
+| FR | Description | Story | Status |
+|---|---|---|---|
+| FR-001 | KYC personne physique | STORY-CUST-01 | ✓ Couvert |
+| FR-002 | KYC personne morale + bénéficiaires | STORY-CUST-01, CUST-03 | ✓ Couvert |
+| FR-003 | Validation KYC par Compliance | STORY-CUST-04 | ✓ Couvert |
+| FR-004 | PEP detection | STORY-CUST-05 | ✓ Couvert |
+| FR-005 | EDD renforcée | STORY-CUST-05 | ✓ Couvert |
+| FR-006 | Risk scoring client | STORY-CUST-06 | ✓ Couvert |
+| FR-007 | Données sensibles INPDP | STORY-CUST-02 | ✓ Couvert |
+| FR-008 | Consentement INPDP | STORY-CUST-07, COMP-03 | ✓ Couvert |
+| FR-009 | Droit portabilité | STORY-CUST-08 | ✓ Couvert |
+| FR-010 | Droit effacement | STORY-CUST-08 | ✓ Couvert |
+| FR-011 | e-KYC biométrique | STORY-CUST-05 | ✓ Couvert |
+| FR-012 | Profiling client | STORY-CUST-06 | ✓ Couvert |
+| FR-013 | Statut client | STORY-CUST-01 | ✓ Couvert |
+| FR-014 | Audit trail client | STORY-CUST-02 | ✓ Couvert |
+| FR-015 | Vérification OFAC | STORY-SANC-01, SANC-02 | ✓ Couvert |
+
+### BC2 — Account (FR-016 à FR-028)
+
+| FR | Description | Story | Status |
+|---|---|---|---|
+| FR-016 | Ouverture compte courant | STORY-ACCT-01 | ✓ Couvert |
+| FR-017 | Ouverture compte épargne | STORY-ACCT-01 | ✓ Couvert |
+| FR-018 | Ouverture DAT | STORY-ACCT-01 | ✓ Couvert |
+| FR-019 | Consultation soldes | STORY-ACCT-03 | ✓ Couvert |
+| FR-020 | Calcul intérêts | STORY-ACCT-04 | ✓ Couvert |
+| FR-021 | Restitution DAT | STORY-ACCT-04 | ✓ Couvert |
+| FR-022 | Clôture de compte | STORY-ACCT-05 | ✓ Couvert |
+| FR-023 | Suspension de compte | STORY-ACCT-05 | ✓ Couvert |
+| FR-024 | Recherche compte | STORY-ACCT-03 | ✓ Couvert |
+| FR-025 | Conciliation GL | STORY-ACC-06, ACC-07 | ✓ Couvert |
+| FR-026 | Compte multi-devise | STORY-ACCT-08 | ✓ Couvert (v4.2) |
+| FR-027 | Limite débit | STORY-ACCT-05 | ✓ Couvert |
+| FR-028 | Gel des avoirs | STORY-AML-06 | ✓ Couvert |
+
+### BC3 — Credit (FR-029 à FR-042)
+
+| FR | Description | Story | Status |
+|---|---|---|---|
+| FR-029 | Demande crédit | STORY-CR-01 | ✓ Couvert |
+| FR-030 | Analyse risque PD/LGD/EAD | STORY-CR-02 | ✓ Couvert |
+| FR-031 | Classification créance | STORY-CR-03 | ✓ Couvert |
+| FR-032 | Comité crédit | STORY-CR-04 | ✓ Couvert |
+| FR-033 | Déblocage crédit | STORY-CR-05 | ✓ Couvert |
+| FR-034 | Échéancier remboursement | STORY-CR-05 | ✓ Couvert |
+| FR-035 | Paiement mensualité | STORY-CR-06 | ✓ Couvert |
+| FR-036 | Défaut paiement | STORY-CR-07 | ✓ Couvert |
+| FR-037 | Provision créance | STORY-CR-08 | ✓ Couvert |
+| FR-038 | IFRS 9 ECL | STORY-CR-09 | ✓ Couvert |
+| FR-039 | Concentration limite | STORY-PRUD-04 | ✓ Couvert |
+| FR-040 | Restructuration crédit | STORY-CR-10 | ✓ Couvert |
+| FR-041 | Remboursement anticipé | STORY-CR-06 | ✓ Couvert |
+| FR-042 | Créances douteuses | STORY-CR-10 | ✓ Couvert |
+
+### BC4 — AML (FR-043 à FR-053)
+
+| FR | Description | Story | Status |
+|---|---|---|---|
+| FR-043 | Scénarios surveillance P0 | STORY-AML-01 | ✓ Couvert |
+| FR-044 | Investigation workflow | STORY-AML-02 | ✓ Couvert |
+| FR-045 | DOS → goAML | STORY-AML-03, COMP-01 | ✓ Couvert |
+| FR-046 | Gel des avoirs | STORY-AML-06 | ✓ Couvert |
+| FR-047 | Travel rule | STORY-AML-07, COMP-02 | ✓ Couvert |
+| FR-048 | Sanctions screening | STORY-SANC-01 | ✓ Couvert |
+| FR-049 | Scénarios avancés | STORY-AML-04 | ✓ Couvert |
+| FR-050 | CTR | STORY-AML-05 | ✓ Couvert |
+| FR-051 | Blocage manuel | STORY-AML-06 | ✓ Couvert |
+| FR-052 | Dashboard AML | STORY-AML-08 | ✓ Couvert |
+| FR-053 | Statistiques AML | STORY-AML-08, COMP-04 | ✓ Couvert |
+
+### BC5 — Sanctions (FR-054 à FR-058) → STORY-SANC-01 à SANC-08 : ✓ Tous couverts
+
+### BC6 — Prudential (FR-059 à FR-065) → STORY-PRUD-01 à PRUD-08 : ✓ Tous couverts
+
+### BC7 — Accounting (FR-066 à FR-077) → STORY-ACC-01 à ACC-08 : ✓ Tous couverts
+
+### BC8 — Reporting (FR-078 à FR-083) → STORY-REP-01 à REP-08 : ✓ Tous couverts
+
+### BC9 — Payment (FR-084 à FR-090) → STORY-PAY-01 à PAY-08 : ✓ Tous couverts
+
+### BC10 — ForeignExchange (FR-091 à FR-096) → STORY-FX-01 à FX-08 : ✓ Tous couverts
+
+### BC11 — Governance (FR-097 à FR-102) → STORY-GOV-01 à GOV-08 : ✓ Tous couverts
+
+### BC12 — Identity (FR-103 à FR-108) → STORY-ID-01 à ID-08 : ✓ Tous couverts
+
+### BC13 — Compliance (FR-109 à FR-116) → STORY-COMP-01 à COMP-06 : ✓ Tous couverts
+
+### BC14 — Arrangement (FR-117 à FR-125) → STORY-ARR-01 à ARR-15 : ✓ Tous couverts (P1)
+
+### BC15 — TradeFinance (FR-126 à FR-132) → STORY-TF-01 à TF-12 : ✓ Tous couverts (P2)
+
+### BC16 — CashManagement (FR-133 à FR-139) → STORY-CM-01 à CM-08 : ✓ Tous couverts (P2)
+
+### BC17 — IslamicBanking (FR-140 à FR-148) → STORY-IB-01 à IB-12 : ✓ Tous couverts (P1)
+
+### BC18 — DataHub (FR-149 à FR-156) → STORY-DH-01 à DH-08 : ✓ Tous couverts (P2)
+
+### BC19 — ReferenceData (FR-157 à FR-163) → STORY-RD-01 à RD-08 : ✓ Tous couverts (P0)
+
+### BC20 — Securities (FR-164 à FR-170) → STORY-SEC-01 à SEC-10 : ✓ Tous couverts (P2)
+
+### BC21 — Insurance (FR-171 à FR-176) → STORY-INS-01 à INS-06 : ✓ Tous couverts (P2)
+
+### BC22 — Compliance étendu (FR-177 à FR-182) → STORY-COMP-01 à COMP-06 : ✓ Tous couverts (P0)
+
+### Résumé traçabilité
+
+| Métrique | Valeur |
+|---|---|
+| **FRs totaux (PRD)** | 182 |
+| **FRs couverts par ≥1 story** | 182 (100%) |
+| **FRs orphelins** | 0 (vs 24 pré-itération) |
+| **Stories totales** | ~320 |
+| **Ratio FR:Story** | 1:1.76 (vs 1:3.8 pré-itération — normalisé) |
+| **Stories techniques** | 13 (T01-T13) — sans FR direct |
+| **Stories E2E** | 6 (E2E-01 à E2E-06) — validation cross-BC |
+
+> **Note** : Les 13 stories techniques (Sprint 0) et 6 stories E2E n'ont pas de FR direct — elles supportent l'infrastructure et la validation. Ce ratio 1:1.76 est normal pour un projet DDD (1 FR = ~2 stories : 1 domain + 1 persistence/handler).
+
+---
+
 ## Conclusion
 
-BANKO v4.0 — Epics & User Stories représente un effort de **300-350 stories** sur **22 Bounded Contexts**, visant la **parité Temenos** (550-700+ endpoints) tout en garantissant la **conformité totale** avec les obligations légales tunisiennes (BCT, CTAF, INPDP, BVMT) et internationales (Bâle III, GAFI R.16, IFRS 9, ISO 27001:2022, PCI DSS v4.0.1).
+BANKO v4.0 — Epics & User Stories représente un effort de **~320 stories** sur **22 Bounded Contexts** (13 MVP P0 + 9 roadmap P1/P2), visant une **parité progressive Temenos** (v4.0: 50%, v4.1: 70%, v4.2: 85%+) tout en garantissant la **conformité totale** avec les obligations légales tunisiennes (BCT, CTAF, INPDP, BVMT) et internationales (Bâle III, GAFI R.16, IFRS 9, ISO 27001:2022, PCI DSS v4.0.1).
 
-**Horizon cible** : Avril 2026 → Août 2027 (12-16 mois). Vélocité solo-dev : 8h/sem moyenne avec coefficients IA (÷3 backend, ÷1.5 frontend, ×1 infra).
+**Horizon cible** : v4.0 MVP = 18-22 mois (conservateur), v4.2 full parity = 32-36+ mois. Vélocité solo-dev : 8h/sem moyenne avec coefficients IA (à valider Sprint 0).
 
 **Différenciation BANKO** : Une action illégale en droit bancaire tunisien ne compile tout simplement pas. Chaque opération est tracée vers un texte légal (95 références mappées). Architecture hexagonale + DDD + BDD + TDD + SOLID = 100% auditable, souverain, open source AGPL-3.0.
 
 ---
 
-**Version** : 4.0.0 — 7 avril 2026
+**Version** : 4.0.1 — 7 avril 2026 (itéré post-validation Phase F)
 **Auteur** : GILMRY / Projet BANKO
 **Référentiel légal** : [REFERENTIEL_LEGAL_ET_NORMATIF.md](../legal/REFERENTIEL_LEGAL_ET_NORMATIF.md)
 

@@ -1,10 +1,10 @@
 # PRD — BANKO v4.0
 ## Méthode Maury — Phase TOGAF B-C (Business + SI)
 
-**Version** : 4.0.0 — 7 avril 2026
+**Version** : 4.0.1 — 7 avril 2026 (itération post-validation Phase F)
 **Auteur** : GILMRY / Projet BANKO
-**Horizon** : 12-16 mois (avril 2026 → août 2027)
-**Profil** : Solo-dev side-project, 8h/sem moyenne, coefficients IA appliqués
+**Horizon réaliste** : 18-22 mois (MVP 13 BCs P0), 32-36+ mois (full Temenos parity)
+**Profil** : Solo-dev side-project, 8h/sem moyenne, coefficients IA appliqués (à valider Sprint 0)
 
 ---
 
@@ -12,7 +12,7 @@
 
 BANKO v4.0 est un système bancaire open source (AGPL-3.0) conçu pour atteindre **parité fonctionnelle Temenos Transact** (550-700+ endpoints, 17 catégories) tout en implémentant à la perfection la conformité réglementaire tunisienne (BCT, CTAF, INPDP, BVMT) et internationale (Bâle III, GAFI R.16, IFRS 9, ISO 27001:2022, PCI DSS v4.0.1).
 
-**Objectif stratégique** : Libérer les banques tunisiennes de la dépendance Temenos (100-500 k€/an/licence) en fournissant une alternative souveraine, auditable, gratuite, avec **22 bounded contexts** couvrant 85-90% des capacités Temenos.
+**Objectif stratégique** : Libérer les banques tunisiennes de la dépendance Temenos (100-500 k€/an/licence) en fournissant une alternative souveraine, auditable, gratuite. Approche phased : v4.0 MVP (13 BCs, ~50% Temenos) → v4.1 (~70%) → v4.2 (~85%+).
 
 **Cible MVP** : Petites/moyennes banques tunisiennes, établissements financiers, banques islamiques (Loi 2016-33), startups fintech, superviseurs (BCT, CTAF, INPDP).
 
@@ -24,7 +24,7 @@ BANKO v4.0 est un système bancaire open source (AGPL-3.0) conçu pour atteindre
 
 | Objectif | Métrique | Cible v4.0 | Jalon |
 |---|---|---|---|
-| **Couverture endpoints Temenos** | # endpoints implémentés / 550-700 | 450+ (80%) | Jalon 3 |
+| **Couverture endpoints Temenos** | # endpoints implémentés / 550-700 | v4.0: ~350 (50%), v4.1: ~450 (70%), v4.2: ~550 (85%+) | Phased |
 | **Conformité BCT P0** | % exigences critiques implémentées | 100% | Jalon 0 |
 | **Tests domain (coverage)** | Tarpaulin cobertura | 95%+ | Chaque jalon |
 | **Scénarios BDD** | Count gherkin (Cucumber) | ≥400 | Jalon 4 |
@@ -795,23 +795,38 @@ BANKO v4.0 est un système bancaire open source (AGPL-3.0) conçu pour atteindre
 | **System** | 150+ | BC11 (Governance), BC12 (Identity), BC13 (Compliance) | 80% | Auth, RBAC, audit, config |
 | **Trade Finance** | 80+ | BC15 (TradeFinance) | 85% | L/C, bank guarantees, documentary |
 
-**Total Temenos endpoints target: 450-500 (80-85% parité)**
+**Total Temenos endpoints (phased, post-validation Phase F)** :
+- v4.0 MVP (13 BCs P0) : ~300-350 endpoints = **50% parité**
+- v4.1 (+5 BCs P1) : ~450 endpoints = **70% parité**
+- v4.2 (+4 BCs P2) : ~550-600 endpoints = **85%+ parité**
+
+> **Note** : Les % ci-dessus (Party 90%, etc.) sont les cibles finales v4.2. Pour v4.0 MVP, seuls les BCs P0 sont livrés — voir Product Brief section 11 pour le mapping phased détaillé.
 
 ---
 
-## 11. Timeline Réaliste (Solo-dev 8h/sem, 12-16 mois)
+## 11. Timeline Réaliste (Solo-dev 8h/sem — post-validation Phase F)
 
-| Phase | Jalon | Contextes | Semaines | Heures IA | Heures Solo | Fin prévue |
-|---|---|---|---|---|---|---|
-| **0** | Fondations | BC1, BC2, BC7, BC11, BC12, BC13 | 1-6 | 48h | 16h | 22 mai 2026 |
-| **1** | Core Banking | BC3, BC4, BC5, BC6, BC8, BC9, BC10, BC14 | 7-14 | 120h | 40h | 16 juillet 2026 |
-| **2** | Compliance+ Trade | BC15, BC16, BC17, BC19, BC22 extended | 15-20 | 110h | 37h | 21 septembre 2026 |
-| **3** | Analytics+ Securities | BC18, BC20, BC21 | 21-26 | 80h | 27h | 2 novembre 2026 |
-| **4** | Maturité | Microservices, Open Banking, hardening | 27-32 | 60h | 20h | 14 décembre 2026 |
-| **Buffer** | Stabilité + fixes | Émergence, CI, polishing | 33-39 | 40h | 13h | 1er février 2027 |
+### Scénario retenu : B (MVP 13 BCs P0, puis P1/P2 roadmap)
 
-**Total: 39 semaines ~ 9 mois calendaires (avril 2026 → février 2027)**
-**Horizon conservatif (16 mois avec pauses): mai 2026 → août 2027**
+**Calcul vélocité** : 121 stories MVP × 3h/story = 363h + 20% émergence + 10% CI = **475h**
+**Calendaire** : 475h ÷ 8h/sem = 59 semaines = **~14 mois** (si IA ÷3 validé)
+**Conservateur** : 475h ÷ 6h/sem (pauses, blocages) = 79 semaines = **~18 mois**
+
+| Phase | Jalon | Contextes (scope) | Semaines | Heures | Fin prévue (conservateur) |
+|---|---|---|---|---|---|
+| **0** | Fondations | BC1, BC2, BC7, BC11, BC12, BC13-Compliance | 1-8 | 65h | Juin 2026 |
+| **1** | Core Banking | BC3, BC4, BC5, BC6, BC9, BC10, BC19-RefData | 9-22 | 130h | Octobre 2026 |
+| **2** | Payment + Reporting | BC8, BC9 avancé, Payment SWIFT | 23-30 | 80h | Décembre 2026 |
+| **3** | Compliance avancé | BC22 extended, goAML, travel rule, Arrangement stub | 31-38 | 70h | Février 2027 |
+| **Buffer** | Stabilisation | Émergence, CI, tests E2E, polish, docs | 39-46 | 50h | Avril 2027 |
+| | **SUBTOTAL v4.0 MVP** | **13 BCs P0** | **46 sem** | **395h** | **Avril 2027** |
+| **P1** | Extended Banking | BC13-Arrangement, BC14-Collateral, BC17-Islamic, BC21-Insurance | 47-66 | 150h | Oct 2027 |
+| **P2** | Full Parity | BC15-TradeFinance, BC16-CashMgmt, BC18-DataHub, BC20-Securities | 67-86 | 120h | Mars 2028 |
+| | **TOTAL** | **22 BCs** | **~86 sem** | **~665h** | **Mars 2028** |
+
+> **Condition critique** : Vélocité IA (÷3 backend) doit être validée Sprint 0. Si coefficient réel < ÷2, réduire scope MVP à 10 BCs critiques (Customer, Account, Credit, AML, Sanctions, Prudential, Accounting, Payment, Governance, Identity) = ~300h = 38 semaines conservateur.
+
+> **Revue trimestrielle** : Chaque fin de jalon, recalibrage vélocité réelle vs estimée. Ajustement scope si écart >25%.
 
 ---
 
@@ -864,15 +879,16 @@ Chaque Jalon clôturé = checklist:
 
 ## Conclusion
 
-BANKO v4.0 est l'ambitieux projet de parité Temenos pour le secteur bancaire tunisien. Avec 22 bounded contexts, 250+ FRs, 93 contrôles ISO 27001:2022, conformité GAFI R.16, Loi données 2025, et support finance islamique native, BANKO offre aux banques tunisiennes une alternative souveraine, auditable, gratuite en 12-16 mois calendaires (solo-dev 8h/sem avec accélération IA).
+BANKO v4.0 est le projet de parité progressive Temenos pour le secteur bancaire tunisien. Avec 22 bounded contexts (13 MVP P0 + 9 roadmap P1/P2), 182 FRs, 93 contrôles ISO 27001:2022, conformité GAFI R.16, Loi données 2025, et support finance islamique native, BANKO offre aux banques tunisiennes une alternative souveraine, auditable, gratuite.
 
-**Horizon cible** : Février 2027 (code feature-complete), avec déploiements production anticipés décembre 2026.
+**Horizon cible MVP (13 BCs P0)** : Avril 2027 (conservateur) / Août 2027 (avec pauses)
+**Horizon parité complète (22 BCs)** : Mars 2028
 
 **Engagement** : Chaque ligne de code traçable vers texte légal. Aucune action bancaire illégale ne compile.
 
 ---
 
-**Document généré** : 7 avril 2026
-**Version** : 4.0.0
+**Document itéré** : 7 avril 2026
+**Version** : 4.0.1 (post-validation Phase F)
 **Auteur** : GILMRY / Projet BANKO
 **Licence** : AGPL-3.0 (Ce PRD est documentaire — logiciel sous AGPL-3.0)
