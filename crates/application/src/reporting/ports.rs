@@ -2,7 +2,10 @@ use async_trait::async_trait;
 use chrono::NaiveDate;
 
 use banko_domain::reporting::{
-    RegulatoryReport, ReportId, ReportStatus, ReportTemplate, ReportType, TemplateId,
+    AdHocReport, AdHocReportId, Ifrs9Report, Ifrs9ReportId, ReportArchive, ReportArchiveId,
+    ReportDistribution, ReportDistributionId, RegulatoryReport, ReportId, ReportStatus,
+    ReportTemplate, ReportType, ScheduledReport, ScheduledReportId, TaxReport, TaxReportId,
+    TaxReportType, TemplateId,
 };
 
 // --- Report Repository ---
@@ -63,4 +66,81 @@ pub trait IEclDataProvider: Send + Sync {
         &self,
         as_of: NaiveDate,
     ) -> Result<Vec<EclDataPoint>, String>;
+}
+
+// ============================================================
+// Advanced Repositories (BMAD v4.0.1 Compliance)
+// ============================================================
+
+// --- Scheduled Report Repository ---
+
+#[async_trait]
+pub trait IScheduledReportRepository: Send + Sync {
+    async fn save(&self, report: &ScheduledReport) -> Result<(), String>;
+    async fn find_by_id(&self, id: &ScheduledReportId) -> Result<Option<ScheduledReport>, String>;
+    async fn find_active(&self) -> Result<Vec<ScheduledReport>, String>;
+    async fn find_due_for_execution(&self) -> Result<Vec<ScheduledReport>, String>;
+}
+
+// --- Report Distribution Repository ---
+
+#[async_trait]
+pub trait IReportDistributionRepository: Send + Sync {
+    async fn save(&self, distribution: &ReportDistribution) -> Result<(), String>;
+    async fn find_by_id(
+        &self,
+        id: &ReportDistributionId,
+    ) -> Result<Option<ReportDistribution>, String>;
+    async fn find_by_report_id(
+        &self,
+        report_id: &str,
+    ) -> Result<Vec<ReportDistribution>, String>;
+}
+
+// --- Report Archive Repository ---
+
+#[async_trait]
+pub trait IReportArchiveRepository: Send + Sync {
+    async fn save(&self, archive: &ReportArchive) -> Result<(), String>;
+    async fn find_by_id(&self, id: &ReportArchiveId) -> Result<Option<ReportArchive>, String>;
+    async fn find_by_report_id(&self, report_id: &str) -> Result<Vec<ReportArchive>, String>;
+    async fn find_expired(&self) -> Result<Vec<ReportArchive>, String>;
+    async fn find_all(&self) -> Result<Vec<ReportArchive>, String>;
+}
+
+// --- Ad-Hoc Report Repository ---
+
+#[async_trait]
+pub trait IAdHocReportRepository: Send + Sync {
+    async fn save(&self, report: &AdHocReport) -> Result<(), String>;
+    async fn find_by_id(&self, id: &AdHocReportId) -> Result<Option<AdHocReport>, String>;
+    async fn find_all(&self) -> Result<Vec<AdHocReport>, String>;
+}
+
+// --- Tax Report Repository ---
+
+#[async_trait]
+pub trait ITaxReportRepository: Send + Sync {
+    async fn save(&self, report: &TaxReport) -> Result<(), String>;
+    async fn find_by_id(&self, id: &TaxReportId) -> Result<Option<TaxReport>, String>;
+    async fn find_by_criteria(
+        &self,
+        tax_type: Option<TaxReportType>,
+        period_start: Option<NaiveDate>,
+        period_end: Option<NaiveDate>,
+    ) -> Result<Vec<TaxReport>, String>;
+}
+
+// --- IFRS 9 Report Repository ---
+
+#[async_trait]
+pub trait IIfrs9ReportRepository: Send + Sync {
+    async fn save(&self, report: &Ifrs9Report) -> Result<(), String>;
+    async fn find_by_id(&self, id: &Ifrs9ReportId) -> Result<Option<Ifrs9Report>, String>;
+    async fn find_latest_by_date(&self, as_of: NaiveDate) -> Result<Option<Ifrs9Report>, String>;
+    async fn find_by_period(
+        &self,
+        from: Option<NaiveDate>,
+        to: Option<NaiveDate>,
+    ) -> Result<Vec<Ifrs9Report>, String>;
 }
