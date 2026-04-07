@@ -124,7 +124,7 @@ Voir [GOVERNANCE.md](GOVERNANCE.md).
 
 ## Sécurité
 
-Voir [SECURITY.md](SECURITY.md). Divulgation responsable : security@banko.tn
+Voir [SECURITY.md](SECURITY.md). Divulgation responsable : abuse@koprogo.com
 
 ## Licence
 
