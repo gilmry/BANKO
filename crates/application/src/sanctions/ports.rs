@@ -41,3 +41,79 @@ pub trait IScreeningResultRepository: Send + Sync {
 pub trait IMatchingStrategy: Send + Sync {
     fn screen(&self, name: &str, entries: &[SanctionEntry], threshold: u8) -> Vec<MatchDetail>;
 }
+
+// ============================================================================
+// BMAD FR-058: Batch Screening Job Repository
+// ============================================================================
+
+use banko_domain::sanctions::{BatchScreeningJob, BatchScreeningJobId, BatchJobStatus};
+
+#[async_trait]
+pub trait IBatchScreeningJobRepository: Send + Sync {
+    async fn save(&self, job: &BatchScreeningJob) -> Result<(), String>;
+    async fn find_by_id(&self, id: &BatchScreeningJobId) -> Result<Option<BatchScreeningJob>, String>;
+    async fn find_by_status(&self, status: BatchJobStatus) -> Result<Vec<BatchScreeningJob>, String>;
+}
+
+// ============================================================================
+// BMAD FR-057: Sanctions Whitelist Repository (False Positive Management)
+// ============================================================================
+
+use banko_domain::sanctions::{
+    SanctionsWhitelistEntry, SanctionsWhitelistEntryId, WhitelistApprovalStatus,
+};
+
+#[async_trait]
+pub trait ISanctionsWhitelistRepository: Send + Sync {
+    async fn save(&self, entry: &SanctionsWhitelistEntry) -> Result<(), String>;
+    async fn find_by_id(
+        &self,
+        id: &SanctionsWhitelistEntryId,
+    ) -> Result<Option<SanctionsWhitelistEntry>, String>;
+    async fn find_by_document_number(
+        &self,
+        document_number: &str,
+    ) -> Result<Option<SanctionsWhitelistEntry>, String>;
+    async fn find_by_status(
+        &self,
+        status: WhitelistApprovalStatus,
+    ) -> Result<Vec<SanctionsWhitelistEntry>, String>;
+    /// Mark all expired entries as Expired status
+    async fn mark_expired_entries(&self) -> Result<i64, String>;
+}
+
+// ============================================================================
+// BMAD FR-060: Escalation Rule Repository
+// ============================================================================
+
+use banko_domain::sanctions::{EscalationRule, EscalationRuleId, EscalationTrigger};
+
+#[async_trait]
+pub trait IEscalationRuleRepository: Send + Sync {
+    async fn save(&self, rule: &EscalationRule) -> Result<(), String>;
+    async fn find_by_id(&self, id: &EscalationRuleId) -> Result<Option<EscalationRule>, String>;
+    async fn find_by_trigger(&self, trigger: EscalationTrigger) -> Result<Vec<EscalationRule>, String>;
+    async fn find_active(&self) -> Result<Vec<EscalationRule>, String>;
+}
+
+// ============================================================================
+// BMAD FR-062: Sanctions Report Repository
+// ============================================================================
+
+use banko_domain::sanctions::{SanctionsReport, SanctionsReportId};
+
+#[async_trait]
+pub trait ISanctionsReportRepository: Send + Sync {
+    async fn save(&self, report: &SanctionsReport) -> Result<(), String>;
+    async fn find_by_id(&self, id: &SanctionsReportId) -> Result<Option<SanctionsReport>, String>;
+    async fn find_by_period_month(
+        &self,
+        year: i32,
+        month: u32,
+    ) -> Result<Option<SanctionsReport>, String>;
+    async fn find_by_period_quarter(
+        &self,
+        year: i32,
+        quarter: u8,
+    ) -> Result<Option<SanctionsReport>, String>;
+}
