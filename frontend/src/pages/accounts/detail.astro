@@ -1,0 +1,14 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import AccountDetailPage from '../../components/account/AccountDetailPage.svelte';
+---
+
+<DashboardLayout
+  title="Détail du compte"
+  breadcrumb={[
+    { label: 'Comptes', href: '/accounts/list' },
+    { label: 'Détail' },
+  ]}
+>
+  <AccountDetailPage client:load />
+</DashboardLayout>

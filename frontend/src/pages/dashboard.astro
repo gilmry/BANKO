@@ -1,8 +1,8 @@
 ---
-import DashboardLayout from '@/layouts/DashboardLayout.astro';
-import KpiCard from '@/components/common/KpiCard.svelte';
-import DataTable from '@/components/common/DataTable.svelte';
-import type { Column } from '@/components/common/DataTable.svelte';
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import KpiCard from '../components/common/KpiCard.svelte';
+import DataTable from '../components/common/DataTable.svelte';
+import type { Column } from '../components/common/DataTable.svelte';
 
 interface RecentTransaction {
   id: string;
@@ -152,7 +152,7 @@ const columns: Column<RecentTransaction>[] = [
       client:load
       columns={columns}
       rows={recentTransactions}
-      rowLink={(row) => `/accounts/${row.id}`}
+      rowLink={(row) => `/accounts/detail?id=${row.id}`}
     />
   </section>
 

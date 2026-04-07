@@ -1,9 +1,9 @@
 ---
-import DashboardLayout from '@/layouts/DashboardLayout.astro';
-import SearchBar from '@/components/common/SearchBar.svelte';
-import DataTable from '@/components/common/DataTable.svelte';
-import StatusBadge from '@/components/common/StatusBadge.svelte';
-import type { Column } from '@/components/common/DataTable.svelte';
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import SearchBar from '../../components/common/SearchBar.svelte';
+import DataTable from '../../components/common/DataTable.svelte';
+import StatusBadge from '../../components/common/StatusBadge.svelte';
+import type { Column } from '../../components/common/DataTable.svelte';
 
 interface Account {
   id: string;
@@ -145,7 +145,7 @@ const columns: Column<Account>[] = [
 
   <!-- Accounts Table -->
   <div class="rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm mb-6">
-    <DataTable client:load columns={columns} rows={accounts} rowLink={(row) => `/accounts/${row.id}`} />
+    <DataTable client:load columns={columns} rows={accounts} rowLink={(row) => `/accounts/detail?id=${row.id}`} />
   </div>
 
   <!-- Summary Stats -->

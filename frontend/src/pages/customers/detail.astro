@@ -1,0 +1,14 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import CustomerDetailPage from '../../components/customer/CustomerDetailPage.svelte';
+---
+
+<DashboardLayout
+  title="Fiche client"
+  breadcrumb={[
+    { label: 'Clients', href: '/customers' },
+    { label: 'Détail' },
+  ]}
+>
+  <CustomerDetailPage client:load />
+</DashboardLayout>

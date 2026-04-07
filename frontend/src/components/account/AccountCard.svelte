@@ -58,7 +58,7 @@
 
   <div class="mt-4">
     <a
-      href="/accounts/{id}"
+      href="/accounts/detail?id={id}"
       class="text-sm font-medium text-blue-600 hover:text-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
     >
       Voir les details

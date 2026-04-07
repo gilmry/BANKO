@@ -4,16 +4,11 @@
   import MovementsList from './MovementsList.svelte';
   import TransferModal from './TransferModal.svelte';
 
-  interface Props {
-    accountId: string;
-  }
-
-  let { accountId }: Props = $props();
-
   let account = $state<Account | null>(null);
   let loading = $state(true);
   let error = $state('');
   let showTransfer = $state(false);
+  let accountId = $state('');
 
   async function loadAccount() {
     loading = true;
@@ -28,7 +23,14 @@
   }
 
   $effect(() => {
-    loadAccount();
+    const params = new URLSearchParams(window.location.search);
+    accountId = params.get('id') || '';
+    if (accountId) {
+      loadAccount();
+    } else {
+      error = 'Aucun identifiant de compte fourni';
+      loading = false;
+    }
   });
 </script>
 
