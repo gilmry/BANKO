@@ -134,13 +134,14 @@ impl SubLimit {
         }
 
         let now = Utc::now();
+        let currency = max_amount.currency();
 
         Ok(SubLimit {
             id: SubLimitId::new(),
             credit_line_id,
             limit_type,
             max_amount,
-            utilized_amount: Money::zero(max_amount.currency()),
+            utilized_amount: Money::zero(currency),
             created_at: now,
             updated_at: now,
         })
@@ -310,13 +311,14 @@ impl RevolvingCreditLine {
         }
 
         let now = Utc::now();
+        let currency = max_limit.currency();
 
         Ok(RevolvingCreditLine {
             id: RevolvingCreditLineId::new(),
             customer_id,
             account_id,
             max_limit,
-            current_balance: Money::zero(max_limit.currency()),
+            current_balance: Money::zero(currency),
             interest_rate,
             sub_limits: Vec::new(),
             status: RevolvingCreditStatus::Pending,

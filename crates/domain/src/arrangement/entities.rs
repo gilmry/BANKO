@@ -2,7 +2,8 @@ use chrono::{DateTime, Utc, Duration};
 use serde::{Deserialize, Serialize};
 
 use crate::shared::errors::DomainError;
-use crate::shared::value_objects::{CustomerId, AccountId};
+use crate::shared::value_objects::CustomerId;
+use crate::account::AccountId;
 
 use super::value_objects::{
     ArrangementId, ArrangementType, ArrangementStatus, RenewalType, ArrangementEventId,

@@ -230,8 +230,8 @@ impl Card {
             expiry_year,
             status: CardStatus::Issued,
             activation_code_hash: None,
-            daily_limit: Decimal::new(2000_000, 3), // 2000.000 TND
-            monthly_limit: Decimal::new(50000_000, 3), // 50000.000 TND
+            daily_limit: Decimal::new(2_000_000, 3), // 2000.000 TND
+            monthly_limit: Decimal::new(50_000_000, 3), // 50000.000 TND
             daily_spent: Decimal::ZERO,
             monthly_spent: Decimal::ZERO,
             is_contactless_enabled: true,

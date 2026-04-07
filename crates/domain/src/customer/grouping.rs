@@ -3,12 +3,17 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::shared::errors::DomainError;
-use crate::shared::value_objects::CustomerId;
 
 // --- GroupId ---
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct GroupId(Uuid);
+
+impl Default for GroupId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl GroupId {
     pub fn new() -> Self {

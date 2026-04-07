@@ -3,3 +3,4 @@ pub mod value_objects;
 
 pub use errors::DomainError;
 pub use value_objects::*;
+pub use crate::account::AccountId;

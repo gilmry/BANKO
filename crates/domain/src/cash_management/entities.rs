@@ -2,7 +2,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::shared::errors::DomainError;
-use crate::shared::value_objects::{AccountId, Currency, Money};
+use crate::shared::value_objects::{Currency, Money};
+use crate::account::AccountId;
 
 use super::value_objects::{
     CashForecastId, CashPoolId, ConfidenceLevel, FundingStrategyId, InstrumentType,
@@ -516,7 +517,7 @@ impl LiquidityPosition {
         }
 
         // Invariant: LCR eligible assets <= total assets
-        if lcr_eligible_assets.compare(&total_assets) == std::cmp::Ordering::Greater {
+        if lcr_eligible_assets.amount_cents() > total_assets.amount_cents() {
             return Err(DomainError::ValidationError(
                 "LCR eligible assets cannot exceed total assets".to_string(),
             ));
@@ -570,7 +571,7 @@ impl LiquidityPosition {
             return Ok(1.0);
         }
 
-        let lcr = self.lcr_eligible_assets.as_f64() / self.total_liabilities.as_f64();
+        let lcr = self.lcr_eligible_assets.amount() / self.total_liabilities.amount();
         Ok(lcr)
     }
 
@@ -580,7 +581,7 @@ impl LiquidityPosition {
             return Ok(1.0);
         }
 
-        let nsfr = self.nsfr_stable_funding.as_f64() / self.total_assets.as_f64();
+        let nsfr = self.nsfr_stable_funding.amount() / self.total_assets.amount();
         Ok(nsfr)
     }
 }
@@ -1036,4 +1037,39 @@ mod tests {
 
     #[test]
     fn test_funding_strategy_invalid_ratio() {
-        let instruments = vec
+        let instruments = vec![InstrumentType::Deposits];
+
+        let strategy = FundingStrategy::new("Bad Strategy", 1.5, instruments);
+
+        assert!(strategy.is_err());
+    }
+
+    #[test]
+    fn test_funding_strategy_empty_instruments() {
+        let strategy = FundingStrategy::new("Bad Strategy", 0.5, vec![]);
+
+        assert!(strategy.is_err());
+    }
+
+    #[test]
+    fn test_funding_strategy_add_instrument() {
+        let instruments = vec![InstrumentType::Deposits];
+        let mut strategy = FundingStrategy::new("Strategy", 0.6, instruments).unwrap();
+
+        strategy
+            .add_instrument(InstrumentType::CentralBank)
+            .unwrap();
+
+        assert_eq!(strategy.instruments().len(), 2);
+    }
+
+    #[test]
+    fn test_funding_strategy_remove_last_instrument_fails() {
+        let instruments = vec![InstrumentType::Deposits];
+        let mut strategy = FundingStrategy::new("Strategy", 0.6, instruments).unwrap();
+
+        let result = strategy.remove_instrument(InstrumentType::Deposits);
+
+        assert!(result.is_err());
+    }
+}

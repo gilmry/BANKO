@@ -1,6 +1,5 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 use crate::shared::errors::DomainError;
 use super::value_objects::{
@@ -572,6 +571,14 @@ impl MasterDataRecord {
     pub fn sources(&self) -> &[String] {
         &self.sources
     }
+
+    pub fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
+
+    pub fn updated_at(&self) -> DateTime<Utc> {
+        self.updated_at
+    }
 }
 
 // --- DataGovernancePolicy ---
@@ -697,6 +704,14 @@ impl DataGovernancePolicy {
 
     pub fn is_active(&self) -> bool {
         self.is_active
+    }
+
+    pub fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
+
+    pub fn updated_at(&self) -> DateTime<Utc> {
+        self.updated_at
     }
 }
 

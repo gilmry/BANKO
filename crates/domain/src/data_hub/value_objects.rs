@@ -116,6 +116,12 @@ impl DataQualityRuleId {
         DataQualityRuleId(id)
     }
 
+    pub fn parse(s: &str) -> Result<Self, DomainError> {
+        Uuid::parse_str(s)
+            .map(DataQualityRuleId)
+            .map_err(|_| DomainError::ValidationError(format!("Invalid DataQualityRuleId: {s}")))
+    }
+
     pub fn as_uuid(&self) -> &Uuid {
         &self.0
     }
@@ -176,6 +182,12 @@ impl DataLineageId {
 
     pub fn from_uuid(id: Uuid) -> Self {
         DataLineageId(id)
+    }
+
+    pub fn parse(s: &str) -> Result<Self, DomainError> {
+        Uuid::parse_str(s)
+            .map(DataLineageId)
+            .map_err(|_| DomainError::ValidationError(format!("Invalid DataLineageId: {s}")))
     }
 
     pub fn as_uuid(&self) -> &Uuid {
@@ -249,6 +261,12 @@ impl DataReconciliationId {
         DataReconciliationId(id)
     }
 
+    pub fn parse(s: &str) -> Result<Self, DomainError> {
+        Uuid::parse_str(s)
+            .map(DataReconciliationId)
+            .map_err(|_| DomainError::ValidationError(format!("Invalid DataReconciliationId: {s}")))
+    }
+
     pub fn as_uuid(&self) -> &Uuid {
         &self.0
     }
@@ -320,6 +338,12 @@ impl MasterDataRecordId {
         MasterDataRecordId(id)
     }
 
+    pub fn parse(s: &str) -> Result<Self, DomainError> {
+        Uuid::parse_str(s)
+            .map(MasterDataRecordId)
+            .map_err(|_| DomainError::ValidationError(format!("Invalid MasterDataRecordId: {s}")))
+    }
+
     pub fn as_uuid(&self) -> &Uuid {
         &self.0
     }
@@ -349,6 +373,12 @@ impl DataGovernancePolicyId {
 
     pub fn from_uuid(id: Uuid) -> Self {
         DataGovernancePolicyId(id)
+    }
+
+    pub fn parse(s: &str) -> Result<Self, DomainError> {
+        Uuid::parse_str(s)
+            .map(DataGovernancePolicyId)
+            .map_err(|_| DomainError::ValidationError(format!("Invalid DataGovernancePolicyId: {s}")))
     }
 
     pub fn as_uuid(&self) -> &Uuid {

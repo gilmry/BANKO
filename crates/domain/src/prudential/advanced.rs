@@ -174,7 +174,7 @@ impl RiskWeightedAsset {
                 "Exposure value must be positive".to_string(),
             ));
         }
-        if !(0.0..=12.5).contains(&risk_weight) && method == RiskWeightingMethod::StandardizedApproach {
+        if !(0.0..=1250.0).contains(&risk_weight) && method == RiskWeightingMethod::StandardizedApproach {
             return Err(DomainError::InvalidPrudentialData(
                 "Risk weight must be 0-1250%".to_string(),
             ));

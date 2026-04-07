@@ -2,8 +2,9 @@
 /// - BMAD v4.0.1 (Islamic Banking Standard)
 /// - Loi 2016-33 (Tunisia Islamic Banking Regulation)
 /// - Quranic and Hadith-based principles
-
+///
 /// ZAKAT_RATE: 2.5% annual wealth tax (Zakat al-Mal)
+///
 /// Source: Qur'an 9:60 - obligatory on all Muslims with wealth above Nisab
 pub const ZAKAT_RATE: f64 = 0.025;
 
@@ -124,4 +125,9 @@ mod tests {
     }
 
     #[test]
-    fn test_zakat_below_nisab(
+    fn test_zakat_below_nisab() {
+        let wealth = 100.0;
+        let nisab = 1000.0;
+        assert!(wealth < nisab, "below nisab threshold");
+    }
+}

@@ -196,4 +196,12 @@ mod tests {
     #[test]
     fn test_invalid_share_error() {
         let err = IslamicBankingError::InvalidSharePercentage("150%".to_string());
-        assert!(err.to_string().contains("
+        assert!(err.to_string().contains("share percentage"));
+    }
+
+    #[test]
+    fn test_zakat_error() {
+        let err = IslamicBankingError::BelowNisabThreshold;
+        assert!(err.to_string().contains("Nisab threshold"));
+    }
+}

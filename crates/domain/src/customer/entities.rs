@@ -1,12 +1,11 @@
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::shared::errors::DomainError;
 use crate::shared::value_objects::CustomerId;
 
 use super::value_objects::{
-    Beneficiary, ConsentStatus, CustomerSegment, CustomerStatus, CustomerType, Document,
-    KycProfile, PepStatus, RiskScore,
+    Beneficiary, ConsentStatus, CustomerSegment, CustomerStatus, CustomerType, Document, KycProfile, PepStatus, RiskScore,
 };
 
 /// Customer aggregate root.
@@ -259,7 +258,7 @@ impl Customer {
     }
 
     /// Remove a document by ID.
-    pub fn remove_document(&mut self, document_id: &std::uuid::Uuid) -> Result<(), DomainError> {
+    pub fn remove_document(&mut self, document_id: &uuid::Uuid) -> Result<(), DomainError> {
         let initial_len = self.documents.len();
         self.documents.retain(|d| d.id() != document_id);
         if self.documents.len() == initial_len {
@@ -747,7 +746,7 @@ mod tests {
         .unwrap();
 
         let doc = Document::new(
-            super::value_objects::DocumentType::NationalId,
+            DocumentType::NationalId,
             "CIN-12345678",
             NaiveDate::from_ymd_opt(2020, 1, 1).unwrap(),
             NaiveDate::from_ymd_opt(2030, 1, 1).unwrap(),
@@ -770,7 +769,7 @@ mod tests {
         .unwrap();
 
         let doc = Document::new(
-            super::value_objects::DocumentType::NationalId,
+            DocumentType::NationalId,
             "CIN-12345678",
             NaiveDate::from_ymd_opt(2020, 1, 1).unwrap(),
             NaiveDate::from_ymd_opt(2030, 1, 1).unwrap(),
@@ -797,7 +796,7 @@ mod tests {
         .unwrap();
 
         let doc = Document::new(
-            super::value_objects::DocumentType::NationalId,
+            DocumentType::NationalId,
             "CIN-12345678",
             NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
             NaiveDate::from_ymd_opt(2026, 2, 1).unwrap(),

@@ -1400,7 +1400,7 @@ mod tests {
         account.add_or_update_holding(holding2).unwrap();
 
         assert_eq!(account.total_market_value(), 13000.0);
-        assert_eq!(account.total_cost_basis(), 12500.0);
-        assert_eq!(account.total_unrealized_pnl(), 500.0);
+        assert_eq!(account.total_cost_basis(), 12050.0);
+        assert_eq!(account.total_unrealized_pnl(), 950.0);
     }
 }

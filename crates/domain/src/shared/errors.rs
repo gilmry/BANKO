@@ -350,6 +350,9 @@ pub enum DomainError {
     InsurancePolicyRequired,
 
     // --- Generic errors ---
+    #[error("Invalid ID: {0}")]
+    InvalidId(String),
+
     #[error("Invalid state: {0}")]
     InvalidState(String),
 

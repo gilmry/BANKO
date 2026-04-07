@@ -56,6 +56,12 @@ impl TradeOrderId {
         TradeOrderId(id)
     }
 
+    pub fn parse(s: &str) -> Result<Self, DomainError> {
+        Uuid::parse_str(s)
+            .map(TradeOrderId)
+            .map_err(|_| DomainError::ValidationError(format!("Invalid TradeOrderId: {s}")))
+    }
+
     pub fn as_uuid(&self) -> &Uuid {
         &self.0
     }

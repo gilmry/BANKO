@@ -157,7 +157,7 @@ impl FeeDefinition {
     /// FR-092: Calculate VAT on fees (19% in Tunisia)
     pub fn calculate_vat(&self, fee_amount: Decimal) -> Decimal {
         // VAT rate for Tunisia: 19%
-        fee_amount * Decimal::new(19, 2) / Decimal::from(100)
+        fee_amount * Decimal::new(19, 2)
     }
 
     /// FR-092: Calculate total fee including VAT

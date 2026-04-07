@@ -11,6 +11,12 @@ use crate::shared::errors::DomainError;
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ConsentId(Uuid);
 
+impl Default for ConsentId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ConsentId {
     pub fn new() -> Self {
         ConsentId(Uuid::new_v4())

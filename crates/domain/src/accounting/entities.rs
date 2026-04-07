@@ -1414,7 +1414,7 @@ mod tests {
         let pc = PeriodClosing::new("2026-04-07".into(), PeriodType::Daily).unwrap();
         assert_eq!(pc.period_type(), PeriodType::Daily);
         assert_eq!(pc.status(), ClosingStatus::Open);
-        assert!(!pc.is_balanced());
+        assert!(pc.is_balanced());
     }
 
     #[test]

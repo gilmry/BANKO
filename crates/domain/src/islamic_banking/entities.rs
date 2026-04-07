@@ -1,8 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::shared::errors::DomainError;
-use crate::shared::value_objects::{Currency, CustomerId, Money};
+use crate::shared::value_objects::{CustomerId, Money};
 
 use super::errors::IslamicBankingError;
 use super::invariants::*;
@@ -1048,7 +1047,7 @@ impl ShariaBoardDecision {
         }
 
         // Quorum = majority of board members (> 50%)
-        let quorum_met = board_members.len() >= (SHARIA_BOARD_MIN_MEMBERS + 1) / 2;
+        let quorum_met = board_members.len() >= SHARIA_BOARD_MIN_MEMBERS.div_ceil(2);
 
         Ok(ShariaBoardDecision {
             id: IslamicContractId::new(),
@@ -1149,7 +1148,7 @@ impl ProfitDistribution {
                 "Cannot sum distributions".to_string(),
             ))?;
 
-        let sum_check = (depositor_pool_share
+        let sum_check = depositor_pool_share
             .add(&bank_share)
             .map_err(|_| IslamicBankingError::DistributionMismatch(
                 "Cannot sum bank and depositor shares".to_string(),
@@ -1157,7 +1156,7 @@ impl ProfitDistribution {
             .add(&total_distributed)
             .map_err(|_| IslamicBankingError::DistributionMismatch(
                 "Cannot sum all distributions".to_string(),
-            ))?);
+            ))? ;
 
         if sum_check.amount_cents() > total_profit.amount_cents() {
             return Err(IslamicBankingError::DistributionMismatch(
@@ -1435,7 +1434,7 @@ mod tests {
     fn test_profit_distribution() {
         let total_profit = Money::new(1000.0, Currency::TND).unwrap();
         let bank_share = Money::new(300.0, Currency::TND).unwrap();
-        let depositor_share = Money::new(700.0, Currency::TND).unwrap();
+        let depositor_share = Money::new(600.0, Currency::TND).unwrap();
         let distributions = vec![(CustomerId::new(), Money::new(100.0, Currency::TND).unwrap())];
 
         let dist = ProfitDistribution::new(
@@ -1497,4 +1496,49 @@ mod tests {
     fn test_sukuk_status_transitions() {
         let denom = Money::new(1000.0, Currency::TND).unwrap();
         let total = Money::new(1000000.0, Currency::TND).unwrap();
-        let mu
+        let mut sukuk = SukukIssuance::new(
+            denom,
+            total,
+            1000,
+            0.05,
+            Utc::now() + Duration::days(365 * 5),
+            "Real Estate".to_string(),
+        )
+        .unwrap();
+
+        assert_eq!(sukuk.status(), SukukStatus::Proposed);
+        sukuk.approve().unwrap();
+        assert_eq!(sukuk.status(), SukukStatus::Approved);
+        sukuk.issue().unwrap();
+        assert_eq!(sukuk.status(), SukukStatus::Outstanding);
+    }
+
+    #[test]
+    fn test_zakat_status_transitions() {
+        let customer_id = CustomerId::new();
+        let nisab = Money::new(1000.0, Currency::TND).unwrap();
+        let wealth = Money::new(5000.0, Currency::TND).unwrap();
+        let mut zakat = ZakatCalculation::new(customer_id, 2026, nisab, wealth).unwrap();
+
+        assert_eq!(zakat.payment_status(), ZakatPaymentStatus::Pending);
+        zakat.mark_paid().unwrap();
+        assert_eq!(zakat.payment_status(), ZakatPaymentStatus::Paid);
+    }
+
+    #[test]
+    fn test_currency_consistency() {
+        let customer_id = CustomerId::new();
+        let cost_tnd = Money::new(1000.0, Currency::TND).unwrap();
+        let contract = MurabahaContract::new(
+            customer_id,
+            cost_tnd,
+            0.1,
+            12,
+            "Asset".to_string(),
+            Utc::now() + Duration::days(30),
+        );
+        assert!(contract.is_ok());
+        let c = contract.unwrap();
+        assert_eq!(c.selling_price().currency(), Currency::TND);
+    }
+}

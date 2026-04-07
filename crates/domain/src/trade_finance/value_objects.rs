@@ -463,4 +463,20 @@ mod tests {
     #[test]
     fn test_letter_of_credit_id_new() {
         let id = LetterOfCreditId::new();
-        as
+        assert!(!id.as_uuid().to_string().is_empty());
+    }
+
+    #[test]
+    fn test_bank_guarantee_id_parse() {
+        let uuid = Uuid::new_v4();
+        let uuid_str = uuid.to_string();
+        let parsed = BankGuaranteeId::parse(&uuid_str).unwrap();
+        assert_eq!(parsed.as_uuid(), &uuid);
+    }
+
+    #[test]
+    fn test_limit_type_as_str() {
+        assert_eq!(LimitType::LC.as_str(), "LC");
+        assert_eq!(LimitType::Guarantee.as_str(), "Guarantee");
+    }
+}

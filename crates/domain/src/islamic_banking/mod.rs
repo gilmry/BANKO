@@ -16,7 +16,6 @@
 /// - Takaful: Islamic insurance reference
 /// - Sharia Board: Governance and compliance
 /// - Profit Distribution: Sharia-compliant returns
-
 pub mod entities;
 pub mod value_objects;
 pub mod invariants;
@@ -24,4 +23,4 @@ pub mod errors;
 
 pub use entities::*;
 pub use value_objects::*;
-pub use err
+pub use errors::IslamicBankingError;

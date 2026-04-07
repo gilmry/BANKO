@@ -133,7 +133,7 @@ impl CountryCode {
     pub fn is_active(&self) -> bool {
         let now = Utc::now();
         now >= self.effective_from
-            && self.effective_to.map_or(true, |to| now < to)
+            && self.effective_to.is_none_or(|to| now < to)
     }
 
     pub fn created_at(&self) -> DateTime<Utc> {
@@ -258,7 +258,7 @@ impl CurrencyReference {
     pub fn is_active(&self) -> bool {
         self.is_active && {
             let now = Utc::now();
-            now >= self.effective_from && self.effective_to.map_or(true, |to| now < to)
+            now >= self.effective_from && self.effective_to.is_none_or(|to| now < to)
         }
     }
 
@@ -738,7 +738,7 @@ impl SystemParameter {
     pub fn is_active(&self) -> bool {
         self.is_active && {
             let now = Utc::now();
-            now >= self.effective_from && self.effective_to.map_or(true, |to| now < to)
+            now >= self.effective_from && self.effective_to.is_none_or(|to| now < to)
         }
     }
 
@@ -864,7 +864,7 @@ impl RegulatoryCode {
     pub fn is_active(&self) -> bool {
         self.is_active && {
             let now = Utc::now();
-            now >= self.effective_from && self.effective_to.map_or(true, |to| now < to)
+            now >= self.effective_from && self.effective_to.is_none_or(|to| now < to)
         }
     }
 
@@ -999,7 +999,7 @@ impl FeeScheduleReference {
     pub fn is_active(&self) -> bool {
         self.is_active && {
             let now = Utc::now();
-            now >= self.effective_from && self.effective_to.map_or(true, |to| now < to)
+            now >= self.effective_from && self.effective_to.is_none_or(|to| now < to)
         }
     }
 

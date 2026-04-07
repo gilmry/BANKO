@@ -131,10 +131,7 @@ impl CollateralType {
 
     /// Whether insurance is mandatory for this collateral type.
     pub fn insurance_mandatory(&self) -> bool {
-        match self {
-            CollateralType::RealEstate => true,
-            _ => false,
-        }
+        matches!(self, CollateralType::RealEstate)
     }
 }
 
@@ -306,4 +303,13 @@ mod tests {
     #[test]
     fn test_valuation_method_from_str() {
         assert_eq!(
-            ValuationMethod:
+            ValuationMethod::from_str("market_comparison").unwrap(),
+            ValuationMethod::MarketComparison
+        );
+        assert_eq!(
+            ValuationMethod::from_str("cost_approach").unwrap(),
+            ValuationMethod::CostApproach
+        );
+        assert!(ValuationMethod::from_str("invalid").is_err());
+    }
+}

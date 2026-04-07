@@ -629,7 +629,7 @@ impl TradeFinanceLimit {
             customer_id,
             limit_type,
             total_limit: total_limit.clone(),
-            utilized: total_limit.zero(),
+            utilized: Money::zero(total_limit.currency()),
             available: total_limit,
             created_at: now,
             updated_at: now,
@@ -697,7 +697,7 @@ impl TradeFinanceLimit {
 
     pub fn utilize(&mut self, amount: &Money) -> Result<(), DomainError> {
         // Check that utilization does not exceed available
-        if amount.compare(&self.available) == std::cmp::Ordering::Greater {
+        if amount.amount_cents() > self.available.amount_cents() {
             return Err(DomainError::ValidationError(
                 "Utilization exceeds available limit".to_string(),
             ));
@@ -711,7 +711,7 @@ impl TradeFinanceLimit {
 
     pub fn release(&mut self, amount: &Money) -> Result<(), DomainError> {
         // Check that release does not exceed utilized
-        if amount.compare(&self.utilized) == std::cmp::Ordering::Greater {
+        if amount.amount_cents() > self.utilized.amount_cents() {
             return Err(DomainError::ValidationError(
                 "Release amount exceeds utilized amount".to_string(),
             ));
@@ -744,7 +744,7 @@ impl TradeFinanceLimit {
         }
 
         // Cannot decrease below utilized amount
-        if decrease.compare(&self.available) == std::cmp::Ordering::Greater {
+        if decrease.amount_cents() > self.available.amount_cents() {
             return Err(DomainError::ValidationError(
                 "Cannot decrease limit below utilized amount".to_string(),
             ));
@@ -761,7 +761,7 @@ impl TradeFinanceLimit {
             return Ok(0.0);
         }
 
-        Ok(self.utilized.as_f64() / self.total_limit.as_f64())
+        Ok(self.utilized.amount() / self.total_limit.amount())
     }
 }
 
@@ -960,4 +960,27 @@ mod tests {
     }
 
     #[test]
-    fn test_trade_finance_limit_exceed_fail
+    fn test_trade_finance_limit_exceed_fails() {
+        let customer = CustomerId::from_uuid(uuid::Uuid::new_v4());
+        let limit = Money::from_cents(5000000, Currency::try_from("TND").unwrap());
+        let exceed = Money::from_cents(6000000, Currency::try_from("TND").unwrap());
+
+        let mut tfl = TradeFinanceLimit::new(customer, LimitType::Collection, limit).unwrap();
+
+        let result = tfl.utilize(&exceed);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_trade_finance_limit_utilization_rate() {
+        let customer = CustomerId::from_uuid(uuid::Uuid::new_v4());
+        let limit = Money::from_cents(10000000, Currency::try_from("TND").unwrap());
+        let utilize = Money::from_cents(5000000, Currency::try_from("TND").unwrap());
+
+        let mut tfl = TradeFinanceLimit::new(customer, LimitType::LC, limit).unwrap();
+        tfl.utilize(&utilize).unwrap();
+
+        let rate = tfl.utilization_rate().unwrap();
+        assert!((rate - 0.5).abs() < 0.001);
+    }
+}

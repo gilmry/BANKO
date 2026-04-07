@@ -765,8 +765,6 @@ impl PepScreeningSchedule {
         }
 
         let now = Utc::now();
-        let next_due = now + chrono::Duration::days(frequency.days());
-
         Ok(Self {
             id: PepScreeningScheduleId::new(),
             customer_id,
@@ -774,7 +772,7 @@ impl PepScreeningSchedule {
             frequency,
             active: true,
             last_screened_at: None,
-            next_screening_due: next_due,
+            next_screening_due: now,
             pep_match_found: false,
         })
     }

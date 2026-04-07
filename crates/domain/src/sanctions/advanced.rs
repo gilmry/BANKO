@@ -863,7 +863,7 @@ mod tests {
 
         assert_eq!(report.total_screenings(), 3);
         assert_eq!(report.confirmed_hits(), 2);
-        assert_eq!(report.hit_rate(), 200.0 / 3.0);
+        assert_eq!(report.hit_rate(), (2.0_f64 / 3.0_f64) * 100.0);
     }
 
     #[test]

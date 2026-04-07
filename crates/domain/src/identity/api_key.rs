@@ -60,14 +60,14 @@ impl ApiKeyScope {
         if self.0 == required {
             return true;
         }
+        // Master scope "*:*" grants all access
+        if self.0 == "*:*" {
+            return true;
+        }
         // Wildcard: "resource:*" grants access to all actions under resource
         if self.0.ends_with(":*") {
             let resource = &self.0[..self.0.len() - 2];
             return required.starts_with(&format!("{resource}:"));
-        }
-        // Master scope "*:*" grants all access
-        if self.0 == "*:*" {
-            return true;
         }
         false
     }

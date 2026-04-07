@@ -273,6 +273,12 @@ impl ArrangementBundleId {
         ArrangementBundleId(id)
     }
 
+    pub fn parse(s: &str) -> Result<Self, DomainError> {
+        Uuid::parse_str(s)
+            .map(ArrangementBundleId)
+            .map_err(|_| DomainError::ValidationError(format!("Invalid ArrangementBundleId: {s}")))
+    }
+
     pub fn as_uuid(&self) -> &Uuid {
         &self.0
     }

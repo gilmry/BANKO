@@ -302,7 +302,7 @@ impl SegregationOfDuties {
     ) -> Result<(), DomainError> {
         self.incompatible_actions
             .entry(action1)
-            .or_insert_with(HashSet::new)
+            .or_default()
             .insert(action2);
         Ok(())
     }

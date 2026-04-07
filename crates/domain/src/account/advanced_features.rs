@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use num_traits::ToPrimitive;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -80,14 +81,13 @@ impl InternalAccount {
         if matches!(
             internal_type,
             InternalAccountType::Nostro | InternalAccountType::Vostro
-        ) {
-            if correspondent_bank.is_none() || correspondent_bank.as_ref().map_or(true, |b| b.is_empty())
+        )
+            && (correspondent_bank.is_none() || correspondent_bank.as_ref().is_none_or(|b| b.is_empty()))
             {
                 return Err(DomainError::ValidationError(
                     "Nostro/Vostro accounts require correspondent bank name".to_string(),
                 ));
             }
-        }
 
         let now = Utc::now();
         let zero = Money::zero(currency);
@@ -416,7 +416,7 @@ impl InterestCapitalization {
         }
 
         // Interest = balance * (annual_rate / 100) * (days_elapsed / 365)
-        let daily_rate = self.annual_rate / Decimal::from(365);
+        let _daily_rate = self.annual_rate / Decimal::from(365);
         let interest_decimal = Decimal::from_str_exact(&current_balance.amount().to_string())
             .unwrap_or(Decimal::ZERO)
             * (self.annual_rate / Decimal::from(100))

@@ -2247,8 +2247,8 @@ mod tests {
         )
         .expect("Should create valid incident");
 
-        assert_eq!(incident.status, WhistleblowerStatus::Received);
-        assert!(!incident.reported_to_regulator);
+        assert_eq!(incident.severity(), IncidentSeverity::Major);
+        assert!(incident.closed_at().is_none());
     }
 
     #[test]

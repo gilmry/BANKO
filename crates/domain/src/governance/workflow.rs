@@ -1,6 +1,5 @@
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::Vec;
 use std::fmt;
 use uuid::Uuid;
 

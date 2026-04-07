@@ -367,7 +367,7 @@ impl StandingOrder {
     pub fn is_due_today(&self, today: NaiveDate) -> bool {
         self.status == StandingOrderStatus::Active
             && today >= self.next_execution_date
-            && self.end_date.map_or(true, |end| today <= end)
+            && self.end_date.is_none_or(|end| today <= end)
             && !self.is_completed()
     }
 
@@ -412,10 +412,10 @@ impl StandingOrder {
     /// Check if this standing order is completed
     pub fn is_completed(&self) -> bool {
         // Completed if end_date reached or max_executions reached
-        let end_date_reached = self.end_date.map_or(false, |end| Utc::now().naive_utc().date() > end);
+        let end_date_reached = self.end_date.is_some_and(|end| Utc::now().naive_utc().date() > end);
         let max_executions_reached = self
             .max_executions
-            .map_or(false, |max| self.execution_count >= max);
+            .is_some_and(|max| self.execution_count >= max);
 
         end_date_reached || max_executions_reached
     }

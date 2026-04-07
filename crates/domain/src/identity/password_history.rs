@@ -2,7 +2,6 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::shared::errors::DomainError;
 use super::{PasswordHash, UserId};
 
 const MAX_PASSWORD_HISTORY: usize = 12;
@@ -186,8 +185,8 @@ mod tests {
         let hash1 = valid_hash("1");
         history.add_password(hash1.clone());
 
-        // Add MAX_PASSWORD_HISTORY more passwords
-        for i in 1..=MAX_PASSWORD_HISTORY {
+        // Add MAX_PASSWORD_HISTORY more passwords (starting from 2 to avoid duplicate with hash1)
+        for i in 2..=(MAX_PASSWORD_HISTORY + 1) {
             let hash = valid_hash(&i.to_string());
             history.add_password(hash);
         }

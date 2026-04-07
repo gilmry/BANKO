@@ -2358,7 +2358,7 @@ impl BiometricVerification {
         }
     }
 
-    pub fn fail_verification(&mut self, reason: &str) -> Result<(), DomainError> {
+    pub fn fail_verification(&mut self, _reason: &str) -> Result<(), DomainError> {
         match self.status {
             BiometricStatus::Pending | BiometricStatus::InProgress => {
                 self.status = BiometricStatus::Failed;

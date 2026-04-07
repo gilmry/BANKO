@@ -11,6 +11,12 @@ use crate::shared::errors::DomainError;
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct DataRequestId(Uuid);
 
+impl Default for DataRequestId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DataRequestId {
     pub fn new() -> Self {
         DataRequestId(Uuid::new_v4())

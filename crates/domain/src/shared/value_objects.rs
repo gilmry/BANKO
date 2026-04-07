@@ -48,7 +48,26 @@ impl Currency {
             Currency::EUR | Currency::USD | Currency::GBP => 2,
         }
     }
+
+    pub fn code(&self) -> &str {
+        match self {
+            Currency::TND => "TND",
+            Currency::EUR => "EUR",
+            Currency::USD => "USD",
+            Currency::GBP => "GBP",
+            Currency::LYD => "LYD",
+        }
+    }
 }
+
+impl TryFrom<&str> for Currency {
+    type Error = DomainError;
+
+    fn try_from(code: &str) -> Result<Self, Self::Error> {
+        Currency::from_code(code)
+    }
+}
+
 
 // --- Money ---
 
@@ -92,7 +111,19 @@ impl Money {
         self.amount as f64 / factor
     }
 
+    pub fn as_f64(&self) -> f64 {
+        self.amount()
+    }
+
+    pub fn from_f64(amount: f64, currency: Currency) -> Result<Self, DomainError> {
+        Self::new(amount, currency)
+    }
+
     pub fn amount_cents(&self) -> i64 {
+        self.amount
+    }
+
+    pub fn as_cents(&self) -> i64 {
         self.amount
     }
 

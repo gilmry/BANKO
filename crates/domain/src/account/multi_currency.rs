@@ -236,9 +236,14 @@ impl CurrencyConverter {
         })
     }
 
+    /// Get the bank margin percentage
+    pub fn bank_margin_percent(&self) -> Decimal {
+        self.bank_margin_percent
+    }
+
     /// Check monthly limit for currency conversion
     pub fn check_monthly_limit(
-        customer_id: Uuid,
+        _customer_id: Uuid,
         currency: Currency,
         amount: Decimal,
         monthly_limit: Decimal,
@@ -332,13 +337,13 @@ mod tests {
     #[test]
     fn test_currency_converter_new() {
         let converter = CurrencyConverter::new();
-        assert_eq!(converter.bank_margin_percent, Decimal::from(2));
+        assert_eq!(converter.bank_margin_percent(), Decimal::from(2));
     }
 
     #[test]
     fn test_currency_converter_custom_margin() {
         let converter = CurrencyConverter::with_margin(Decimal::from(3));
-        assert_eq!(converter.bank_margin_percent, Decimal::from(3));
+        assert_eq!(converter.bank_margin_percent(), Decimal::from(3));
     }
 
     #[test]

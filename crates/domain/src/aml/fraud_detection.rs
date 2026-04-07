@@ -168,9 +168,7 @@ pub struct HighRiskCountryRule {
 impl HighRiskCountryRule {
     pub fn new() -> Self {
         // FATF grey list and black list countries (simplified)
-        let countries = vec![
-            "IR", "SY", "KP", "JO", "LA", "MM", "TZ", "UA", "VN",
-        ]
+        let countries = ["IR", "SY", "KP", "JO", "LA", "MM", "TZ", "UA", "VN"]
         .iter()
         .map(|s| s.to_string())
         .collect();
