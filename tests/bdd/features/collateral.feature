@@ -260,4 +260,8 @@ Feature: Collateral Management (P1-BC1)
   Scenario: Force liquidation of collateral in default
     Given loan in severe default (>90 days)
     And pledged collateral with clear title
-    W
+    When collateral enforcement is initiated
+    Then collateral status changes to "in_liquidation"
+    And liquidation process is logged with dates and actions
+    And proceeds are applied to outstanding loan balance
+    And surplus (if any) is returned to customer

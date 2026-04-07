@@ -309,4 +309,11 @@ Feature: Insurance Products (P1-BC5)
     Given underwriting review for life policy applicant
     When medical examination reveals borderline condition:
       | Condition | Pre-diabetic state |
-      | Risk Impact | Increas
+      | Risk Impact | Increased mortality risk |
+      | Standard Premium | 50000 TND |
+      | Loading Applied | 25% |
+      | Loaded Premium | 62500 TND |
+      | Underwriting Decision | Approved with loading |
+    Then policy is issued with loaded premium
+    And applicant accepts terms
+    And policy document notes the loading reason

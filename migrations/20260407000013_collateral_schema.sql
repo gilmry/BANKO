@@ -138,4 +138,6 @@ CREATE TABLE IF NOT EXISTS collateral.ltv_calculations (
 CREATE INDEX idx_ltv_calculations_account ON collateral.ltv_calculations(account_id);
 CREATE INDEX idx_ltv_calculations_date ON collateral.ltv_calculations(calculation_date);
 CREATE INDEX idx_ltv_calculations_status ON collateral.ltv_calculations(calculation_status);
-CREATE INDEX idx_ltv_calculations_compliant ON collateral.ltv_
+CREATE INDEX idx_ltv_calculations_compliant ON collateral.ltv_calculations(ltv_compliant);
+
+COMMENT ON TABLE collateral.ltv_calculations IS 'Loan-to-Value ratio calculations and LTV breach monitoring';

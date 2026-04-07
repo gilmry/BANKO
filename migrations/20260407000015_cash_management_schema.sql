@@ -236,4 +236,7 @@ CREATE TABLE IF NOT EXISTS cash_management.funding_strategies (
 );
 
 CREATE INDEX idx_funding_strategies_date ON cash_management.funding_strategies(strategy_effective_date);
-CREATE INDEX idx_funding_strategies_status ON cash_management.fundi
+CREATE INDEX idx_funding_strategies_status ON cash_management.funding_strategies(strategy_status);
+CREATE INDEX idx_funding_strategies_type ON cash_management.funding_strategies(strategy_type);
+
+COMMENT ON TABLE cash_management.funding_strategies IS 'Bank-wide funding strategies and sources management';

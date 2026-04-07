@@ -220,4 +220,6 @@ CREATE INDEX idx_insurance_commissions_policy ON insurance.insurance_commissions
 CREATE INDEX idx_insurance_commissions_date ON insurance.insurance_commissions(commission_date);
 CREATE INDEX idx_insurance_commissions_status ON insurance.insurance_commissions(commission_status);
 CREATE INDEX idx_insurance_commissions_agent ON insurance.insurance_commissions(commissioned_to_agent_name);
-CREATE 
+CREATE INDEX idx_insurance_commissions_payment_date ON insurance.insurance_commissions(commission_payment_date);
+
+COMMENT ON TABLE insurance.insurance_commissions IS 'Insurance commissions and incentives to agents and branches';
