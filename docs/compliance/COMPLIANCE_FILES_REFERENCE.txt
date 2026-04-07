@@ -1,0 +1,230 @@
+================================================================================
+BANKO COMPLIANCE MODULE - FILES REFERENCE
+================================================================================
+
+DOMAIN LAYER
+============
+
+Location: /crates/domain/src/compliance/
+
+1. entities.rs (2104 lines total, ~870 lines of INPDP features appended)
+   
+   INPDP Consent Types (lines ~1300-1550):
+   - InpdpConsentId (value object)
+   - ConsentPurpose enum (Marketing, Analytics, ThirdPartySharing, Profiling, CrossBorder)
+   - LegalBasis enum (Consent, ContractualNecessity, LegalObligation, VitalInterest, PublicInterest, LegitimateInterest)
+   - InpdpConsent aggregate (with new(), reconstitute(), revoke(), is_valid())
+   
+   DPIA Types (lines ~1550-1800):
+   - DpiaId (value object)
+   - DpiaStatus enum (Draft, UnderReview, Approved, Rejected)
+   - Dpia aggregate (state machine: Draft->UnderReview->Approved/Rejected)
+   
+   Breach Notification Types (lines ~1800-2050):
+   - BreachNotificationId (value object)
+   - BreachStatus enum (Detected, AuthorityNotified, SubjectsNotified, Resolved)
+   - BreachNotification aggregate (72-hour deadline compliance)
+   
+   Tests (lines ~2050-2104):
+   - 13 test cases covering all domain entities
+   - Consent lifecycle tests
+   - DPIA workflow tests
+   - Breach notification tests
+
+2. mod.rs (6 lines)
+   - Exports InpdpConsentId, ConsentPurpose, LegalBasis, InpdpConsent
+   - Exports DpiaId, DpiaStatus, Dpia
+   - Exports BreachNotificationId, BreachStatus, BreachNotification
+
+APPLICATION LAYER
+=================
+
+Location: /crates/application/src/compliance/
+
+1. dto.rs (298 lines total)
+   
+   INPDP Consent DTOs (lines ~130-180):
+   - GrantConsentRequest (customer_id, purpose, legal_basis, data_categories, expiry_days)
+   - RevokeConsentRequest (customer_id, consent_id)
+   - ConsentResponse (full consent details)
+   - ConsentDashboardResponse (total, active, revoked, by_purpose)
+   - ConsentListResponse (list with pagination)
+   
+   DPIA DTOs (lines ~180-220):
+   - CreateDpiaRequest (title, description, processing_activity, risk_assessment, mitigations)
+   - UpdateDpiaStatusRequest (status, approved_by)
+   - DpiaResponse (full DPIA details)
+   - DpiaListResponse (list response)
+   
+   Breach Notification DTOs (lines ~220-270):
+   - ReportBreachRequest (breach_type, description, affected_data, affected_count)
+   - NotifyAuthorityRequest (breach_id)
+   - NotifySubjectsRequest (breach_id)
+   - BreachNotificationResponse (full details with 72h compliance info)
+   - BreachListResponse (list response)
+   
+   Data Portability/Erasure DTOs (lines ~270-298):
+   - RequestDataPortabilityRequest (customer_id, reason)
+   - DataPortabilityResponse (request_id, status, scheduled_for)
+   - RequestErasureRequest (customer_id, reason)
+   - ErasureEligibilityResponse (is_eligible, reason, checked_at)
+   - ErasureRequestResponse (request_id, status, scheduled_for)
+
+2. ports.rs (248 lines total)
+   
+   Repository Port Interfaces (lines ~100-248):
+   - IInpdpConsentRepository (save_consent, find_consent_by_id, find_consents_by_customer, find_active_consents_by_customer, count_by_purpose)
+   - IDpiaRepository (save_dpia, find_dpia_by_id, list_all_dpias, list_by_status, count_by_status)
+   - IBreachNotificationRepository (save_breach, find_breach_by_id, list_all_breaches, list_by_status, count_pending_authority_notification)
+   - IDataPortabilityRepository (save_request, find_request_by_id, find_by_customer)
+   - IErasureRepository (save_request, find_request_by_id, find_by_customer)
+   
+   Domain Models (lines ~80-100):
+   - DataPortabilityRequest (id, customer_id, status, reason, timestamps)
+   - ErasureRequest (id, customer_id, status, reason, scheduled_for)
+
+3. service.rs (651 lines - NEW FILE)
+   
+   InpdpConsentService (lines ~20-120):
+   - grant_consent(customer_id, purpose, legal_basis, data_categories, expiry_days)
+   - revoke_consent(consent_id)
+   - get_consent_dashboard(customer_id) -> (total, active, revoked, by_purpose)
+   - list_consents_by_customer(customer_id)
+   
+   DpiaService (lines ~130-240):
+   - create_dpia(title, description, processing_activity, risk_assessment, mitigations)
+   - submit_dpia_for_review(dpia_id)
+   - approve_dpia(dpia_id, approved_by)
+   - reject_dpia(dpia_id)
+   - get_dpia(dpia_id)
+   - list_dpias() / list_dpias_by_status(status)
+   
+   BreachNotificationService (lines ~250-380):
+   - report_breach(breach_type, description, affected_data, affected_count)
+   - notify_authority(breach_id) - validates 72h deadline
+   - notify_subjects(breach_id)
+   - resolve_breach(breach_id)
+   - check_72h_compliance() -> count of overdue breaches
+   - get_breach(breach_id)
+   - list_breaches()
+   
+   DataPortabilityService (lines ~390-430):
+   - request_data_portability(customer_id, reason)
+   - get_request(request_id)
+   - list_requests(customer_id)
+   
+   ErasureService (lines ~440-500):
+   - request_erasure(customer_id, reason)
+   - check_erasure_eligibility(customer_closed_at) -> (is_eligible, reason)
+   - get_request(request_id)
+   - list_requests(customer_id)
+   
+   Tests (lines ~500-651):
+   - 13 service test cases
+   - Mock repositories
+   - Grant/revoke consent tests
+   - Dashboard calculation tests
+   - 72h compliance validation tests
+   - Retention eligibility tests
+
+4. mod.rs (12 lines)
+   - Exports InpdpConsentService, DpiaService, BreachNotificationService, DataPortabilityService, ErasureService
+
+5. errors.rs (34 lines)
+   - ComplianceError enum with error variants
+   - Used by all services and repositories
+
+DOCUMENTATION
+==============
+
+1. INPDP_IMPLEMENTATION.md
+   - Complete story reference guide
+   - Feature descriptions with code signatures
+   - Architecture overview
+   - Testing strategy
+   - Next steps for infrastructure layer
+
+2. COMPLIANCE_FILES_REFERENCE.txt (this file)
+   - Quick reference for all files and locations
+   - Line numbers for easy navigation
+
+3. Implementation summary documents
+   - Code changes summary
+   - Feature checklist
+   - Compliance validation
+
+================================================================================
+KEY IMPLEMENTATION POINTS
+================================================================================
+
+Consent Lifecycle (STORY-COMP-06 & 07):
+  Domain: InpdpConsent aggregate with revoke() and is_valid()
+  Service: InpdpConsentService with grant/revoke/dashboard
+  Ports: IInpdpConsentRepository
+  DTOs: GrantConsentRequest, RevokeConsentRequest, ConsentResponse, ConsentDashboardResponse
+
+DPIA Workflow (STORY-COMP-08A):
+  Domain: Dpia aggregate with state machine (Draft->UnderReview->Approved/Rejected)
+  Service: DpiaService with create/submit/approve/reject methods
+  Ports: IDpiaRepository
+  DTOs: CreateDpiaRequest, UpdateDpiaStatusRequest, DpiaResponse
+
+Breach Notification with 72h Compliance (STORY-COMP-08B):
+  Domain: BreachNotification aggregate with 72h deadline validation
+  Service: BreachNotificationService with notify_authority() checking deadline
+  Ports: IBreachNotificationRepository with count_pending_authority_notification()
+  DTOs: ReportBreachRequest, NotifyAuthorityRequest, BreachNotificationResponse
+
+Data Portability & Erasure with Retention (STORY-COMP-09):
+  Domain Models: DataPortabilityRequest, ErasureRequest
+  Services: DataPortabilityService, ErasureService with check_erasure_eligibility()
+  Ports: IDataPortabilityRepository, IErasureRepository
+  DTOs: RequestDataPortabilityRequest, RequestErasureRequest, ErasureEligibilityResponse
+
+================================================================================
+HOW TO USE THIS REFERENCE
+================================================================================
+
+1. To understand STORY-COMP-06 (Consent to BC13):
+   - Read: /crates/domain/src/compliance/entities.rs lines ~1300-1500
+   - Service: /crates/application/src/compliance/service.rs lines ~20-120
+   - DTOs: /crates/application/src/compliance/dto.rs lines ~130-180
+
+2. To understand STORY-COMP-07 (Consent Dashboard):
+   - Service: /crates/application/src/compliance/service.rs InpdpConsentService
+   - DTOs: /crates/application/src/compliance/dto.rs Consent DTOs
+   - Ports: /crates/application/src/compliance/ports.rs IInpdpConsentRepository
+
+3. To understand STORY-COMP-08 (DPIA + Breach):
+   - DPIA Domain: /crates/domain/src/compliance/entities.rs lines ~1550-1800
+   - Breach Domain: /crates/domain/src/compliance/entities.rs lines ~1800-2050
+   - DPIA Service: /crates/application/src/compliance/service.rs DpiaService
+   - Breach Service: /crates/application/src/compliance/service.rs BreachNotificationService
+
+4. To understand STORY-COMP-09 (Portability + Erasure):
+   - Services: /crates/application/src/compliance/service.rs DataPortabilityService & ErasureService
+   - DTOs: /crates/application/src/compliance/dto.rs Portability/Erasure DTOs
+   - Ports: /crates/application/src/compliance/ports.rs IDataPortabilityRepository & IErasureRepository
+
+================================================================================
+RUNNING TESTS
+================================================================================
+
+Unit Tests (26 test cases total):
+  $ make test-unit
+
+Domain Tests Only:
+  $ cargo test --package banko-domain --lib compliance
+
+Service Tests Only:
+  $ cargo test --package banko-application --lib compliance
+
+Watch Mode:
+  $ cargo watch -x "test --package banko-application --lib compliance"
+
+Test Coverage:
+  $ make coverage
+
+================================================================================
+END OF REFERENCE
+================================================================================

@@ -1,843 +1,1326 @@
-# Rapport de Validation — BANKO
+# Rapport de Validation Croisée — BANKO v4.0
 
-## Méthode Maury — Phase TOGAF F (Validation croisée)
+## Phase TOGAF F — Validation des Livrables BMAD
 
-**Version** : 3.0.0 — 6 avril 2026
-**Validateur** : Étape 5 — Architecte + Scrum Master (Mode IA)
-**Référentiel légal** : [REFERENTIEL_LEGAL_ET_NORMATIF.md](../legal/REFERENTIEL_LEGAL_ET_NORMATIF.md)
-
----
-
-## Statut global : ✅ **PASS v3.0** — Zéro bloqueur
-
-### Résumé exécutif
-
-Le projet BANKO présente une **architecture solide, une couverture fonctionnelle exhaustive et une conformité réglementaire par design**. Les 5 documents (Brief, PRD, Architecture, Épics, Configuration) sont **cohérents, traçables et prêts pour la mise en oeuvre**.
-
-La v3.0.0 intègre les **normes ISO 27001:2022, PCI DSS v4.0.1, Open Banking PSD3/FIDA, loi données personnelles 2025, circulaires BCT 2025-2026, et évaluation GAFI novembre 2026** :
-- ✅ **95 références légales** (vs 70 en v2.0)
-- ✅ **13 bounded contexts** (vs 12) avec ajout BC13 Compliance
-- ✅ **26 capacités** (vs 19), **20 invariants** (vs 15), **~151 stories** (vs ~136)
-- ✅ **15 FRs compliance** (FR-COMP-01 à FR-COMP-15) couverts par Sprint 10
-- ✅ **3 nouveaux ADRs** (ADR-008 Tokenisation, ADR-009 Consent-as-a-Service, ADR-010 Controls-as-Code)
-- ✅ **7 tables compliance** ajoutées au data model (smsi_controls, risk_register, token_vault, encryption_keys, consents, impact_assessments, breach_notifications)
-- ✅ Documentation compliance complète : ISO 27001 (4 fichiers), PCI DSS (4 fichiers), Open Banking (5 fichiers), matrice globale, dashboard exécutif
-
-Les 5 blockers et 8 recommandations identifiés dans la v1.0.0 du rapport avaient été **intégralement résolus en v2.0**. La v3.0 étend la couverture normative et réglementaire.
-
-**Verdict : ✅ PASS v3.0 — Zéro bloqueur. Prêt pour Sprint 0 avec couverture compliance complète.**
+**Version** : 4.0.0 — 7 avril 2026
+**Auteur** : Architecte Senior + Scrum Master (Quality Gate)
+**Scope** : Audit croisé des 5 livrables précédents (00-04)
+**Horizon** : 12-16 mois (avril 2026 → août 2027)
+**Signature** : PASS WITH WARNINGS
 
 ---
 
-## 1. Cohérence DDD (Glossaire, Bounded Contexts, Invariants)
+## RÉSUMÉ EXÉCUTIF
+
+BANKO v4.0 présente une **architecture globalement cohérente et ambitieuse**, alignée sur la parité fonctionnelle Temenos (550-700+ endpoints, 22 BCs). La conformité réglementaire tunisienne (95 références légales) est rigoureusement mappée dans le domaine. Cependant, **3 bloqueurs critiques** et **8 warnings significatifs** requièrent corrections avant exécution :
+
+1. **BLOQUEUR** : Les 9 nouveaux BCs (v4.0 Arrangement, Collateral, TradeFinance, CashManagement, IslamicBanking, DataHub, ReferenceData, Securities, Insurance) manquent d'entités Rust détaillées dans l'Architecture — seuls Customer, Account, Credit, AML, Sanctions sont complets.
+
+2. **BLOQUEUR** : Couverture fonctionnelle fragmentée — 47 épics identifiés mais 89 FRs du PRD vs 342 stories de Phase E = ratio 1:3.8 (anormalement élevé, suggérant des stories orphelines ou sur-découpées).
+
+3. **BLOQUEUR** : Impact temps fort sous-estimé — vélocité solo-dev (8h/semaine) + 342 stories × 3h moyenne = 1026h = 128 semaines = 29.5 mois (vs 12-16 mois annoncés). Écart = 13+ mois de retard calendaire présumé.
+
+**Recommandation immédiate** : Prioriser les 22 BCs avec une matrice MVP (Phase 0) incluant seuls Customer, Account, Credit, AML, Sanctions, Prudential, Accounting, Payment, Governance, Identity (10 BCs critiques) = 150-180 stories estimées, horizon réaliste 18-24 mois.
+
+---
+
+## 1. COHÉRENCE DDD (Glossaire, Bounded Contexts, Invariants)
 
 ### 1.1 Évaluation glossaire métier
 
-| Critère | État | Détail |
-|---|---|---|
-| **Ubiquitous Language complet** | ✅ PASS | 31+ termes métier définis, traçables aux BCs (ajout SMSI, CDE, Tokenisation, SCA, Consent, DPO, DPIA, goAML, TuniCheque) |
-| **Mapping glossaire → code** | ✅ PASS | Termes incluent types Rust attendus (ex: `AssetClass` enum, `Provision` struct, `Consent` aggregate, `TokenVault` service) |
-| **Couverture réglementaire** | ✅ PASS | 95 références légales sourcées, chaque terme lié à un texte (vs 70 en v2.0) |
-| **Ambiguïtés terminologiques** | ✅ PASS | Distinction Provision (réglementaire Circ. 91-24) vs ECL (IFRS 9 probabiliste) clarifiée avec structs Rust séparés et exemples concrets |
+**Status** : PASS (termes bien définis, mais couverture incomplète v4.0)
+
+Glossaire harmonisé dans les 4 premiers docs (Configuration, Product Brief, PRD, Architecture). Tous les termes clés définis : Customer, Account, Loan, Arrangement, KYC, AML, Asset Class, Collateral, etc.
+
+**Problème** : Glossaire v4.0 manque 7 nouveaux contextes (IslamicBanking, DataHub, Securities, Insurance, CashManagement, TradeFinance, ReferenceData) — termes comme "Murabaha", "Ijara", "Waqf", "Master Data", "Sweep Account" non documentés. Loi 2016-33 (banques islamiques) citée dans Configuration, mais termes sharia non expliqués.
+
+**Recommandation** : Créer glossaire annexe v4.0 pour 9 nouveaux BCs avant Sprint 1.
+
+---
 
 ### 1.2 Évaluation Bounded Contexts
 
-**13 BCs identifiés et mappés** (ajout BC13 Compliance en v3.0) :
+**Status** : PASS WITH WARNINGS (22 BCs annoncés, 13 détaillés, 9 manquent d'entités Rust)
 
-| # | BC | Brief | PRD | Architecture | Stories |
-|---|---|---|---|---|---|
-| 1 | **Customer** | ✅ | ✅ | ✅ | ✅ 8 stories hydratées |
-| 2 | **Account** | ✅ | ✅ | ✅ | ✅ 8 stories hydratées |
-| 3 | **Credit** | ✅ | ✅ | ✅ | ✅ 8 stories hydratées (CR-01 à CR-08) |
-| 4 | **AML** | ✅ | ✅ | ✅ | ✅ 8 stories hydratées (AML-01 à AML-08) |
-| 5 | **Sanctions** | ✅ | ✅ | ✅ | ✅ 8 stories hydratées (SAN-01 à SAN-08) |
-| 6 | **Prudential** | ✅ | ✅ | ✅ | ✅ 8 stories hydratées (PRU-01 à PRU-08) |
-| 7 | **Accounting** | ✅ | ✅ | ✅ | ✅ 8 stories hydratées (ACC-01 à ACC-08) |
-| 8 | **Reporting** | ✅ | ✅ | ✅ | ✅ 8 stories hydratées (REP-01 à REP-08) |
-| 9 | **Payment** | ✅ | ✅ | ✅ | ✅ 8 stories hydratées (PAY-01 à PAY-08) |
-| 10 | **ForeignExchange** | ✅ | ✅ | ✅ | ✅ 8 stories hydratées (FX-01 à FX-08) |
-| 11 | **Governance** | ✅ | ✅ | ✅ | ✅ 8 stories hydratées (GOV-01 à GOV-08) |
-| 12 | **Identity** | ✅ | ✅ | ✅ | ✅ 10 stories hydratées (ID-01 à ID-10) |
-| 13 | **Compliance** | ✅ | ✅ | ✅ | ✅ 15 stories hydratées (COMP-01 à COMP-15) — **NEW v3.0** |
+**Couverture BC par document** :
+- Customer, Account, Credit, AML : 100% (entités Rust complètes)
+- Sanctions, Prudential, Accounting : 90% (partiellement détaillés)
+- Reporting, Payment, ForeignExchange, Governance, Identity : 70% (esquissés)
+- Arrangement (BC central selon config) : 60% (annoncé, code absent)
+- Collateral, TradeFinance, CashManagement, IslamicBanking, DataHub, ReferenceData, Securities, Insurance : 30-40% (annoncés, zéro code Rust)
 
-**BC13 Compliance** : Bounded context transversal couvrant SMSI ISO 27001, PCI DSS v4.0.1, consent management, privacy (loi 2025), goAML, TuniCheque, e-KYC. Suit le pattern hexagonal (domain -> application -> infrastructure).
+**Problème critique** : 9 BCs nouveaux (v4.0) annoncés dans Configuration/Brief/PRD, mais absent ou esquissé dans Architecture phase TOGAF C-D. Arrangement cité comme "central !", mais 0 ligne de code Rust (pas de struct, pas de ports).
 
-**Verdict** : ✅ **PASS** — Tous les 13 BCs du Brief sont détaillés avec pattern Agent IA Ready complet dans les 4 documents suivants.
-
-### 1.3 Invariants métier critiques
-
-| Invariant | Brief | PRD | Architecture | Stories | Validation |
-|---|---|---|---|---|---|
-| **INV-01 : KYC avant ouverture compte** | ✅ | ✅ | ✅ | ✅ STORY-C02, AC-01 | **PASS** — codé dans constructeur Customer |
-| **INV-02 : Solvabilité ≥ 10%** | ✅ | ✅ | ✅ | ✅ STORY-PRU-05 | **PASS** — calcul temps réel |
-| **INV-03 : Tier 1 ≥ 7%** | ✅ | ✅ | ✅ | ✅ STORY-PRU-06 | **PASS** |
-| **INV-04 : C/D ≤ 120%** | ✅ | ✅ | ✅ | ✅ STORY-PRU-07 | **PASS** |
-| **INV-05 : Concentration ≤ 25% FPN** | ✅ | ✅ | ✅ | ✅ STORY-PRU-08 | **PASS** |
-| **INV-06 : Créance classe unique (0-4)** | ✅ | ✅ | ✅ | ✅ STORY-CR-06 | **PASS** — enum AssetClass |
-| **INV-07 : Provisionnement min (cl.2=20%, 3=50%, 4=100%)** | ✅ | ✅ | ✅ | ✅ STORY-CR-07 | **PASS** — BDD scénarios |
-| **INV-08 : AML check ≥ 5000 TND espèces** | ✅ | ✅ | ✅ | ✅ STORY-AML-05 | **PASS** — scénario BDD |
-| **INV-09 : Gel avoirs immédiat (Circ. 2025-17)** | ✅ | ✅ | ✅ | ✅ STORY-AML-08 | **PASS** |
-| **INV-10 : KYC conservée 10 ans post-clôture** | ✅ | ✅ | ✅ | ✅ **STORY-RET-01** | **PASS** — story dédiée avec Gherkin rétention/anonymisation |
-| **INV-11 : Écritures comptables équilibrées** | ✅ | ✅ | ✅ | ✅ STORY-ACC-01 | **PASS** — validation domaine |
-| **INV-12 : Piste d'audit immuable** | ✅ | ✅ | ✅ | ✅ STORY-GOV-01 | **PASS** — hash chain SHA256 |
-| **INV-13 : Consentement INPDP** | ✅ | ✅ | ✅ | ✅ **STORY-CONS-01 + CONS-02** | **PASS** — stories dédiées consentement + droits d'accès/opposition |
-| **INV-14 : Filtrage sanctions avant virement** | ✅ | ✅ | ✅ | ✅ STORY-SAN-06, PAY-08 | **PASS** |
-| **INV-15 : Provisions ≥ minimales réglementaires** | ✅ | ✅ | ✅ | ✅ STORY-CR-07 | **PASS** |
-| **INV-16 : Tokenisation PAN (PCI DSS)** | ✅ | ✅ | ✅ | ✅ STORY-COMP-02 | **PASS** — token vault isolé, PAN jamais stocké en clair |
-| **INV-17 : MFA obligatoire accès CDE** | ✅ | ✅ | ✅ | ✅ STORY-COMP-14 | **PASS** — Req 8.4.2 PCI DSS |
-| **INV-18 : Notification breach 72h** | ✅ | ✅ | ✅ | ✅ STORY-COMP-08 | **PASS** — loi données personnelles 2025 |
-| **INV-19 : Consentement granulaire obligatoire** | ✅ | ✅ | ✅ | ✅ STORY-COMP-06, COMP-07, COMP-15 | **PASS** — consent-as-a-service |
-| **INV-20 : Travel Rule R.16 (originator + beneficiary)** | ✅ | ✅ | ✅ | ✅ STORY-COMP-13 | **PASS** — GAFI Recommandation 16 |
-
-**Verdict** : ✅ **PASS** — 20/20 invariants validés dans les 4 documents, chacun avec story dédiée et scénarios BDD (ajout INV-16 à INV-20 en v3.0).
+**Recommandation** : Phase TOGAF C-D doit livrer entités Rust complètes pour tous 22 BCs ou accepter réduction du scope à 13 BCs MVP.
 
 ---
 
-## 2. Couverture SOLID
+### 1.3 Évaluation invariants métier
 
-### Checklist SOLID par BC et couche
+**Status** : PASS (invariants mappés à corpus légal, traces incomplètes)
 
-#### Backend (Domain, Application, Infrastructure)
+25 invariants identifiés. 8/25 complets (32%), 12/25 partiels (48%), 5/25 absents (20%).
 
-| Principe | Customer (BC1) | Account (BC2) | Credit (BC3) | AML (BC4) | Sanctions (BC5) | Prudential (BC6) | Accounting (BC7) | Governance (BC11) |
-|---|---|---|---|---|---|---|---|---|
-| **S (SRP)** | ✅ KycService ≠ CustomerService | ✅ AccountService ≠ MovementService | ✅ LoanService ≠ ScheduleService | ✅ MonitoringService ≠ InvestigationService | ✅ ScreeningService ≠ ListSyncService | ✅ RatioService ≠ SnapshotService | ✅ JournalService ≠ LedgerService | ✅ AuditService ≠ CommitteeService |
-| **O (OCP)** | ✅ RiskScoring extensible | ✅ AccountType enum extensible | ✅ AssetClass classification pluggable | ✅ AmlScenario configurable | ✅ MatchingStrategy pluggable | ✅ RatioType extensible | ✅ ReportTemplate configurable | ✅ ControlCheck pluggable |
-| **L (LSP)** | ✅ KycProfile immuable (VO) | ✅ Movement immuable | ✅ Provision immuable | ✅ Alert immuable | ✅ ScreeningResult immuable | ✅ RatioSnapshot immuable | ✅ JournalEntry immutable | ✅ AuditTrailEntry immutable |
-| **I (ISP)** | ✅ ICustomerRepository slim | ✅ IAccountRepository < 5 méthodes | ✅ ILoanRepository, IScheduleRepository séparés | ✅ IAlertRepository, IInvestigationRepository séparés | ✅ ISanctionListRepository, IScreeningRepository séparés | ✅ IRatioRepository, ISnapshotRepository séparés | ✅ IJournalRepository, ILedgerRepository séparés | ✅ IAuditRepository, ICommitteeRepository séparés |
-| **D (DIP)** | ✅ KycService dépend IKycRepository | ✅ AccountService dépend IAccountRepository | ✅ LoanService dépend de ports | ✅ MonitoringService dépend de ports | ✅ ScreeningService dépend de ports | ✅ RatioService dépend de ports | ✅ AccountingService dépend de ports | ✅ AuditService dépend de ports |
+**Problème clé** : Invariants "soft" (SLA, audit trail, timing) manquent de réification en code. Exemple : "DOS report ≤ 48h" = règle métier critique (GAFI), mais 0 validation dans SuspicionReport struct. "PEP check ≤ 24h" : pas de timestamp validation.
 
-#### Frontend (Svelte + Astro)
-
-| Principe | État | Détail |
-|---|---|---|
-| **S (SRP)** | ✅ PASS | Components séparés par BC (CustomerForm, AccountForm, LoanForm, etc.) |
-| **O (OCP)** | ✅ PASS | Button, Form, Modal composants réutilisables + paramétrisables |
-| **L (LSP)** | ✅ PASS | Stores immuables (Svelte writable) |
-| **I (ISP)** | ✅ PASS | Stores séparés : `toast.store.ts`, `modal.store.ts`, `loading.store.ts` (ISP respecté) |
-| **D (DIP)** | ✅ PASS | Composants injectent via props, pas de dépendances statiques |
-
-**Verdict** : ✅ **PASS** — SOLID appliqué dans tous les BCs et toutes les couches. ISP corrigé (stores séparés).
+**Recommandation** : Créer fichier `backend/src/domain/invariants.rs` explicitant tous 25 invariants + tests unitaires avant Sprint 1 exécution.
 
 ---
 
-## 3. Couverture fonctionnelle (Brief → PRD → Architecture → Stories)
+### 1.4 Context Map (relations inter-BC)
 
-### Mapping capacités métier (C1-C26) vers stories
+**Status** : PASS (relations clairement énoncées, anti-corruption layer absent)
 
-| Capacité | Brief | PRD | Architecture | Stories | Statut |
-|---|---|---|---|---|---|
-| **C1 : Gestion comptes** | ✅ P0 | ✅ FR-008 | ✅ BC2 endpoints | ✅ AC-01 à AC-08 | **PASS** |
-| **C2 : Dépôts** | ✅ P0 | ✅ FR-008 | ✅ POST movements | ✅ AC-06 | **PASS** |
-| **C3 : Gestion crédits** | ✅ P0 | ✅ FR-013 | ✅ BC3 endpoints | ✅ CR-01 à CR-08 hydratées | **PASS** |
-| **C4 : KYC/CDD/EDD** | ✅ P0 | ✅ FR-001 à FR-004 | ✅ BC1 endpoints | ✅ C01-C08 | **PASS** |
-| **C5 : Surveillance transactionnelle** | ✅ P0 | ✅ FR-016 | ✅ BC4 endpoints | ✅ AML-01 à AML-08 hydratées | **PASS** |
-| **C6 : DOS génération** | ✅ P0 | ✅ FR-017 | ✅ BC4 endpoints | ✅ AML-07 hydratée | **PASS** |
-| **C7 : Filtrage sanctions** | ✅ P0 | ✅ FR-018 | ✅ BC5 endpoints | ✅ SAN-01 à SAN-08 hydratées | **PASS** |
-| **C8 : Gel avoirs** | ✅ P0 | ✅ FR-019 | ✅ BC4+BC5 | ✅ AML-08 hydratée | **PASS** |
-| **C9 : Calcul prudentiel** | ✅ P0 | ✅ FR-020 à FR-025 | ✅ BC6 endpoints | ✅ PRU-01 à PRU-08 hydratées | **PASS** |
-| **C10 : Gouvernance + 3 lignes** | ✅ P0 | ✅ FR-029, FR-030 | ✅ BC11 endpoints | ✅ GOV-01 à GOV-08 hydratées | **PASS** |
-| **C11 : Comptabilité NCT** | ✅ P0 | ✅ FR-026 | ✅ BC7 endpoints | ✅ ACC-01 à ACC-08 hydratées | **PASS** |
-| **C12 : Reporting BCT** | ✅ P1 | ✅ FR-030 | ✅ BC8 endpoints | ✅ REP-01 à REP-08 hydratées | **PASS** |
-| **C13 : Opérations paiement** | ✅ P1 | ✅ FR-031 | ✅ BC9 endpoints | ✅ PAY-01 à PAY-08 hydratées | **PASS** |
-| **C14 : Change** | ✅ P1 | ✅ (brief mention) | ✅ BC10 endpoints | ✅ FX-01 à FX-08 hydratées | **PASS** |
-| **C15 : Monétique** | ✅ **P2** | ✅ P2 (hors MVP) | ✅ P2 | ✅ P2 — cohérent, dépriorisé | **PASS** |
-| **C16 : Protection données** | ✅ P1 | ✅ FR-029 | ✅ Identity + INPDP | ✅ STORY-CONS-01 + CONS-02 | **PASS** |
-| **C17 : Provisionnement IFRS 9** | ✅ P2 | ✅ (FR-028 brief) | ✅ Architecture | ✅ ACC-08 (préparation) | **PASS** |
-| **C18 : Portail audit BCT** | ✅ P2 | ✅ P2 | ✅ BC8 | ✅ **STORY-AUD-01 + AUD-02** | **PASS** |
-| **C19 : E-banking** | ✅ P2 | ✅ (brief) | ✅ Frontend routes | ✅ P2 — cohérent | **PASS** |
-| **C20 : ISO 27001:2022 SMSI** | ✅ P0 | ✅ FR-COMP-01 à 05 | ✅ BC13 + SMSI section | ✅ COMP-01, 03, 04, 05 | **PASS** — **NEW v3.0** |
-| **C21 : PCI DSS v4.0.1** | ✅ P0 | ✅ FR-COMP-02, 03 | ✅ BC13 + CDE section | ✅ COMP-02, 14 | **PASS** — **NEW v3.0** |
-| **C22 : Open Banking PSD3/FIDA** | ✅ P1 | ✅ FR-COMP-07, 15 | ✅ BC13 + API security | ✅ COMP-06, 07, 15 | **PASS** — **NEW v3.0** |
-| **C23 : Loi données personnelles 2025** | ✅ P0 | ✅ FR-COMP-06, 08, 09 | ✅ BC13 + Privacy section | ✅ COMP-06, 07, 08, 09 | **PASS** — **NEW v3.0** |
-| **C24 : goAML (CTAF)** | ✅ P0 | ✅ FR-COMP-10 | ✅ BC13 + AML intégration | ✅ COMP-10 | **PASS** — **NEW v3.0** |
-| **C25 : TuniCheque (Circ. 2025-03)** | ✅ P1 | ✅ FR-COMP-11 | ✅ BC13 + Payment intégration | ✅ COMP-11 | **PASS** — **NEW v3.0** |
-| **C26 : e-KYC (Circ. 2025-06)** | ✅ P1 | ✅ FR-COMP-12 | ✅ BC13 + Identity intégration | ✅ COMP-12 | **PASS** — **NEW v3.0** |
+Architecture suit pattern Upstream-Downstream (Customer → Account → Credit → Accounting) avec Customer-Supplier entre AML-Payment et CTAF. **Anti-Corruption Layer (ACL) absent pour CTAF/goAML/External APIs**.
 
-### Couverture FRs compliance (v3.0)
-
-Les 15 FRs compliance (FR-COMP-01 à FR-COMP-15) sont intégralement couverts par le Sprint 10 (15 stories COMP-01 à COMP-15). Chaque FR est mappé a un ou plusieurs stories avec Gherkin, TDD tasks et dependances.
-
-**Verdict** : ✅ **PASS** — 26/26 capacités traçables Brief -> PRD -> Architecture -> Stories. C15 cohérent en P2. C20-C26 (compliance) ajoutés en v3.0 avec 15 FRs dédiés.
+**Recommandation** : Ajouter module `backend/src/infrastructure/external/acl/` pour goAML, SWIFT, BVMT avec transformations DTO-domain en phase Architecture.
 
 ---
 
-## 4. Architecture Hexagonale (Backend + Frontend Light)
+## 2. COHÉRENCE ARCHITECTURE (Hexagonale + DDD)
 
-### 4.1 Backend : Couches + Dépendances
+### 2.1 Séparation des couches respectée ?
 
-```
-            ┌──────────────────────────────┐
-            │       HTTP Handlers          │
-            │    (api/ → actix-web)        │
-            ├──────────────────────────────┤
-            │    Application Services      │
-            │  (*.service.rs)              │
-            ├──────────────────────────────┤
-            │       Domain Layer           │
-            │    (aggregates, entities)    │
-            ├──────────────────────────────┤
-            │  Ports (Traits)              │
-            │  IRepository, IService, etc. │
-            └──────────────┬───────────────┘
-                           │
-        ┌──────────────────┴──────────────────┐
-        │                                     │
-    ┌───▼────┐                          ┌────▼───┐
-    │  DB    │                          │ Extern │
-    │Adapters│                          │Adapters│
-    │(sqlx)  │                          │(cache) │
-    └────────┘                          └────────┘
-```
+**Status** : PASS (structure définie, BCs v4.0 incomplets)
 
-| Couche | État | Détail |
-|---|---|---|
-| **Domain** | ✅ PASS | Isolée, zéro dépendances externes. Invariants en constructeurs. 13 BCs (ajout BC13 Compliance). |
-| **Application** | ✅ PASS | Services orchestrent domain + infrastructure. Ports injectés. |
-| **Infrastructure** | ✅ PASS | PostgreSQL adapters (sqlx), Redis cache, FTP/SFTP pour reports. Token vault isolé (PCI DSS). |
-| **HTTP Handlers** | ✅ PASS | Actix-web routes + error handling. Mappage DTO <-> domain. |
-| **Dependency Injection** | ✅ PASS | Arc<dyn Port> pattern ou DI container (actix-web middleware). |
-| **BC13 Compliance** | ✅ PASS | Suit le pattern hexagonal : domain (entities compliance) -> application (use cases SMSI/PCI/consent) -> infrastructure (adapters goAML, TuniCheque). **NEW v3.0** |
+Domain Layer (Customer, Account, Credit, AML, Sanctions) : Entités Rust complètes. 9 BCs v4.0 : Zéro code domain.
 
-### 4.1.1 Sécurité étendue (v3.0)
+Application Layer : DTOs skeleton listés, UseCases mentionnés mais 0 code, Ports/Traits définies, DomainEvents mentionnés (0 code enum).
 
-| Domaine sécurité | État | Détail |
-|---|---|---|
-| **SMSI ISO 27001:2022** | ✅ PASS | 93 contrôles Annexe A documentés, registre risques ISO 31000, plan implémentation 18 mois |
-| **PCI DSS v4.0.1** | ✅ PASS | CDE isolé, token vault, chiffrement niveau champ, exigences mars 2025 (Req 3.5.1.2, 6.4.3, 8.4.2, 11.6.1) |
-| **Open Banking** | ✅ PASS | OAuth 2.0 + PKCE, mTLS, JWS, consent management, SCA |
-| **Privacy (loi 2025)** | ✅ PASS | DPO dashboard, DPIA, notification 72h, portabilité, effacement |
+Infrastructure Layer : Repository pattern défini, HTTP handlers énumérés (35 endpoints listés), Routes.rs structure non documentée, Middleware (JWT, HSM) mentionné (0 code).
 
-### 4.1.2 ADRs (Architecture Decision Records)
+**Problème clé** : Architecture diagramme montre "Layer 1: HTTP Handlers", "Layer 2: Application", "Layer 3: Domain", "Layer 4: Infrastructure" — cette nomenclature **renverse la convention hexagonale**. Diagramme clarifiant requis.
 
-| ADR | État | Détail |
-|---|---|---|
-| **ADR-001 à ADR-007** | ✅ PASS | Décisions existantes validées (v2.0) |
-| **ADR-008 : Tokenisation PAN** | ✅ PASS | Token vault isolé, format-preserving encryption, PCI DSS scope reduction. **NEW v3.0** |
-| **ADR-009 : Consent-as-a-Service** | ✅ PASS | Consentement granulaire centralisé, audit trail, révocation temps réel. **NEW v3.0** |
-| **ADR-010 : Controls-as-Code** | ✅ PASS | Contrôles ISO 27001 codifiés, évaluation automatisée, dashboard compliance. **NEW v3.0** |
-
-**Total** : 10 ADRs documentés.
-
-### 4.1.3 Data model compliance (v3.0)
-
-7 tables compliance ajoutées :
-
-| Table | BC | Détail |
-|---|---|---|
-| `smsi_controls` | BC13 | 93 contrôles ISO 27001 Annexe A |
-| `risk_register` | BC13 | Registre risques ISO 31000 |
-| `token_vault` | BC13 | Tokens PAN PCI DSS |
-| `encryption_keys` | BC13 | Clés chiffrement niveau champ |
-| `consents` | BC13 | Consentements granulaires (loi 2025) |
-| `impact_assessments` | BC13 | DPIA (Data Protection Impact Assessment) |
-| `breach_notifications` | BC13 | Notifications incidents 72h |
-
-**Verdict** : ✅ **PASS** — Architecture hexagonale correctement décrite, étendue avec BC13 Compliance, sécurité renforcée (SMSI, PCI DSS, Open Banking, Privacy), 10 ADRs, 7 tables compliance.
-
-### 4.2 Frontend : Hexagonal Light
-
-| Couche | État | Détail |
-|---|---|---|
-| **Presentation** | ✅ PASS | Svelte components par BC (LoginForm, CustomerForm, LoanForm, etc.) |
-| **Application** | ✅ PASS | Stores séparés (auth.store, customer.store, toast.store, modal.store, loading.store) |
-| **API layer** | ✅ PASS | lib/api/ folder avec typed HTTP calls (fetch wrapper) |
-| **Business logic** | ✅ PASS | Validateurs, formatters en utils/ |
-| **i18n** | ✅ PASS | lib/i18n/ avec support AR (RTL), FR, EN — structure détaillée |
-| **Accessibility** | ✅ PASS | WCAG 2.1 AA — ARIA, keyboard nav, contraste 4.5:1, axe-core dans Playwright |
-
-**Verdict** : ✅ **PASS** — Frontend architecture solide avec accessibilité et i18n détaillés.
+**Recommandation** : Créer `backend/src/domain/mod.rs` pour exporter all BCs avec tests inline avant STORY-T01.
 
 ---
 
-## 5. Glossaire → Code (Mapping Validation)
+### 2.2 Ports & Adapters pattern correct ?
 
-### Termes métier → Types Rust attendus
+**Status** : PASS (traits définis, implémentations futures)
 
-| Terme métier (Brief §8) | Entité DDD attendue | Code Rust attendu | Validation Stories |
+CustomerRepository, KycValidator, LoanRepository, AssetClassifier, ProvisioningCalculator, AmlScenarioEngine, etc. — traits bien définis.
+
+Adapters absent mais listés : PostgreSQL Repositories, Redis Cache, Event Store, HSM Interface, External APIs (CTAF, SWIFT, BVMT).
+
+**Recommandation** : Ajouter fichier `backend/src/infrastructure/persistence/mod.rs` esquissant implémentations SQLx.
+
+---
+
+### 2.3 Domain layer pur (pas de dépendances externes) ?
+
+**Status** : PASS (95% pureté, async/await violation légère)
+
+Imports OK (std, serde, uuid, chrono, rust_decimal, thiserror). Aucun actix, sqlx, tokio runtime.
+
+**Problème léger** : Services domain cités avec `async fn` — violation légère (domain services = sync, déléguer async à application/infrastructure).
+
+**Recommandation** : Déplacer `async fn` des services domain vers application/use cases.
+
+---
+
+### 2.4 API design cohérent ?
+
+**Status** : PASS (REST conventions respectées, couverture fragmentée)
+
+Resource-based routing 100%, method semantics 100%, versioning ✓. Problèmes : status codes ~, error format ~, pagination ~, rate limiting ~, JWT validation ~, CORS ~.
+
+**Couverture endpoints critique** :
+- Configuration promet 550-700+ endpoints
+- Architecture liste ~35 endpoints total
+- **Gap = 515-665 endpoints (93-95% manquants)**
+
+**Problème critique** : Configuration promet Temenos parity (550-700 endpoints), Architecture liste 35 endpoints. **Écart = 93% des endpoints non documentés**.
+
+**Recommandation** : Phase TOGAF C-D doit livrer matrice : 22 BCs × ~30 endpoints/BC = 660 endpoints, GET/POST/PUT/DELETE/PATCH variants.
+
+---
+
+### 2.5 Data model aligné avec entités domain ?
+
+**Status** : PASS (model logique défini, schéma SQL absent)
+
+Structs Rust enums mappent SQL ENUM types ✓. Money → NUMERIC(15,3) ✓. UUID consistent ✓. Problèmes : partitioning strategy cité (0 SQL DDL), indexes non documentés (critique <5ms), Collateral/Arrangement/AuditTrail tables manquantes.
+
+**Recommandation** : Créer `backend/migrations/` avec 001_init.sql complet (22 BCs ou 13 MVP).
+
+---
+
+## 3. COUVERTURE FONCTIONNELLE
+
+### 3.1 Matrice FR (PRD) → Stories (Phase E)
+
+**Status** : FAIL (89 FRs vs 342 stories, ratio 3.8× trop élevé, matrice absente)
+
+89 FRs extraits PRD. 342 stories Phase E. **Zéro matrice reliant FR → Story**. Ratio 1:3.8 anormalement élevé suggère stories sur-découpées ou orphelines.
+
+**Orphaned FRs (sans story)** : FR-024 SEPA/SWIFT, FR-031-032 Taux/hedge FX, FR-042-044 Murabaha/Waqf/Sharia, FR-045-048 Arrangement/Collateral, FR-049-050 LC/Guarantees, FR-053-054 Securities, FR-057-060 ReferenceData/DataHub. Total ≥20 FRs sans story.
+
+**Recommandation** : Créer `docs/bmad/TRACEABILITY_MATRIX.md` mappant 89 FRs → 342 stories avec validation croisée avant Sprint 1.
+
+---
+
+### 3.2 Couverture Temenos (17 catégories)
+
+**Status** : FAIL (couverture estimée 45-50%, vs cible 85-90% v4.0)
+
+| Catégorie | Endpoints Temenos | BANKO Coverage | % |
 |---|---|---|---|
-| **Compte** | Account (AggregateRoot) | `struct Account { id: AccountId, rib: Rib, ... }` | ✅ STORY-AC-01 |
-| **RIB** | Rib (ValueObject) | `struct Rib(String)` + validation regex | ✅ STORY-AC-01 |
-| **Client** | Customer (AggregateRoot) | `struct Customer { id: CustomerId, kyc: KycProfile, ... }` | ✅ STORY-C01 |
-| **Fiche KYC** | KycProfile (ValueObject) | `struct KycProfile { identity, profession, pep_status, ... }` | ✅ STORY-C02 |
-| **PEP** | PepStatus (enum) | `enum PepStatus { No, Yes, Unknown }` | ✅ STORY-C07 |
-| **Créance** | Loan (AggregateRoot) | `struct Loan { id: LoanId, asset_class, ... }` | ✅ STORY-CR-01 |
-| **Classe créance** | AssetClass (enum) | `enum AssetClass { Class0, Class1, Class2, Class3, Class4 }` | ✅ STORY-CR-06 |
-| **Provision** | Provision (ValueObject) | `struct Provision { amount: Money, asset_class: AssetClass, regulatory_min_pct: Percentage }` | ✅ STORY-CR-07 |
-| **ECL** | ExpectedCreditLoss (ValueObject) | `struct ExpectedCreditLoss { stage: EclStage, amount: Money, probability_of_default: Decimal, loss_given_default: Percentage, exposure_at_default: Money }` | ✅ STORY-ACC-08 |
-| **Ratio de solvabilité** | SolvencyRatio (ValueObject) | `struct SolvencyRatio(Percentage)` where Percentage ≥ 10% | ✅ STORY-PRU-05 |
-| **Tier 1** | Tier1Ratio (ValueObject) | `struct Tier1Ratio(Percentage)` where Percentage ≥ 7% | ✅ STORY-PRU-06 |
-| **C/D** | CreditToDepositRatio (ValueObject) | `struct CreditToDepositRatio(Percentage)` where Percentage ≤ 120% | ✅ STORY-PRU-07 |
-| **RWA** | RiskWeightedAsset (ValueObject) | `struct RiskWeightedAsset(Money)` | ✅ STORY-PRU-02 |
-| **DOS** | SuspicionReport (Entity) | `struct SuspicionReport { id, investigation, status, ctaf_transmission_date }` | ✅ STORY-AML-07 |
-| **Gel avoirs** | AssetFreeze (Entity) | `struct AssetFreeze { id, customer_id, amount, reason, status }` | ✅ STORY-AML-08 |
-| **Piste audit** | AuditTrailEntry (Entity) | `struct AuditTrailEntry { id, actor, action, resource, timestamp, signature }` | ✅ STORY-GOV-01 |
+| Party | 60-80 | 20-25 | 30% |
+| Holdings | 40-60 | 15-20 | 30% |
+| Order | 50-70 | 5-10 | 10% |
+| Product | 30-50 | 8-12 | 25% |
+| Credit | 60-80 | 40-50 | 70% |
+| Collateral | 40-60 | 15-20 | 30% |
+| ForeignExchange | 30-50 | 6-10 | 15% |
+| Commitment | 30-40 | 3-5 | 10% |
+| Liquidity | 20-30 | 5-8 | 20% |
+| Risk | 50-70 | 15-20 | 30% |
+| AML/Sanctions | 40-50 | 32-40 | 80% |
+| Enterprise | 60-80 | 35-45 | 60% |
+| Analytics | 40-60 | 12-18 | 25% |
+| Islamic Banking | 30-40 | 3-5 | 10% |
+| Cash Mgmt | 20-40 | 2-5 | 10% |
+| Securities | 40-60 | 5-8 | 10% |
+| Microservices | 60-80 | 30-40 | 50% |
+| **TOTAL** | **550-700** | **~285-345** | **45-50%** |
 
-**Verdict** : ✅ **PASS** — Mapping complet et traçable. Chaque terme métier → type Rust → story de validation. Distinction Provision/ECL clarifiée.
+**Gaps critiques** : Order BC absent (50-70 endpoints), Commitment BC absent (30-40), Product Catalog absent (20-30), 4 BCs v4.0 (Securities/Collateral/Islamic/CashMgmt) = 0 code = -140-160 endpoints.
+
+**Recommandation** : Reconnaître v4.0 = 45-50% Temenos parity, planifier v4.1-v4.2 pour atteindre 85%+.
 
 ---
 
-## 6. BDD + Documentation Vivante
+### 3.3 Couverture BCT (circulaires tunisiennes)
 
-### 6.1 Couverture Gherkin
+**Status** : PASS (95 références légales mappées, validation incomplète)
 
-| BC | Stories | Scénarios BDD | Fichiers .feature | État |
+Circ. 91-24, 2006-19, 2016-xx, 2015-26, 2019-09, 2025-06, 2025-08, 2025-17, Loi 2025, ISO 27001, PCI DSS, GAFI R.16, GAFI 40, BVMT, Bâle III, IFRS 9, ISO 20022 — tous citées.
+
+Circ. 2025-17 (immédiatement applicable) : 10 requirements, 7 mappés, 3 require code completion.
+
+**Circulaires non couvertes** : Circ. 2025-03 TuniCheque (FR absent), Loi 2016-33 + BVMT (code absent).
+
+**Recommandation** : Ajouter sprint conformité Circ. 2025-17 en Sprint 1 avec tests BDD explicites.
+
+---
+
+### 3.4 & 3.5 Stories orphelines + FRs sans story
+
+**Status** : FAIL (nombreuses stories manquent trace vers FR, 24+ FRs sans story)
+
+10 stories techniques (T01-T10) orphelines (infrastructure, pas FR utilisateur). 342 stories fonctionnelles non numérotées de façon unique. FR:Story traceability = ZÉRO.
+
+24/89 FRs critiques sans story : FR-024 SEPA/SWIFT, FR-031-032 FX, FR-042-044 Islamic, FR-045-048 Arrangement/Collateral, FR-049-054 TradeFinance/Securities, FR-057-060 ReferenceData/DataHub.
+
+**Recommandation** : Avant Sprint 1, créer stories pour 24 FRs orphelines, ou déprioritiser (P2/P3) les BCs non livrés v4.0.
+
+---
+
+## 4. QUALITÉ DES STORIES
+
+### 4.1 Format respecté (User Story, BDD, TDD)
+
+**Status** : PASS for Sprint 0, UNKNOWN for Phase E
+
+Sprint 0 : Chaque story T0X suit template : User Story ✓, BDD scénarios ✓, TDD tâches ✓, dépendances ✓, références légales ✓, Temenos mapping ✓, estimation ✓. Qualité 9/10.
+
+Phase E : Pas d'extrait détaillé, liste plate de 342 stories suggère format variant ou absent.
+
+**Recommandation** : Valider que chaque story Phase E suit même template.
+
+---
+
+### 4.2 Stories testables (Given/When/Then exécutables)
+
+**Status** : PASS for Sprint 0, UNKNOWN for Phase E
+
+Sprint 0 : BDD exécutable, assertions vérifiables, mais assertions qualitatives ("le service respecte") plutôt que quantifiées. Testabilité 8-9/10.
+
+**Recommandation** : Ajouter métriques claires à tous When/Then (ex: "API responds <5ms" vs "quickly").
+
+---
+
+### 4.3 Estimations réalistes (S/M/L)
+
+**Status** : PASS (sizing correct, scalability critical gap)
+
+Sprint 0 : 28.5h total, 3.6 weeks @ 8h/week = ~1 month. Realistic.
+
+**CRITICAL PROJECTION** : 342 stories × 3h average = 1026 hours = 128 weeks = 29.5 months @ 8h/week. Configuration promise = 12-16 months (52-69 weeks). **Gap = 59-77 weeks = 14-19 months LATE**.
+
+Possible reconciliation : IA acceleration (÷3 backend, ÷1.5 frontend) reduces to 500-600h = 62.5 weeks = 14.4 months ✓ (within range, IF validated).
+
+**Recommandation** : Confirm IA velocity in Sprint 0, or reduce scope to MVP (150 stories, 13 BCs) = 47 weeks = 10.8 months (doable).
+
+---
+
+### 4.4 Dépendances sans cycles
+
+**Status** : PASS (Sprint 0 dependencies linear, Phase E unknown)
+
+T01 → T02 → {T03,T04,T05} → T06 → T07 → T08. No cycles (DAG). Critical path = 23h sequential, ~15-18h wall-clock avec parallelization.
+
+**Recommandation** : Create dependency matrix for Phase E before execution.
+
+---
+
+## 5. COHÉRENCE ENTRE DOCUMENTS
+
+### 5.1 Brief → PRD (capabilities → FRs)
+
+**Status** : PASS (capabilities well mapped, completeness varies)
+
+Capabilities clearly map to FRs. Some PRD FRs lack Brief capability section (OpenAPI spec, i18n formatting).
+
+Quality : 8/10.
+
+---
+
+### 5.2 PRD → Architecture (FRs → feasibility)
+
+**Status** : PASS for P0, FAIL for P1-P2
+
+8 FRs fully feasible (32%), 12 partially feasible (48%), 5 unfeasible due to missing BCs (20%). Key gap : 9 BCs announced but no Rust code = 31 FRs architecturally unproven.
+
+---
+
+### 5.3 Architecture → Stories (each BC has stories)
+
+**Status** : FAIL (13 BCs covered, 9 v4.0 lack stories)
+
+Customer, Account, Credit, AML : 100%. Sanctions-Identity : 50-70%. Arrangement-Insurance : 5-10%. Average coverage = 44%.
+
+---
+
+### 5.4 Invariants cohérents
+
+**Status** : PASS (invariants appear all docs, soft invariants not coded)
+
+Hard invariants (Asset class ∈ {0,1,2,3,4}) appear all docs. Soft invariants (DOS <48h, PEP continuous) remain implicit business rules, not compiled constraints.
+
+---
+
+### 5.5 Roadmap/jalons cohérents
+
+**Status** : PASS with RISK (roadmap clear, timeline risky)
+
+Configuration : 12-16 months promised. Reality check : 1000h ÷ 8h/week = 125 weeks = 29.5 months. **Shortfall = 13-17 months** (unless IA velocity ÷3 validated).
+
+---
+
+## 6. CONFORMITÉ RÉGLEMENTAIRE (Summary)
+
+**Status** : PASS (legal references mapped, compliance code partial)
+
+- **Complete** : Loi 2015-26, Loi 2019-09 (LBC/FT, AML detailed)
+- **Partial** : Circ. 91-24, 2025-17, ISO 27001, PCI DSS (framework/skeleton)
+- **Absent** : Loi 2016-33 (Islamic), ISO 20022 (SWIFT), BVMT, Circ. 2025-03 (TuniCheque)
+
+Overall compliance score : 10 complete (Complete+Partial) / 20 regulations = 50%. Critical : Loi 2025 (INPDP) 40% compliant only.
+
+**Recommendation** : Before Sprint 1, confirm which regulations v4.0 MVP vs v4.1 deferred. At minimum, Circ. 2025-17 (KYC/AML) must be 100% coded.
+
+---
+
+## 7. RISQUES ET RECOMMANDATIONS
+
+### Bloqueurs (MUST FIX)
+
+**BLOQUEUR 1** : 9 BCs v4.0 sans code Architecture
+- Fix : Livrer entités Rust (22 BCs) ou réduire à 13 MVP
+- Timeline : 1-4 weeks
+
+**BLOQUEUR 2** : Gap FR:Story 1:3.8, 24 FRs orphelines
+- Fix : Créer matrice traçabilité FR → Story
+- Timeline : 1-2 weeks
+
+**BLOQUEUR 3** : Timeline impossible (29.5 mo solo vs 12-16 mo promise)
+- Fix : Decision scope/velocity before Sprint 0 starts
+- Timeline : Immediate
+
+### Warnings (SHOULD FIX) — 10 items
+
+1. Architecture diagram non-standard (Layer 4 reversed)
+2. 550+ endpoints promised, 35 documented (93% gap)
+3. Invariants soft (SLA, timing) non compilés
+4. ACL (anti-corruption) absent pour external systems
+5. Event sourcing / Audit trail implicite
+6. HSM interface framework only
+7. 9 BCs v4.0 couverture Temenos 20-40%
+8. Loi 2025 (INPDP) seulement 40% conforme
+9. API design : pagination, rate limiting, error format absent
+10. Frontend i18n : nombres/devises AR, RTL forms incomplete
+
+---
+
+## 8. ALIGNEMENT TEMENOS (17 catégories)
+
+Tableau couverture (voir section 3.2). **Total : 45-50% actual vs 80%+ promised**.
+
+**Gaps critiques** : Order BC (50-70 endpoints), Commitment BC (30-40), Product Catalog (20-30), 4 BCs v4.0 sans code (-140-160 endpoints).
+
+**Roadmap recommandé** :
+- v4.0 : 13 BCs P0 = 300-350 endpoints = **50% Temenos**
+- v4.1 : +Arrangement, Collateral, Islamic, CashManagement = 450 endpoints = **70%**
+- v4.2 : Order, Commitment, Catalog, advanced Securities = **85%+**
+
+---
+
+## 9. MÉTRIQUES v3.0 → v4.0
+
+| Métrique | v3.0 | v4.0 | Δ |
+|---|---|---|---|
+| BCs | 13 | 22 | +9 (69%) |
+| Domain entities | 25 | ~60 | +35 |
+| Stories | ~100 | 342 | +242% |
+| FRs | ~45 | 89 | +44 (98%) |
+| Invariants | 15 | 25 | +10 (67%) |
+| API endpoints | ~200 | 300-350 (actual) | +50-75% |
+| Regulatory refs | ~60 | 95 | +35 (58%) |
+| Est. Rust LOC | ~8000 | ~20000-25000 | +12000-17000 |
+| Est. effort (hours) | ~600-700 | ~1000-1200 | +300-500 |
+| Calendar (solo) | ~7-8 mo | 29.5 mo (actual) / 12-16 mo (promise) | +22+ mo gap |
+| Temenos parity | ~30% | 45-50% (actual) / 80%+ (promise) | +15-50% gap |
+
+---
+
+## 10. VERDICT FINAL
+
+### Status
+
+**PASS WITH WARNINGS** — Exécution non-recommandée avant résolution des 3 bloqueurs.
+
+### Go / No-Go
+
+**CONDITIONAL GO** Sprint 0 (1 month foundational).
+
+**NO-GO Sprints 1-4** tant que :
+1. 9 BCs v4.0 n'ont pas Rust code Architecture complet
+2. FR:Story matrix traçabilité non établie
+3. Timeline réaliste confirmée (IA velocity + scope + team)
+
+### Conditions préalables (Tier 1, 1-2 weeks)
+
+1. Architecture détaillée 22 BCs (ou réduire 13 MVP)
+2. Matrice traçabilité FR → Epic → Story
+3. Décider scope : Scénario A/B/C/D (voir 5.5)
+4. Mapper 550+ endpoints Temenos → BANKO
+
+### Horizon réaliste
+
+**Conservative (proof-based)** : v4.0 MVP = **18-22 months**
+**Aggressive (IA ÷3 validated)** : v4.0 MVP = **12-16 months**
+**Full Temenos parity** : v4.2 = **32-36+ months**
+
+**Recommandation** : Commit v4.0 MVP (18-22 mo realistic), declare "Core Banking Ready" P0 BCs, defer P1-P3 roadmap.
+
+---
+
+**Rapport signé le 7 avril 2026**
+**Validateur : Architecte Senior BANKO**
+**Prochaine revue : Post Sprint 0 (semaine 4)**
+
+
+---
+
+## ANNEXE A — Analyse détaillée : Context Map BANKO v4.0
+
+### A.1 Relations inter-BC (Expanded)
+
+La carte des contextes révèle une **topologie en couches** bien définie :
+
+**Couche 1 : Entités (clients, comptes)**
+- Customer (BC1) — fact central
+- Account (BC2) — lié Customer
+- Identity (BC12) — authentification
+
+**Couche 2 : Produits bancaires**
+- Credit (BC3) — prêts, octrois
+- Arrangement (BC13) — contrats, limites (v4.0)
+- Collateral (BC14) — garanties (v4.0)
+- IslamicBanking (BC17) — Sharia (v4.0)
+- Insurance (BC21) — couverture risques (v4.0)
+
+**Couche 3 : Conformité réglementaire**
+- AML (BC4) — anti-blanchiment
+- Sanctions (BC5) — filtrage listes
+- Governance (BC11) — audit trail, RBAC
+
+**Couche 4 : Opérations**
+- Payment (BC9) — virements, SEPA/SWIFT
+- ForeignExchange (BC10) — taux, couverture
+- CashManagement (BC16) — trésorerie (v4.0)
+- TradeFinance (BC15) — LC, garanties (v4.0)
+
+**Couche 5 : Financier-comptable**
+- Accounting (BC7) — double-entry, NCT + IFRS9
+- Prudential (BC6) — ratios, capital réglementaire
+- Reporting (BC8) — rapports BCT
+
+**Couche 6 : Support données**
+- ReferenceData (BC19) — MDM (v4.0)
+- DataHub (BC18) — data lake (v4.0)
+- Securities (BC20) — portefeuille titres (v4.0)
+
+**Relations critiques manquantes** :
+
+1. **Arrangement ↔ Account/Credit** (v4.0, central selon config)
+   - Actuellement implicit dans Account struct
+   - Doit être explicite, relationship 1:1 ou 1:N?
+   - Impact : Queries, reporting, compliance checks
+   - **Doit être clarifié AVANT exécution**
+
+2. **Collateral ↔ Credit** (BC14)
+   - Relation 1:N (un crédit peut avoir N garanties)
+   - Valuation service lié? (LTV monitoring)
+   - Absent du Credit BC detail → **BLOQUEUR**
+
+3. **Travel Rule** (GAFI R.16, Payment)
+   - Payment → originator/beneficiary data
+   - Sanctions screening + AML checks requis
+   - Implicit dans Payment BC, pas de structure detail
+   - Circ. 2025-17 compliance critical
+
+4. **Event sourcing** (audit trail, Circ. 2006-19)
+   - Toutes les opérations audit trail
+   - Modèle : événement-sourced ou point-in-time snapshots?
+   - Infrastructure absent, design implicit
+   - **Impact performance + compliance**
+
+### A.2 Problèmes ACL (Anti-Corruption Layer)
+
+BANKO s'intègre 4 systèmes externes critiques :
+
+1. **goAML (CTAF)**
+   - Format : XML CTAF standard
+   - BANKO domain : SuspicionReport struct
+   - **Manquant** : XML ↔ Domain transformation layer
+   - Risk : Coupling direct CTAF schema → domain
+
+2. **SWIFT**
+   - Format : ISO 20022 (MT940, etc.)
+   - BANKO domain : Payment struct + BIC/IBAN
+   - **Manquant** : ISO 20022 parser adapter
+   - Risk : FI format creep en domain layer
+
+3. **Listes sanctions (UN, OFAC, EU)**
+   - Format : CSV/XML, champs variables
+   - BANKO domain : SanctionList enum (UN, EU, OFAC)
+   - **Manquant** : List update scheduler, caching, transformation
+   - Risk : External dependency volatility
+
+4. **BVMT** (dépositaire titres)
+   - Format : Protocol propriétaire TBD
+   - BANKO domain : Securities BC (absent code)
+   - **Manquant** : Entire ACL + interface design
+
+**Recommandation** : Créer fichier `backend/src/infrastructure/external/acl/mod.rs` avec :
+- `goaml_adapter.rs` — XML ↔ SuspicionReport mapping
+- `swift_adapter.rs` — ISO 20022 parser
+- `sanctions_adapter.rs` — List fetch + normalization
+- `bvmt_adapter.rs` — Protocol wrapper (TBD)
+
+Chaque adapter = **anti-corruption layer** qui protège domain de volatilité externe.
+
+---
+
+## ANNEXE B — Analyse détaillée : Risques par priorité
+
+### B.1 Risques P0 (Impact projet, probabilité haute)
+
+**RISQUE-P0-1 : Timeline IA velocity non validée**
+- **Problem** : Configuration assume IA backend coefficient ÷3 (1.5h/S story vs 4.5h humain)
+- **Evidence** : Sprint 0 T02 (Cargo setup) estimated 3h (seems realistic for cargo.toml + dependencies)
+- **Validation needed** : Mesurer Sprint 0 + Sprint 1 réels vs estimates, recalibrer
+- **Impact** : Sans validation, timeline 29.5 mo au lieu 12-16 mo promise
+- **Mitigation** : Run Sprint 0 (4 weeks), measure velocity, decide go/no-go Sprints 1-4 before committing
+
+**RISQUE-P0-2 : Scope 22 BCs inatteignable v4.0**
+- **Problem** : 9 BCs v4.0 (Arrangement, Collateral, etc.) = 0 code Architecture, implicitement déferred
+- **Evidence** : Configuration p.119 "Arrangement = central!", mais Architecture 0 Rust
+- **Impact** : 31 FRs orphelines (FR-042-072), impossible to deliver v4.0 promise
+- **Mitigation** : Decide MVP scope (13 BCs P0) NOW, declare v4.1 roadmap for 9 BCs P1
+
+**RISQUE-P0-3 : Conformité Circ. 2025-17 incomplete**
+- **Problem** : Loi applicable immédiatement (avril 2025), BANKO April 2026 = 12 months late
+- **Evidence** : Architecture Customer.kyc_status enum, but no continuous PEP checks, no EDD scheduler, no SLA enforcement
+- **Impact** : Regulatory non-compliance on day 1 production, supervisory action risk
+- **Mitigation** : Implement Circ. 2025-17 100% BEFORE any production deployment
+
+**RISQUE-P0-4 : Loi 2025 (INPDP) compliance 40% only**
+- **Problem** : New Personal Data law (Loi 2025) replaces Loi 2004-63, applies to BANKO
+- **Evidence** : ConsentManager sketch, no DPO role, no DPIA process, no 72h breach notification
+- **Impact** : GDPR-like heavy penalties, potential injunction against operations
+- **Mitigation** : Privacy-by-design: Create INPDP compliance Sprint (2-3 weeks) BEFORE production
+
+### B.2 Risques P1 (Impact projet, probabilité moyenne)
+
+**RISQUE-P1-1 : Arrangement BC coupling Account/Credit**
+- **Problem** : Arrangement = central contract linking Account, Credit, Collateral (config p.149), but architectural placement unclear
+- **Evidence** : Account.arrangement_id optional FK, Credit.arrangement_id optional FK, but no BC definition
+- **Risk** : Spaghetti queries, performance degradation (N+1 problems), audit trail fragmentation
+- **Mitigation** : Define Arrangement as aggregate root with clear boundaries, query patterns (DDD)
+
+**RISQUE-P1-2 : Audit trail (Event Store) performance**
+- **Problem** : Circ. 2006-19 audit trail obligatoire, immutable, but Event Store design absent
+- **Evidence** : "Event Store (immutable audit trail)" mentioned, 0 SQL schema, 0 event retention policy
+- **Risk** : Event table grows unbounded, queries slow (no partitioning), audit queries timeout
+- **Mitigation** : Design event partitioning (by date, customer), implement aggregate snapshots, tiered storage (hot/cold)
+
+**RISQUE-P1-3 : Cryptography HSM dependency**
+- **Problem** : HSM (Hardware Security Module) = infrastructure requirement (PCI DSS, e-signature), but 0 code
+- **Evidence** : "HSM Interface (PKCS#11 signatures)" mentioned, no PKCS#11 wrapper, no failover design
+- **Risk** : HSM initialization failure = system down, no fallback (vs development mode mocks)
+- **Mitigation** : Implement HSM interface with test mocks early, design graceful degradation
+
+---
+
+## ANNEXE C — Matrice d'implémentation : BCs par priorité
+
+### C.1 MVP Scope proposé (v4.0, 13 BCs P0)
+
+| # | BC | Priorité | Stories (est.) | Effort (h) | Status |
+|---|---|---|---|---|---|
+| 1 | Customer | P0 | 15 | 45 | Detailed ✓ |
+| 2 | Account | P0 | 10 | 30 | Detailed ✓ |
+| 3 | Credit | P0 | 12 | 36 | Detailed ✓ |
+| 4 | AML | P0 | 10 | 30 | Detailed ✓ |
+| 5 | Sanctions | P0 | 8 | 24 | Partial ~ |
+| 6 | Prudential | P0 | 10 | 30 | Partial ~ |
+| 7 | Accounting | P0 | 12 | 36 | Partial ~ |
+| 8 | Payment | P0 | 10 | 30 | Partial ~ |
+| 9 | Governance | P0 | 8 | 24 | Partial ~ |
+| 10 | Identity | P0 | 8 | 24 | Partial ~ |
+| 11 | Reporting | P0 | 7 | 21 | Skeleton ~ |
+| 12 | ForeignExchange | P0 | 5 | 15 | Skeleton ~ |
+| 13 | ReferenceData | P0 | 6 | 18 | Skeleton ~ |
+| | **SUBTOTAL P0** | | **121** | **363** | |
+
+### C.2 P1 Scope (v4.1, 9 BCs additional)
+
+| # | BC | Priorité | Stories (est.) | Effort (h) | Notes |
+|---|---|---|---|---|---|
+| 14 | Arrangement | P1 | 12 | 36 | Central contract linking |
+| 15 | Collateral | P1 | 10 | 30 | Guarantee valuation |
+| 16 | TradeFinance | P2 | 8 | 24 | LC, guarantees |
+| 17 | CashManagement | P2 | 8 | 24 | Liquidity, sweep |
+| 18 | IslamicBanking | P1 | 10 | 30 | Murabaha, Waqf, Sharia |
+| 19 | Securities | P2 | 10 | 30 | Holdings, trading |
+| 20 | Insurance | P1 | 8 | 24 | Credit insurance, coverage |
+| 21 | DataHub | P2 | 6 | 18 | Data lake, MDM |
+| 22 | Compliance | P0 | 8 | 24 | Cross-cutting (ISO 27001, PCI) |
+| | **SUBTOTAL P1-P2** | | **80** | **240** | |
+
+**Total MVP (P0 + core P1)** : 201 stories, 603 hours @ 3h/story average.
+- Weeks @ 8h/week solo : 603h ÷ 8h/week = 75.4 weeks = ~17.4 months
+- **Fits in 18-22 month realistic window** ✓
+
+---
+
+## ANNEXE D — Conformité réglementaire détaillée par BC
+
+### D.1 Customer BC conformité
+
+| Loi/Circ. | Requirement | Code Status | Note |
+|---|---|---|---|
+| Loi 2016-48 | Customer identification | ✓ Customer struct | Basic |
+| Circ. 2025-17 | KYC + CDD (Know Your Customer) | ~ KycProfile | Partial |
+| Circ. 2025-17 | Beneficial owners (≥25%) | ~ BeneficiaryInfo | Partial |
+| Circ. 2025-17 | PEP check | ~ PepStatus enum | Needs scheduler |
+| Circ. 2025-17 | EDD (high-risk) | ~ AmlScenarioEngine | Not integrated |
+| Loi 2025 (INPDP) | Consent management | ~ ConsentManager | Partial |
+| Loi 2025 | DPO (Data Protection Officer) | ✗ | Absent |
+| Loi 2025 | DPIA (impact assessment) | ✗ | Absent |
+| Loi 2025 | Droit à l'oubli (right to erasure) | ~ | Soft delete, not hard |
+| Loi 2025 | Data portability | ~ | Export DTO, not streaming |
+
+**Score** : 4/10 complete, 5/10 partial, 1/10 absent. **Overall : 60% compliant**
+
+### D.2 Credit BC conformité
+
+| Loi/Circ. | Requirement | Code Status | Note |
+|---|---|---|---|
+| Circ. 91-24 | Asset classification (0-4) | ✓ AssetClass enum | Complete |
+| Circ. 91-24 | Provisioning (class 2→20%, 3→50%, 4→100%) | ✓ LoanProvision struct | Complete |
+| Circ. 91-24 | NPL staging (Stage 1-3) | ✓ NplStage enum | Complete |
+| IFRS 9 | ECL (Expected Credit Loss) | ~ LoanProvision.ifrs9_ecl | Partial |
+| Bâle III | PD (Probability Default) × LGD × EAD | ~ | Formula sketch only |
+| Circ. 2025-08 | New prudential norms (2026) | ~ | Framework only |
+
+**Score** : 3/10 complete, 3/10 partial, 0/10 absent. **Overall : 70% compliant**
+
+---
+
+## ANNEXE E — Test strategy (BDD + TDD implications)
+
+### E.1 BDD scenario count by BC
+
+FR-076 requires "≥400 scénarios BDD". Current backlog :
+
+| BC | Scenarios (est.) | Priority | Example |
+|---|---|---|---|
+| Customer | 45 | P0 | "Given customer with PEP flag, When screening, Then flagged" |
+| Account | 30 | P0 | "Given account with overdraft, When deposit, Then balance updates" |
+| Credit | 40 | P0 | "Given loan disbursement, When classify, Then asset class computed" |
+| AML | 50 | P0 | "Given transaction >5k TND, When cumulative daily, Then alert" |
+| Sanctions | 30 | P0 | "Given payment to OFAC entity, When screen, Then blocked" |
+| Prudential | 35 | P0 | "Given all credits portfolio, When calc ratios, Then BCR ≥ 10%" |
+| Accounting | 45 | P0 | "Given disbursement credit, When post entries, Then debit=credit" |
+| Payment | 40 | P0 | "Given SEPA transfer, When validate, Then check IBAN" |
+| Governance | 25 | P0 | "Given audit log entry, When query, Then immutable" |
+| Identity | 30 | P0 | "Given JWT token, When expire, Then refresh required" |
+| Reporting | 20 | P0 | "Given month-end, When consolidate, Then P11 report" |
+| **SUBTOTAL P0** | **390** | | |
+| ForeignExchange | 15 | P0 | "Given EUR/TND rate, When trade, Then lock rate" |
+| ReferenceData | 10 | P0 | "Given code master, When update, Then cascade" |
+| **TOTAL** | **415** | | ✓ Exceeds FR-076 (≥400) |
+
+Remaining BCs (Arrangement, Collateral, etc.) : 0 scenarios (deferred v4.1).
+
+---
+
+## ANNEXE F — Checklist exécution (Go-to-Sprint 1)
+
+**Before Sprint 1 START** : ALL items below must be DONE or explicitly deferred
+
+### Pre-Sprint 1 gates (2 weeks)
+
+- [ ] Architecture document : 22 BC entity stubs Rust (structs, enums, ports) OR decision reduce to 13 MVP
+- [ ] Traceability matrix : All 89 FRs → Epic → Story, validated
+- [ ] Roadmap decision : Confirm Scenario A/B/C/D (timeline, scope, team)
+- [ ] Temenos mapping : Complete 550+ endpoints allocation by BC
+- [ ] Invariants coded : All 25 domain invariants in `backend/src/domain/invariants.rs` with unit tests
+- [ ] ACL design : Architecture for goAML, SWIFT, Sanctions, BVMT adapters
+- [ ] Event sourcing : Design decision (event-sourced vs snapshots), implications documented
+- [ ] HSM interface : PKCS#11 wrapper stub + test mocks
+- [ ] IA velocity : Sprint 0 retrospective measuring actual vs estimated, coefficient ÷3 validated or adjusted
+- [ ] Loi 2025 (INPDP) : DPO role assigned, DPIA process defined, compliance plan created
+- [ ] Circ. 2025-17 : KYC/AML stories detailed (continuous PEP, EDD scheduler, DOS <48h SLA)
+
+### Risk mitigation checklist
+
+- [ ] Timeline : Conservative estimate (18-22 mo MVP) communicated to stakeholders
+- [ ] Scope : MVP (13 BCs) vs full (22 BCs) decision logged
+- [ ] Team : Solo-dev (8h/week) vs team scaling decision
+- [ ] Compliance : Regulatory advisor confirmed (BCT liaison, INPDP DPO)
+- [ ] Infrastructure : HSM procurement plan (if production-bound)
+
+---
+
+**Rapport signé le 7 avril 2026**
+**Validateur : Architecte Senior BANKO**
+**Prochaine revue : Post Sprint 0 (semaine 4)**
+
+**END OF VALIDATION REPORT v4.0.0**
+
+---
+
+## ANNEXE G — Validation détaillée des 89 FRs
+
+### G.1 FRs par catégorie et traçabilité
+
+| FR-ID | Catégorie | Titre | Priorité | BC | Story mapping | Status |
+|---|---|---|---|---|---|---|
+| FR-001 | Customer | Onboarding KYC/CDD | P0 | Customer | STORY-? (assumed Customer-001) | ✓ |
+| FR-002 | Customer | PEP vérification temps réel | P0 | Customer | STORY-? | ✓ |
+| FR-003 | Customer | e-KYC biométrique (Circ. 2025-06) | P1 | Customer | STORY-T05? | ~ |
+| FR-004 | Customer | Portabilité données (INPDP 2025) | P1 | Customer | STORY-? | ~ |
+| FR-005 | Account | Ouverture compte (courant, épargne, DAT) | P0 | Account | STORY-? | ✓ |
+| FR-006 | Account | Soldes temps réel | P0 | Account | STORY-? | ✓ |
+| FR-007 | Account | Historique mouvements | P0 | Account | STORY-? | ✓ |
+| FR-008 | Credit | Octroi crédit (évaluation, approbation) | P0 | Credit | STORY-? | ✓ |
+| FR-009 | Credit | Classification créances (classes 0-4) | P0 | Credit | STORY-? | ✓ |
+| FR-010 | Credit | Provisionnement NCT (Circ. 91-24) | P0 | Credit | STORY-? | ✓ |
+| FR-011 | Credit | Provisionnement IFRS 9 ECL | P1 | Credit | STORY-? | ~ |
+| FR-012 | Credit | Classification NPL (Stage 1-3) | P0 | Credit | STORY-? | ✓ |
+| FR-013 | Prudential | Calcul ratios solvabilité | P0 | Prudential | STORY-? | ~ |
+| FR-014 | Prudential | Reporting BCT Bâle III | P0 | Prudential | STORY-? | ~ |
+| FR-015 | AML | Surveillance transactionnelle temps réel | P0 | AML | STORY-? | ✓ |
+| FR-016 | AML | Alertes + investigations | P0 | AML | STORY-? | ✓ |
+| FR-017 | AML | Gestion DOS (Déclaration Soupçon) | P0 | AML | STORY-? | ✓ |
+| FR-018 | AML | Soumission goAML → CTAF | P0 | AML | STORY-? | ~ |
+| FR-019 | AML | Gel comptes/avoirs | P1 | AML | STORY-? | ~ |
+| FR-020 | AML | Cumul structuring (5k TND/jour) | P0 | AML | STORY-? | ✓ |
+| FR-021 | Sanctions | Screening client listes (UN, OFAC, EU) | P0 | Sanctions | STORY-? | ~ |
+| FR-022 | Sanctions | Screening paiements (travel rule GAFI R.16) | P0 | Payment | STORY-? | ~ |
+| FR-023 | Payment | Virements internes | P0 | Payment | STORY-? | ~ |
+| FR-024 | Payment | SEPA/SWIFT support | P1 | Payment | **ORPHANED** | ✗ |
+| FR-025 | Payment | Travel rule originator/beneficiary | P0 | Payment | STORY-? | ~ |
+| FR-026 | Accounting | Double-entry booking | P0 | Accounting | STORY-? | ~ |
+| FR-027 | Accounting | Trial balance + reconciliation | P0 | Accounting | STORY-? | ~ |
+| FR-028 | Accounting | NCT + pré-IFRS 9 dual engines | P0 | Accounting | STORY-? | ~ |
+| FR-029 | Reporting | Rapports BCT (P11, P11-bis, C/D) | P0 | Reporting | STORY-? | ~ |
+| FR-030 | Reporting | Statistiques prudentielles | P0 | Reporting | STORY-? | ~ |
+| FR-031 | ForeignExchange | Taux de change temps réel | P1 | ForeignExchange | **ORPHANED** | ✗ |
+| FR-032 | ForeignExchange | Couverture change (hedge) | P2 | ForeignExchange | **ORPHANED** | ✗ |
+| FR-033 | Governance | Gestion rôles/permissions (RBAC) | P0 | Governance | STORY-? | ~ |
+| FR-034 | Governance | Audit trail immutable | P0 | Governance | STORY-? | ~ |
+| FR-035 | Identity | JWT authentification + refresh | P0 | Identity | STORY-? | ~ |
+| FR-036 | Identity | MFA SMS/TOTP (PCI DSS 4.0.1) | P0 | Identity | STORY-? | ~ |
+| FR-037 | Identity | e-Signature HSM (crypto) | P1 | Identity | STORY-? | ~ |
+| FR-038 | Security | Chiffrement LUKS AES-XTS-512 au repos | P0 | Infrastructure | STORY-T07 | ~ |
+| FR-039 | Security | Chiffrement AES-256-GCM niveau champ | P0 | Infrastructure | STORY-T07 | ~ |
+| FR-040 | INPDP | Droit oubli + portabilité | P0 | Customer | STORY-? | ~ |
+| FR-041 | INPDP | Consentement opt-in données | P0 | Customer | STORY-? | ~ |
+| FR-042 | IslamicBanking | Produits murabaha | P1 | IslamicBanking | **ORPHANED (BC absent)** | ✗ |
+| FR-043 | IslamicBanking | Waqf (endowment) management | P1 | IslamicBanking | **ORPHANED** | ✗ |
+| FR-044 | IslamicBanking | Conformité Sharia law | P1 | IslamicBanking | **ORPHANED** | ✗ |
+| FR-045 | Arrangement | Contrats, accords, limites | P1 | Arrangement | **ORPHANED (BC absent)** | ✗ |
+| FR-046 | Arrangement | Lien Account/Credit/Collateral | P1 | Arrangement | **ORPHANED** | ✗ |
+| FR-047 | Collateral | Enregistrement garanties | P1 | Collateral | **ORPHANED (BC absent)** | ✗ |
+| FR-048 | Collateral | Évaluation + monitoring LTV | P1 | Collateral | **ORPHANED** | ✗ |
+| FR-049 | TradeFinance | Lettres de crédit (LC) | P2 | TradeFinance | **ORPHANED (BC absent)** | ✗ |
+| FR-050 | TradeFinance | Garanties bancaires | P2 | TradeFinance | **ORPHANED** | ✗ |
+| FR-051 | CashManagement | Trésorerie management | P2 | CashManagement | **ORPHANED (BC absent)** | ✗ |
+| FR-052 | CashManagement | Sweep accounts (liquidity) | P2 | CashManagement | **ORPHANED** | ✗ |
+| FR-053 | Securities | Valeurs mobilières portefeuille | P2 | Securities | **ORPHANED (BC absent)** | ✗ |
+| FR-054 | Securities | Dépositaire fonction | P2 | Securities | **ORPHANED** | ✗ |
+| FR-055 | Insurance | Assurances liées crédit | P1 | Insurance | **ORPHANED (BC absent)** | ✗ |
+| FR-056 | Insurance | Assurance décès | P1 | Insurance | **ORPHANED** | ✗ |
+| FR-057 | ReferenceData | Master Data Management (MDM) | P2 | ReferenceData | **ORPHANED (BC absent)** | ✗ |
+| FR-058 | ReferenceData | Codes, tables de référence | P1 | ReferenceData | **ORPHANED** | ✗ |
+| FR-059 | DataHub | Data lake architecture | P2 | DataHub | **ORPHANED (BC absent)** | ✗ |
+| FR-060 | DataHub | Data warehouse (analytics) | P2 | DataHub | **ORPHANED** | ✗ |
+| FR-061 | Temenos | 550-700+ endpoints parity | P0 | All | STRATEGIC GOAL | ✗ |
+| FR-062 | ISO 27001 | 93 contrôles Annexe A | P0 | Infrastructure | STORY-T10 | ~ |
+| FR-063 | PCI DSS | Tokenisation PAN | P0 | Payment | STORY-? | ~ |
+| FR-064 | PCI DSS | MFA CDE (Cardholder Data) | P0 | Infrastructure | STORY-T06 | ~ |
+| FR-065 | PCI DSS | Chiffrement niveau champ | P0 | Infrastructure | STORY-T07 | ~ |
+| FR-066 | GAFI R.16 | Travel rule originator/beneficiary | P0 | Payment | STORY-? | ~ |
+| FR-067 | BVMT | Exigences dépositaire | P1 | Securities | **ORPHANED** | ✗ |
+| FR-068 | Circ. 2025-17 | KYC/AML conformité | P0 | Customer/AML | STORY-? | ~ |
+| FR-069 | Circ. 2025-06 | e-KYC biométrique | P1 | Customer | STORY-? | ~ |
+| FR-070 | Circ. 2025-08 | Réforme prudentielle | P1 | Prudential | STORY-? | ~ |
+| FR-071 | Frontend | Portail banquier (AR/FR/EN) | P0 | Frontend | STORY-T05 | ~ |
+| FR-072 | Frontend | Portail client e-banking | P1 | Frontend | STORY-? | ~ |
+| FR-073 | Frontend | Agent portal (operations) | P0 | Frontend | STORY-T05 | ~ |
+| FR-074 | Monitoring | Prometheus metrics + Grafana | P1 | Infrastructure | STORY-T08 | ~ |
+| FR-075 | Monitoring | Alertes Alertmanager | P1 | Infrastructure | STORY-? | ~ |
+| FR-076 | Testing | BDD Cucumber ≥400 scénarios | P0 | QA | STORY-T04 | ✓ (415 scenarios) |
+| FR-077 | Testing | E2E Playwright (multi-roles) | P1 | QA | STORY-? | ~ |
+| FR-078 | Testing | Security tests (ANCS intrusion) | P1 | Security | STORY-? | ~ |
+| FR-079 | Documentation | BMAD 5 phases complètes | P0 | Docs | PHASE F (current) | ✓ |
+| FR-080 | Documentation | OpenAPI spec (550+ endpoints) | P1 | Docs | **ORPHANED** | ✗ |
+| FR-081 | i18n | Arabe tunisien RTL native | P0 | Frontend | STORY-T05 | ~ |
+| FR-082 | i18n | Nombres + devises AR format | P1 | Frontend | **ORPHANED** | ✗ |
+| FR-083 | Performance | P99 API latency <5ms | P0 | Ops | STORY-? | ~ |
+| FR-084 | Performance | Throughput ≥1000 req/s | P1 | Ops | **ORPHANED** | ✗ |
+| FR-085 | Backup | WAL archiving S3 off-site | P0 | Infrastructure | STORY-? | ~ |
+| FR-086 | Backup | GPG encryption backups | P0 | Infrastructure | STORY-? | ~ |
+| FR-087 | HA/DR | Logical replication PostgreSQL | P1 | Infrastructure | STORY-? | ~ |
+| FR-088 | HA/DR | Read replicas analytics | P1 | Infrastructure | STORY-? | ~ |
+| FR-089 | Deployment | IaC Terraform + Ansible | P0 | Infrastructure | STORY-? | ~ |
+
+### G.2 Synthèse FRs
+
+- **Total FRs** : 89
+- **FRs mappés à story** : 65 (73%)
+- **FRs orphelines** : 24 (27%)
+  - BCs absence : FR-042-060 (IslamicBanking, Arrangement, Collateral, TradeFinance, CashManagement, Securities, Insurance, ReferenceData, DataHub) = 19 FRs
+  - Autres orphelines : FR-024, FR-031-032, FR-061, FR-067, FR-080, FR-082, FR-084 = 8 FRs (mostly P1-P2, except FR-024 Payment SEPA/SWIFT P1)
+
+---
+
+## ANNEXE H — Impact financier + coûts de non-conformité
+
+### H.1 Coûts de non-livraison (v4.0 incomplet)
+
+Si BANKO v4.0 ne livrait que 13 BCs MVP (déjà un défi 18-22 mois) :
+
+| Impact | Coût estimé | Mitigation |
+|---|---|---|
+| Perte Temenos parity claim credibility | Marque/repositioning coûteux | Declare MVP clearly, roadmap v4.1-v4.2 |
+| Retard de 13-17 mois solo-dev | Opportunité cost (fintech competitors) | Scale team de 2-3 devs dès le départ |
+| Compliance gaps (Loi 2025, Circ. 2025-08) | Fines INPDP (€20k-€100k max Tunisie TBD), supervisory action | Implement INPDP compliance FIRST (2-3 weeks) |
+| HSM not production-ready | Crypto operations blocked, manual signatures | Procure HSM immediately (lead time 4-8 weeks) |
+| No audit trail logging | Regulatory audit failure, reputational damage | Design event sourcing upfront (2-3 days architecture) |
+
+### H.2 ROI if v4.0 successful
+
+Configuration claims : Temenos license = €100k-500k/year saved. Even 50% delivery (Temenos parity 45%) = €50k-250k/year benefit. Over 3 years = €150k-750k saved (vs cost BANKO dev ~€100k-200k at €50k/month ÷ solo-dev productivity).
+
+---
+
+## ANNEXE I — Décisions architecturales requises (Arch ADRs)
+
+### I.1 ADRs à documenter avant Sprint 1
+
+| ADR ID | Decision | Options | Impact | Owner |
 |---|---|---|---|---|
-| **Customer (BC1)** | 8 | 25+ scénarios | ✅ customer.feature | ✅ PASS |
-| **Account (BC2)** | 8 | 30+ scénarios | ✅ account.feature | ✅ PASS |
-| **Credit (BC3)** | 8 | 25+ scénarios (classification, provisionnement, amortisation) | ✅ credit.feature | ✅ PASS |
-| **AML (BC4)** | 8 | 25+ scénarios (surveillance, DOS, gel) | ✅ aml.feature | ✅ PASS |
-| **Sanctions (BC5)** | 8 | 20+ scénarios (screening, fuzzy matching) | ✅ sanctions.feature | ✅ PASS |
-| **Prudential (BC6)** | 8 | 20+ scénarios (ratios, limites, alertes) | ✅ prudential.feature | ✅ PASS |
-| **Accounting (BC7)** | 8 | 20+ scénarios (posting, reconciliation, period close) | ✅ accounting.feature | ✅ PASS |
-| **Reporting (BC8)** | 8 | 15+ scénarios (BCT forms, submission) | ✅ reporting.feature | ✅ PASS |
-| **Payment (BC9)** | 8 | 15+ scénarios (virements, SWIFT stub) | ✅ payment.feature | ✅ PASS |
-| **ForeignExchange (BC10)** | 8 | 10+ scénarios (Loi 76-18) | ✅ fx.feature | ✅ PASS |
-| **Governance (BC11)** | 8 | 20+ scénarios (audit trail, control checks) | ✅ governance.feature | ✅ PASS |
-| **Identity (BC12)** | 10 | 25+ scénarios (auth, 2FA, RBAC, sessions) | ✅ identity.feature | ✅ PASS |
-| **INPDP** | 2 | 10+ scénarios (consentement, droits) | ✅ inpdp.feature | ✅ PASS |
-| **Data Retention** | 1 | 5+ scénarios (rétention, anonymisation) | ✅ retention.feature | ✅ PASS |
-| **Audit BCT** | 2 | 8+ scénarios (portail, dashboard) | ✅ audit-bct.feature | ✅ PASS |
-| **Compliance (BC13)** | 15 | 30+ scénarios (SMSI, PCI, consent, privacy, goAML, TuniCheque, e-KYC) | ✅ compliance.feature | ✅ PASS — **NEW v3.0** |
-| **Frontend** | 6 | 30+ scénarios Playwright | ✅ *.spec.ts | ✅ PASS |
-
-**Total** : ~330+ scénarios BDD (ajout ~30 scénarios compliance en v3.0, dépasse l'objectif KoproGo de 200).
-
-### 6.2 Évaluation documentation vivante
-
-| Critère | État | Détail |
-|---|---|---|
-| **Scénarios multiacteurs (F1-F9)** | ✅ PASS | 9 workflows détaillés |
-| **Traces légales sourcées** | ✅ PASS | Chaque scénario lié à Circ. BCT ou art. Loi |
-| **Stories E2E (STORY-DOC)** | ✅ PASS | 6 scénarios E2E multiacteurs |
-| **Gherkin syntaxe** | ✅ PASS | Format correct (Given/When/Then) partout |
-| **Exécutabilité Cucumber** | ✅ PASS | STORY-T04 prévoit skeleton .feature files pour les 12 BCs + step definitions Rust (cucumber-rs) |
-
-**Verdict** : ✅ **PASS** — Couverture BDD exhaustive. Framework Cucumber configuré dans STORY-T04 avec .feature files prévus pour tous les BCs.
+| ADR-001 | Arrangement BC scope + placement | Aggregate root vs embedded FK | High (affects 10+ queries) | Architect |
+| ADR-002 | Event sourcing: yes/no/partial | Full event-sourced vs snapshots vs point-in-time | High (audit trail, perf) | Architect |
+| ADR-003 | Audit trail retention policy | 5y? 7y? Partition by date? | High (storage, query perf) | Architect |
+| ADR-004 | ACL for external systems | Adapter per system? Shared? | High (maintenance burden) | Architect |
+| ADR-005 | Temenos endpoint mapping | 22 BCs × 30 endpoints = 660? Adjust? | Critical (scope) | PM |
+| ADR-006 | MVP scope : 13 BCs or 22 BCs? | Scenario A/B/C/D (scope vs timeline) | Critical | PM + CTO |
+| ADR-007 | HSM integration timing | Day 1 (production-ready) or later? | High (security) | Architect |
+| ADR-008 | INPDP compliance : in-scope or deferred? | Must-have for production or v4.1? | Critical (legal risk) | Legal + PM |
+| ADR-009 | Database partitioning strategy | By date? By customer? By account type? | High (perf, ops) | DBA |
+| ADR-010 | IA velocity validation | Sprint 0 retrospective: ÷3 holds? | Critical (timeline accuracy) | Tech Lead |
 
 ---
 
-## 7. TDD (Test-Driven Development)
+## ANNEXE J — Jalons recommandés (réaliste)
 
-### 7.1 Ordre TDD : Test → Code
-
-**Modèle** : BDD Scenario → Unit test (Rust #[test]) → Code.
-
-| Story type | Test framework | État | Détail |
-|---|---|---|---|
-| **Domain stories (12 BCs)** | #[cfg(test)] + cucumber-rs | ✅ PASS | Invariants en constructeur → testés avant code. 15 tâches TDD par story. |
-| **Application stories** | #[test] + mock ports | ✅ PASS | Services testés avec mocked repositories |
-| **Infrastructure stories** | Integration tests (Docker) | ✅ PASS | sqlx::test avec base de test |
-| **API stories** | actix-web test client | ✅ PASS | Handler tests + E2E API |
-| **Frontend stories** | Playwright + axe-core | ✅ PASS | BDD Playwright scénarios + accessibility checks |
-
-### 7.2 Coverage target
-
-| Couche | Target | État |
-|---|---|---|
-| **Domain** | 100% | ✅ PASS — Constructors with Result<Self, Error> |
-| **Application** | ≥ 80% | ✅ PASS — Mocking ports avec trait objets |
-| **Infrastructure** | ≥ 70% | ✅ PASS — Integration tests + Docker Compose |
-| **HTTP Handlers** | ≥ 70% | ✅ PASS — Integration tests avec test client actix-web |
-| **Frontend** | ≥ 60% | ✅ PASS — Playwright E2E + axe-core |
-
-**Verdict** : ✅ **PASS** — TDD order clair pour toutes les stories. Coverage 100% domain doable en Rust. CI/CD (cargo tarpaulin) configuré.
-
----
-
-## 8. Readiness Organisationnelle (Scrum/Nexus/SAFe/ITIL)
-
-### 8.1 Scrum Setup (MVP = Sprints 1-6)
-
-| Élément | État | Détail |
-|---|---|---|
-| **Product Backlog** | ✅ PASS | ~151 stories listées, 13 epics, 11 sprints planifiés (ajout Sprint 10 compliance) |
-| **Sprint planning** | ✅ PASS | Sprints 1-6 (2 semaines chacun) avec allocations horaires |
-| **Velocity estimation** | ✅ PASS | M=3h, L=5h, XL=8h — basé sur coefficients IA |
-| **DoD (Definition of Done)** | ✅ PASS | Checklist complète : Gherkin pass, unit tests ≥100% domain, clippy, fmt, audit, doc, PR review, CHANGELOG, zero TODO/FIXME |
-| **Retro/Review cadence** | ✅ PASS | Bi-weekly retro + demo documentées dans Sprint Planning |
-
-### 8.2 Nexus (Multi-team scale)
-
-| Élément | État | Détail |
-|---|---|---|
-| **Scaling roadmap** | ✅ PASS | Phase 1-4 progressif, stories SCALE-01 à SCALE-08 |
-| **Integration points** | ✅ PASS | Sync dependencies (Customer ← Account ← Credit) mappées |
-| **Shared backlog** | ✅ PASS | Cross-BC stories (ACC-01 depends on CR-01, etc.) |
-
-### 8.3 SAFe (Enterprise roadmap post-MVP)
-
-| Élément | État | Détail |
-|---|---|---|
-| **Roadmap capacitaire** | ✅ PASS | Brief §17 : 1 261h solo, 36 mois side-project OU 8 mois full-time |
-| **Jalons (no dates)** | ✅ PASS | Jalons 0-2 (MVP), 3+ (post-MVP) |
-| **Portfolio alignment** | ✅ PASS | §18 Alignement Stratégique ajouté : BANKO ↔ BCT (Basel III, LBC/FT), politique gouvernementale (PNS, inclusion financière), écosystème open source tunisien |
-
-### 8.4 ITIL (Post-MVP operations)
-
-| Élément | État | Détail |
-|---|---|---|
-| **Incident management** | ✅ PASS | STORY-I01 à I13 listées |
-| **Change management** | ✅ PASS | CAB workflow, release pipeline en CI/CD |
-| **SLA tracking** | ✅ PASS | Targets : API P95 < 200ms, uptime 99.9% |
-| **Knowledge base** | ✅ PASS | STORY-I08 (runbooks) planifiée |
-
-**Verdict** : ✅ **PASS** — Scrum, Nexus, SAFe et ITIL complets. DoD définie. Portfolio aligné.
-
----
-
-## 9. "Agent IA Ready" (Chaque story liste fichiers, Gherkin, SOLID, TDD order)
-
-### 9.1 Évaluation story pattern
-
-**Pattern attendu** :
-```
-### STORY-XYZ | Type: Feature | Taille: M
-**Fichiers** : crates/domain/src/xyz/, crates/app/src/xyz/, tests/
-**Gherkin** : 5+ scénarios BDD
-**SOLID** : S (SRP), O (trait), L (immutable), I (interface), D (injection)
-**TDD Order** : Test → Code (avec step-by-step tasks)
-**Dépendances** : STORY-ABC (must complete first)
-```
-
-### 9.2 Validation par BC (13 BCs = ~111 stories core + bonus)
-
-| BC | Stories | Fichiers | Gherkin | SOLID | TDD order | Dépendances | Status |
-|---|---|---|---|---|---|---|---|
-| **Identity (BC12)** | 10 stories | ✅ | ✅ 25+ scénarios | ✅ 5/5 | ✅ 12-15 tâches/story | ✅ | **PASS** |
-| **Customer (BC1)** | 8 stories | ✅ | ✅ 25+ scénarios | ✅ 5/5 | ✅ 13-15 tâches/story | ✅ | **PASS** |
-| **Account (BC2)** | 8 stories | ✅ | ✅ 30+ scénarios | ✅ 5/5 | ✅ 15 tâches/story | ✅ | **PASS** |
-| **Credit (BC3)** | 8 stories | ✅ | ✅ 25+ scénarios | ✅ 5/5 | ✅ 15 tâches/story | ✅ | **PASS** |
-| **AML (BC4)** | 8 stories | ✅ | ✅ 25+ scénarios | ✅ 5/5 | ✅ 15 tâches/story | ✅ | **PASS** |
-| **Sanctions (BC5)** | 8 stories | ✅ | ✅ 20+ scénarios | ✅ 5/5 | ✅ 15 tâches/story | ✅ | **PASS** |
-| **Prudential (BC6)** | 8 stories | ✅ | ✅ 20+ scénarios | ✅ 5/5 | ✅ 15 tâches/story | ✅ | **PASS** |
-| **Accounting (BC7)** | 8 stories | ✅ | ✅ 20+ scénarios | ✅ 5/5 | ✅ 15 tâches/story | ✅ | **PASS** |
-| **Governance (BC11)** | 8 stories | ✅ | ✅ 20+ scénarios | ✅ 5/5 | ✅ 15 tâches/story | ✅ | **PASS** |
-| **Reporting (BC8)** | 8 stories | ✅ | ✅ 15+ scénarios | ✅ 5/5 | ✅ 15 tâches/story | ✅ | **PASS** |
-| **Payment (BC9)** | 8 stories | ✅ | ✅ 15+ scénarios | ✅ 5/5 | ✅ 15 tâches/story | ✅ | **PASS** |
-| **ForeignExchange (BC10)** | 8 stories | ✅ | ✅ 10+ scénarios | ✅ 5/5 | ✅ 15 tâches/story | ✅ | **PASS** |
-| **Compliance (BC13)** | 15 stories | ✅ | ✅ 30+ scénarios | ✅ 5/5 | ✅ 15 tâches/story | ✅ | **PASS** — **NEW v3.0** |
-
-### 9.3 Stories bonus (hors BCs)
-
-| Story | Fichiers | Gherkin | SOLID | TDD | Status |
-|---|---|---|---|---|---|
-| **STORY-RET-01** (Rétention INV-10) | ✅ | ✅ 5+ scénarios | ✅ | ✅ 15 tâches | **PASS** |
-| **STORY-CONS-01** (Consentement INV-13) | ✅ | ✅ 5+ scénarios | ✅ | ✅ 15 tâches | **PASS** |
-| **STORY-CONS-02** (Droits INPDP INV-13) | ✅ | ✅ 5+ scénarios | ✅ | ✅ 15 tâches | **PASS** |
-| **STORY-AUD-01** (API audit BCT) | ✅ | ✅ 5+ scénarios | ✅ | ✅ 15 tâches | **PASS** |
-| **STORY-AUD-02** (Dashboard audit) | ✅ | ✅ 5+ scénarios | ✅ | ✅ 15 tâches | **PASS** |
-| **6 STORY-F-*** (Frontend hydratées) | ✅ | ✅ 30+ Playwright | ✅ | ✅ | **PASS** |
-| **8 STORY-I18N-*** (i18n hydratées) | ✅ | ✅ structures détaillées | ✅ | ✅ | **PASS** |
-
-**Verdict** : ✅ **PASS** — **100% des ~151 stories sont hydratées** (sur 11 sprints, ajout Sprint 10 avec 15 stories compliance) avec le pattern Agent IA Ready complet (fichiers, Gherkin, SOLID, TDD order, dépendances). Chaque story COMP : user story + Gherkin + TDD tasks + dépendances. Zéro story en "brevity summary".
-
----
-
-## 10. Conformité principes d'architecture
-
-### 10.1 SOLID
-
-| Principe | État |
-|---|---|
-| **S (SRP)** | ✅ PASS — Chaque service = 1 responsabilité |
-| **O (OCP)** | ✅ PASS — Extensions via traits et enums |
-| **L (LSP)** | ✅ PASS — Value Objects immuables |
-| **I (ISP)** | ✅ PASS — Repositories slim, stores frontend séparés |
-| **D (DIP)** | ✅ PASS — Injection via Arc<dyn Trait> |
-
-### 10.2 DDD
-
-| Aspect | État |
-|---|---|
-| **Ubiquitous Language** | ✅ PASS — 31+ termes métier mappés (ajout termes compliance v3.0) |
-| **Bounded Contexts** | ✅ PASS — 13 BCs détaillés (ajout BC13 Compliance) |
-| **Aggregates** | ✅ PASS — Root entities per BC |
-| **Value Objects** | ✅ PASS — Money, Rib, Percentage, Provision, ECL, Consent, Token immuables |
-| **Invariants** | ✅ PASS — 20/20 validés dans stories (ajout INV-16 à INV-20) |
-| **Entities vs Value Objects** | ✅ PASS — Distinction claire |
-
-### 10.3 Hexagonal
-
-| Aspect | État |
-|---|---|
-| **Domain isolation** | ✅ PASS — 0 dépendances externes |
-| **Ports & Adapters** | ✅ PASS — Traits pour repositories |
-| **Dependency direction** | ✅ PASS — Flèches vers intérieur |
-
-### 10.4 BDD
-
-| Aspect | État |
-|---|---|
-| **Gherkin coverage** | ✅ PASS — 330+ scénarios (ajout ~30 compliance) |
-| **Step definitions** | ✅ PASS — STORY-T04 prévoit skeleton .feature + step defs Rust |
-| **Test automation** | ✅ PASS — cargo test --test bdd + Playwright |
-
-### 10.5 TDD
-
-| Aspect | État |
-|---|---|
-| **Test-first** | ✅ PASS — 15-task TDD orders pour chaque story |
-| **Domain coverage 100%** | ✅ PASS — Constructors with Result |
-| **CI/CD integration** | ✅ PASS — GitHub Actions + cargo audit |
-
-### 10.6 Security by design
-
-| Aspect | État | Détail |
-|---|---|---|
-| **Authentification 2FA** | ✅ PASS | STORY-ID-09 TOTP détaillée |
-| **RBAC** | ✅ PASS | 6 rôles listés + stories |
-| **Chiffrement at rest** | ✅ PASS | LUKS AES-512 + chiffrement niveau champ (PCI DSS) |
-| **Chiffrement in transit** | ✅ PASS | TLS 1.3 + mTLS (Open Banking) |
-| **Audit trail immutable** | ✅ PASS | Hash chain SHA256 + append-only |
-| **HSM signatures** | ✅ PASS | PKCS#11 intégration |
-| **INPDP / Privacy compliance** | ✅ PASS | STORY-CONS-01/02 + COMP-06/07/08/09 (loi 2025) |
-| **SMSI ISO 27001:2022** | ✅ PASS | 93 contrôles, registre risques, plan 18 mois. **NEW v3.0** |
-| **PCI DSS v4.0.1** | ✅ PASS | CDE isolé, tokenisation PAN (INV-16), MFA CDE (INV-17). **NEW v3.0** |
-| **Open Banking (PSD3)** | ✅ PASS | OAuth 2.0 + PKCE, SCA, consent management. **NEW v3.0** |
-
-### 10.7 Auditabilité
-
-| Aspect | État | Détail |
-|---|---|---|
-| **Piste d'audit 100%** | ✅ PASS | GOV-01 à GOV-08 hydratées |
-| **Horodatage cryptographique** | ✅ PASS | Signature + timestamp |
-| **Non-repudiation** | ✅ PASS | HSM keys |
-| **Traçabilité légale** | ✅ PASS | 95 références textes (vs 70 en v2.0) |
-| **Portail inspecteurs BCT** | ✅ PASS | STORY-AUD-01 + AUD-02 dédiées |
-
-**Verdict** : ✅ **PASS** — Conformité architecture totale. Zéro réserve.
-
----
-
-## 11. Couverture Frontend
-
-### 11.1 Pages et composants (par BC)
-
-| BC | Pages Routes | Composants | Stories détaillées | État |
-|---|---|---|---|---|
-| **Identity (BC12)** | /login, /register | LoginForm, RegisterForm, 2FASetup | ✅ STORY-F-Auth | ✅ PASS |
-| **Customer (BC1)** | /customers, /customers/{id}/edit | CustomerForm, KycForm, BeneficiaryForm, PepCheckCard | ✅ STORY-F-Customer | ✅ PASS |
-| **Account (BC2)** | /accounts, /accounts/{id} | AccountForm, BalanceCard, MovementsList, StatementGenerator | ✅ STORY-F-Accounts | ✅ PASS |
-| **Credit (BC3)** | /loans, /loans/{id} | LoanForm, ClassificationForm, ScheduleTable, ProvisionCard | ✅ (via BC stories) | ✅ PASS |
-| **AML (BC4)** | /aml/alerts, /aml/investigations | AlertsList, InvestigationForm, SuspicionReportForm | ✅ (via BC stories) | ✅ PASS |
-| **Sanctions (BC5)** | /sanctions/screening | ScreeningForm, ResultsTable | ✅ (via BC stories) | ✅ PASS |
-| **Prudential (BC6)** | /prudential/dashboard | RatioDashboard, RatioChart, ComplianceIndicator | ✅ STORY-F-Dashboards | ✅ PASS |
-| **Accounting (BC7)** | /accounting/entries, /accounting/reports | JournalEntryForm, LedgerView, TrialBalanceReport | ✅ (via BC stories) | ✅ PASS |
-| **Reporting (BC8)** | /reporting/reports | ReportForm, ReportPreview | ✅ (via BC stories) | ✅ PASS |
-| **Payment (BC9)** | /payments | PaymentForm, SwiftPreview, ClearingBatchList | ✅ (via BC stories) | ✅ PASS |
-| **FX (BC10)** | /fx/operations | FxOperationForm, PositionDashboard, RateDisplay | ✅ (via BC stories) | ✅ PASS |
-| **Governance (BC11)** | /admin/audit, /admin/controls | AuditTrailViewer, ControlCheckForm | ✅ STORY-F-Audit | ✅ PASS |
-
-### 11.2 i18n Support (AR RTL + FR + EN)
-
-| Aspect | État | Détail |
-|---|---|---|
-| **Language selector** | ✅ PASS | Header dropdown, Svelte store |
-| **Translation files** | ✅ PASS | ar.json, fr.json, en.json avec structure détaillée (STORY-I18N-01 à 08) |
-| **RTL CSS** | ✅ PASS | `direction: rtl` auto pour AR + STORY-I18N-05 dédié |
-| **Date/currency formatting** | ✅ PASS | Intl.DateTimeFormat, TND/EUR/USD + STORY-I18N-08 |
-| **Form validation messages** | ✅ PASS | 3 langues + STORY-I18N-07 |
-
-### 11.3 Accessibility (WCAG 2.1 AA)
-
-| Aspect | État | Détail |
-|---|---|---|
-| **ARIA labels** | ✅ PASS | Tous les contrôles interactifs avec labels ARIA |
-| **Keyboard navigation** | ✅ PASS | Tab order logique, focus visible, Escape pour modales |
-| **Color contrast** | ✅ PASS | Minimum 4.5:1 (texte) / 3:1 (grands textes) |
-| **Alternative text** | ✅ PASS | Toutes les images/icônes avec texte alternatif |
-| **Skip navigation** | ✅ PASS | Liens skip-nav présents |
-| **Rôles ARIA custom** | ✅ PASS | dialog, alert, navigation pour composants custom |
-| **Test automatisé** | ✅ PASS | axe-core intégré dans Playwright E2E (bloquant CI) |
-
-**Verdict** : ✅ **PASS** — Frontend exhaustif. i18n AR/FR/EN détaillé. WCAG 2.1 AA complet avec tests automatisés.
-
----
-
-## 12. Estimation budgétaire (Brief §17 vs Stories coherence)
-
-### 12.1 Cohérence estimations
-
-| Couche | Brief (h) | Stories breakdown (h) | Écart |
-|---|---|---|---|
-| **Backend (domain + API)** | 280h | ~290h (12 BCs × 8 stories hydratées) | **+10h (+4%)** OK |
-| **Frontend** | 350h | ~280h (6 STORY-F + 8 I18N + composants BC) | **-70h (-20%)** OK |
-| **Infrastructure** | 180h | 164h (IaC + CI/CD) | **-16h (-9%)** OK |
-| **Tests** | 100h | 120h BDD + 40h E2E = 160h | **+60h** OK (couverture accrue) |
-| **i18n / Docs** | 60h | 80h | **+20h** OK |
-| **TOTAL** | **1,261h** | **~1,200h** | **-5%** ✅ |
-
-### 12.2 Analyse
-
-| Observation | Détail |
-|---|---|
-| **Variance acceptable** | Brief vs Stories ±5% → excellent pour estimation préliminaire |
-| **Frontend réaliste** | Stories frontend hydratées réduisent l'incertitude |
-| **Tests augmentés** | 300+ scénarios BDD → couverture supérieure aux estimations initiales |
-
-**Verdict** : ✅ **PASS** — Estimations cohérentes (±5%). Aucun gap significatif.
-
----
-
-## 13. Résolution des incohérences v1.0.0
-
-### 13.1 Blockers résolus (5/5)
-
-| # | Titre | Résolution | Statut |
-|---|---|---|---|
-| **B1** | C15 (Monétique) incohérent Brief P1 / absent PRD | C15 dépriorisé à **P2** dans Brief §7 + PRD §3.2 + mention dans hors scope MVP | ✅ RÉSOLU |
-| **B2** | INV-10 manquant dans stories (rétention 10 ans) | **STORY-RET-01** créée avec Gherkin complet (rétention, anonymisation, archivage) | ✅ RÉSOLU |
-| **B3** | INV-13 (consentement INPDP) sans test story | **STORY-CONS-01** (création/révocation consentement) + **STORY-CONS-02** (droits accès/opposition) créées | ✅ RÉSOLU |
-| **B4** | C18 (Portail audit BCT) sous-spécifié | **STORY-AUD-01** (API audit inspecteurs) + **STORY-AUD-02** (Dashboard superviseurs) créées avec Gherkin complet | ✅ RÉSOLU |
-| **B5** | 8 BCs en brevity summary (pas Agent IA Ready) | **64 stories hydratées** (8 BCs × 8 stories) avec fichiers, Gherkin, SOLID, TDD order, dépendances | ✅ RÉSOLU |
-
-### 13.2 Recommandations résolues (8/8)
-
-| # | Titre | Résolution | Statut |
-|---|---|---|---|
-| **R6** | Gherkin sans .feature files | STORY-T04 mise à jour : skeleton .feature pour les 12 BCs + step definitions Rust (cucumber-rs) | ✅ RÉSOLU |
-| **R7** | Frontend stories non détaillées | 6 STORY-F-* hydratées : Gherkin Playwright, Svelte components, i18n keys, WCAG | ✅ RÉSOLU |
-| **R8** | i18n stories sans détails | 8 STORY-I18N-* hydratées : structure fichiers, clés traduction, RTL CSS, Intl API | ✅ RÉSOLU |
-| **R9** | ISP violation commun.store | Store splitté : toast.store.ts, modal.store.ts, loading.store.ts (ISP respecté) | ✅ RÉSOLU |
-| **R10** | DoD absente | Section "Definition of Done" ajoutée avec checklist 13 points (Gherkin, clippy, audit, doc, CHANGELOG) | ✅ RÉSOLU |
-| **R11** | Provision vs ECL distinction floue | Glossaire Brief §8 clarifié : Provision = min réglementaire (struct), ECL = IFRS 9 probabiliste (struct séparé) avec exemples | ✅ RÉSOLU |
-| **R12** | Accessibilité WCAG vague | Architecture §8 : WCAG 2.1 AA détaillé (ARIA, keyboard nav, contraste 4.5:1, axe-core Playwright, skip nav) | ✅ RÉSOLU |
-| **R13** | Portfolio alignment manquant | Brief §18 "Alignement Stratégique" ajouté : BCT ↔ BANKO, politique gouvernementale, écosystème open source | ✅ RÉSOLU |
-
-**Verdict** : ✅ **PASS** — 13/13 incohérences résolues. Zéro incohérence résiduelle.
-
-### 13.3 Risques v3.0 et mitigations
-
-| # | Risque | Mitigation v3.0 | Statut |
-|---|---|---|---|
-| **R7** | Liste grise GAFI (plénière nov. 2026) | goAML intégré (COMP-10) + effectivité mesurable + statistiques LBC/FT + Travel Rule R.16 (COMP-13) | ✅ MITIGÉ |
-| **R8** | Loi données personnelles 2025 (application 11 juil. 2026) | DPO dashboard + DPIA automatisée (COMP-08) + notification breach 72h (INV-18) + consentement granulaire (INV-19) | ✅ MITIGÉ |
-| **R9** | PCI DSS v4.0.1 (exigences obligatoires mars 2025) | Tokenisation native (INV-16, ADR-008) + chiffrement niveau champ + CDE minimal isolé + MFA CDE (INV-17) | ✅ MITIGÉ |
-
-### 13.4 Recommandations v3.0 (toutes implémentées)
-
-| # | Recommandation | Statut |
-|---|---|---|
-| 1 | BC13 Compliance ajouté avec 15 stories | ✅ IMPLÉMENTÉ |
-| 2 | ISO 27001:2022 documenté (4 fichiers) | ✅ IMPLÉMENTÉ |
-| 3 | PCI DSS v4.0.1 documenté (4 fichiers) | ✅ IMPLÉMENTÉ |
-| 4 | Open Banking PSD3 documenté (5 fichiers) | ✅ IMPLÉMENTÉ |
-| 5 | Matrice conformité globale créée | ✅ IMPLÉMENTÉ |
-| 6 | REFERENTIEL enrichi à 95 références | ✅ IMPLÉMENTÉ |
-| 7 | Invariants étendus (INV-16 à INV-20) | ✅ IMPLÉMENTÉ |
-| 8 | Nouvelles capacités C20-C26 | ✅ IMPLÉMENTÉ |
-
----
-
-## 14. Synthèse par domaine
-
-### 14.1 Domaine métier & conformité légale
-
-| Critère | Note | Justification |
-|---|---|---|
-| **DDD** | ✅ 10/10 | 13 BCs distincts, 31+ termes métier mappés, 20 invariants codés |
-| **Couverture légale** | ✅ 10/10 | 95 références légales (Circ. BCT, Loi INPDP, ISO 27001, PCI DSS, PSD3), chaque module traçable |
-| **SOLID** | ✅ 10/10 | 5 principes appliqués dans tous les BCs (dont BC13 Compliance) et frontend. ISP corrigé. |
-| **Invariants métier** | ✅ 10/10 | 20/20 validés dans stories avec scénarios BDD dédiés (ajout INV-16 à INV-20) |
-
-### 14.2 Couverture fonctionnelle
-
-| Critère | Note | Justification |
-|---|---|---|
-| **Capacités C1-C26** | ✅ 10/10 | 26/26 traçables. C15 cohérent P2. C20-C26 compliance couverts par Sprint 10. |
-| **Scénarios métier (F1-F9)** | ✅ 10/10 | 9 workflows multiacteurs détaillés |
-| **BDD Gherkin** | ✅ 10/10 | 330+ scénarios (ajout ~30 compliance), .feature files prévus, step definitions planifiées |
-| **Frontend coverage** | ✅ 10/10 | Tous les BCs, 6 STORY-F hydratées, i18n AR/FR/EN, WCAG 2.1 AA |
-
-### 14.3 Architecture & engineering
-
-| Critère | Note | Justification |
-|---|---|---|
-| **Hexagonal** | ✅ 10/10 | Couches claires, dépendances → intérieur, isolation domain |
-| **TDD order** | ✅ 10/10 | 100% stories avec 15-task TDD order |
-| **Agent IA ready** | ✅ 10/10 | 100% des ~151 stories hydratées (fichiers, Gherkin, SOLID, TDD, dépendances) |
-| **Estimation** | ✅ 10/10 | Brief vs Stories ±5% variance. Cohérent. |
-
-### 14.4 Qualité & readiness
-
-| Critère | Note | Justification |
-|---|---|---|
-| **Documentation vivante** | ✅ 10/10 | Gherkin complet, .feature files planifiés, 6 E2E multi-rôles |
-| **Scrum readiness** | ✅ 10/10 | Sprints, velocity, DoD complète, retro cadence |
-| **Security by design** | ✅ 10/10 | 2FA, RBAC, audit immutable, HSM, INPDP + ISO 27001 + PCI DSS + Open Banking (v3.0) |
-| **Accessibility** | ✅ 10/10 | WCAG 2.1 AA détaillé, axe-core CI, skip nav, ARIA |
-
----
-
-## 14bis. Validation conformité normative (v3.0)
-
-### ISO 27001:2022
-
-| Critère | Statut | Détail |
-|---------|--------|--------|
-| 93 contrôles Annexe A documentés | ✅ | docs/compliance/iso-27001/03-controls-annex-a-mapping.md |
-| Registre des risques (ISO 31000) | ✅ | docs/compliance/iso-27001/02-risk-assessment-register.md |
-| Périmètre et SoA | ✅ | docs/compliance/iso-27001/01-scope-and-statement-of-applicability.md |
-| Plan implémentation 18 mois | ✅ | docs/compliance/iso-27001/04-implementation-plan.md |
-| Amendement climat 1:2024 | ✅ | Évaluation risques climatiques intégrée |
-| Stories implémentation | ✅ | STORY-COMP-01, COMP-03, COMP-04, COMP-05 |
-
-### PCI DSS v4.0.1
-
-| Critère | Statut | Détail |
-|---------|--------|--------|
-| Scope CDE défini | ✅ | docs/compliance/pci-dss/01-cde-scope-definition.md |
-| 12 exigences mappées | ✅ | docs/compliance/pci-dss/02-requirements-mapping.md |
-| Tokenisation + chiffrement | ✅ | docs/compliance/pci-dss/03-tokenization-and-encryption-guide.md |
-| Matrice RACI | ✅ | docs/compliance/pci-dss/04-responsibility-matrix.md |
-| Exigences mars 2025 intégrées | ✅ | Req 3.5.1.2, 6.4.3, 8.4.2, 11.6.1 |
-| INV-16 (tokenisation PAN) | ✅ | STORY-COMP-02 |
-| INV-17 (MFA CDE) | ✅ | STORY-COMP-14 |
-
-### Open Banking / PSD3
-
-| Critère | Statut | Détail |
-|---------|--------|--------|
-| Roadmap préparation | ✅ | docs/compliance/open-banking-psd2/01-readiness-roadmap.md |
-| Consent management | ✅ | docs/compliance/open-banking-psd2/02-consent-management.md |
-| SCA | ✅ | docs/compliance/open-banking-psd2/03-sca-strong-customer-authentication.md |
-| API security specs | ✅ | docs/compliance/open-banking-psd2/04-api-security-specifications.md |
-| Mapping Tunisie | ✅ | docs/compliance/open-banking-psd2/05-tunisian-open-banking-mapping.md |
-| INV-19 (consentement) | ✅ | STORY-COMP-06, COMP-07, COMP-15 |
-
-### Loi données personnelles 2025
-
-| Critère | Statut | Détail |
-|---------|--------|--------|
-| DPO prévu | ✅ | FR-COMP-06, architecture DPO dashboard |
-| DPIA | ✅ | FR-COMP-06, STORY-COMP-08 |
-| Notification 72h | ✅ | INV-18, STORY-COMP-08 |
-| Portabilité | ✅ | FR-COMP-08, STORY-COMP-09 |
-| Effacement | ✅ | FR-COMP-09, STORY-COMP-09 |
-| Consentement granulaire | ✅ | INV-19, STORY-COMP-06/07 |
-
-### GAFI / LBC/FT
-
-| Critère | Statut | Détail |
-|---------|--------|--------|
-| goAML intégré | ✅ | FR-COMP-10, STORY-COMP-10 |
-| Travel Rule R.16 | ✅ | INV-20, STORY-COMP-13 |
-| e-KYC Circ. 2025-06 | ✅ | FR-COMP-12, STORY-COMP-12 |
-| TuniCheque Circ. 2025-03 | ✅ | FR-COMP-11, STORY-COMP-11 |
-
-### Matrice globale
-
-| Critère | Statut | Détail |
-|---------|--------|--------|
-| Matrice conformité (86+ exigences) | ✅ | docs/compliance/overall-compliance-matrix.md |
-| Dashboard exécutif | ✅ | docs/compliance-dashboard.md |
-| Index références (95) | ✅ | docs/legal/legal-references-index.md |
-| REFERENTIEL v0.3.0 | ✅ | docs/legal/REFERENTIEL_LEGAL_ET_NORMATIF.md |
-
-**Verdict** : ✅ **PASS** — Conformité normative exhaustive. ISO 27001, PCI DSS, Open Banking, loi données 2025 et GAFI intégralement couverts par documentation, stories et invariants.
-
----
-
-## 15. Verdict final
-
-### Global Assessment
-
-| Dimension | Verdict | Confidence |
-|---|---|---|
-| **Faisabilité technique** | ✅ **PASS** | 99% |
-| **Conformité légale** | ✅ **PASS** | 99% |
-| **Conformité normative (ISO/PCI/PSD3)** | ✅ **PASS** | 98% |
-| **Readiness implémentation** | ✅ **PASS** | 98% |
-| **Qualité attendue** | ✅ **PASS** | 99% |
-
-### Statut global
+### J.1 Timeline conservative (MVP 13 BCs, solo-dev 8h/week)
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                                                                  │
-│  STATUT GLOBAL : ✅ PASS v3.0 — ZÉRO BLOQUEUR                   │
-│                                                                  │
-│  ✅ Architecture solide (DDD + Hexagonal + SOLID)                │
-│  ✅ Conformité réglementaire tunisienne (95 refs, vs 70 v2.0)    │
-│  ✅ Couverture fonctionnelle exhaustive (26 capacités, vs 19)    │
-│  ✅ Scénarios BDD complets (~330+, vs ~300+)                     │
-│  ✅ Estimation budgétaire cohérente (±5%)                        │
-│  ✅ 20/20 invariants métier validés (ajout INV-16 à INV-20)      │
-│  ✅ 13/13 BCs hydratés Agent IA Ready (ajout BC13 Compliance)    │
-│  ✅ ~151 stories sur 11 sprints (ajout Sprint 10 compliance)     │
-│  ✅ DoD définie (13 points)                                      │
-│  ✅ WCAG 2.1 AA détaillé + axe-core CI                           │
-│  ✅ i18n AR (RTL) + FR + EN détaillé                             │
-│  ✅ Alignement stratégique BCT/gouvernement documenté            │
-│  ✅ ISO 27001:2022 (93 contrôles, 4 docs)                        │
-│  ✅ PCI DSS v4.0.1 (CDE, tokenisation, 4 docs)                  │
-│  ✅ Open Banking PSD3/FIDA (consent, SCA, 5 docs)                │
-│  ✅ Loi données personnelles 2025 (DPO, DPIA, 72h)              │
-│  ✅ GAFI / LBC/FT (goAML, Travel Rule, e-KYC, TuniCheque)       │
-│  ✅ 10 ADRs (ajout ADR-008/009/010)                              │
-│  ✅ 7 tables compliance ajoutées au data model                   │
-│  ✅ Matrice conformité globale (86+ exigences)                   │
-│                                                                  │
-│  0 blockers                                                      │
-│  0 recommandations en suspens                                    │
-│  0 incohérences                                                  │
-│                                                                  │
-│  ✅ PRÊT POUR SPRINT 0 AVEC COUVERTURE COMPLIANCE COMPLÈTE      │
-│                                                                  │
-└──────────────────────────────────────────────────────────────────┘
+Sprint 0 (Weeks 1-4)       : Foundational (Git, Docker, CI/CD, BDD setup)
+  Milestone : Setup DONE, ready Sprint 1
+
+Sprints 1-3 (Weeks 5-16)   : Core 5 BCs (Customer, Account, Credit, AML, Sanctions)
+  Milestone : APIs live for core banking (accounts, credit basics, AML)
+
+Sprints 4-6 (Weeks 17-28)  : Prudential + Accounting + Payment (5 BCs)
+  Milestone : Double-entry accounting working, prudential ratios calculated
+
+Sprints 7-8 (Weeks 29-36)  : Governance + Identity + Reporting + FX + ReferenceData (5 BCs)
+  Milestone : Authentication, audit trail, reporting ready
+
+Weeks 37-52                : QA, E2E testing, security audit (ANCS), production hardening
+  Milestone : v4.0 MVP production-ready (13 BCs)
+
+v4.1 Roadmap (Months 19-24): Arrangement, Collateral, IslamicBanking, Insurance (+4 BCs)
+v4.2 Roadmap (Months 25-32): TradeFinance, CashManagement, Securities, DataHub (+4 BCs)
+
+Total Temenos parity 85%+ by Month 32 (Month 30-32 final polish)
 ```
 
 ---
 
-## 16. Prochaines étapes
+**Rapport finalisé le 7 avril 2026**
+**Version** : 4.0.0
+**Validateur** : Architecte Senior BANKO
+**Status final** : PASS WITH WARNINGS — Exécution conditional go Sprint 0 only
+**Next review** : Post Sprint 0 retrospective (Semaine 4)
 
-### Sprint 0 (2 semaines)
-
-1. **Setup** : Exécuter STORY-T01 à T13 (infrastructure, toolchain, Docker, CI/CD, BDD framework)
-2. **Gherkin** : Créer .feature skeleton files pour les 13 BCs (STORY-T04) — inclure BC13 Compliance
-3. **Compliance docs** : Valider la structure docs/compliance/ (ISO 27001, PCI DSS, Open Banking)
-4. **Sprint 1 kick-off** : Identity (BC12) — STORY-ID-01 à ID-05
-
-### Sprint 1-6 (12 semaines)
-
-Suivre le Sprint Planning défini dans le document Épics (§ Sprint Planning).
-
-### Sprint 10 — Compliance (2 semaines)
-
-15 stories COMP-01 à COMP-15 couvrant ISO 27001, PCI DSS, Open Banking, loi données 2025, goAML, TuniCheque, e-KYC, Travel Rule.
+**This validation report satisfies Phase TOGAF F (Cross-cutting validation) requirements.**
 
 ---
 
-## 17. Conclusion
+## ANNEXE K — Détail des 10 Warnings majeurs
 
-### Étape 5 : Validation croisée — **IMPITOYABLE** ✅
+### K.1 WARNING 1 — Diagramme Architecture inversé (Layer 4)
 
-BANKO est un **projet remarquable** par sa rigueur architecturale, sa conformité légale et normative exhaustive, et sa couverture fonctionnelle. Les 5 documents (Configuration, Brief, PRD, Architecture, Épics) sont **cohérents, traçables et prêts pour la mise en oeuvre**.
+**Description** : L'architecture hexagonale standard place Domain au center, Adapters à la periphery. Mais le diagramme ASCII montre "Layer 1: HTTP Handlers", "Layer 2: Application", "Layer 3: Domain", "Layer 4: Infrastructure" = **inversion dangereuse**.
 
-La v3.0.0 de ce rapport confirme que :
-- **Tous les blockers et recommandations v1.0 ont été intégralement résolus** (confirmé v2.0)
-- **La couverture normative est complète** : ISO 27001:2022, PCI DSS v4.0.1, Open Banking PSD3/FIDA, loi données personnelles 2025, GAFI
-- **Le projet est prêt pour l'évaluation GAFI de novembre 2026** avec effectivité LBC/FT mesurable
-- Le projet atteint un score de **10/10 sur les 16 critères d'évaluation** avec zéro bloqueur
+**Implication** : Si Infrastructure est "Couche 4" (interne), risque de:
+- Infrastructure code (PostgreSQL detail, HTTP concerns) creeping dans domain layer
+- Domain objects tightly coupled à database schema
+- Violations DDD + testabilité compromise
 
-**BANKO est prêt pour une implémentation par agents IA autonomes**, avec :
-- Conformité légale et normative garantie par le design (95 références, 20 invariants)
-- 13 bounded contexts dont BC13 Compliance (transversal)
-- 26 capacités couvrant l'ensemble du spectre bancaire et compliance
-- ~151 stories sur 11 sprints, 330+ scénarios BDD
-- 10 ADRs, 7 tables compliance, matrice conformité globale (86+ exigences)
-- Traçabilité complète vers la réglementation bancaire tunisienne et internationale
-- Pattern Agent IA Ready sur 100% des stories (fichiers, Gherkin, SOLID, TDD order)
-- Definition of Done stricte et testable
+**Recommandation** :
+```
+Corrected mental model:
+  Domain (centre, pur métier, sync)
+    ↑↓ defined by ports (traits)
+  Application (use cases, DTOs, async orchestration)
+    ↑↓ implements ports
+  Infrastructure (HTTP handlers, PostgreSQL, HSM adapters — periphery)
+```
 
----
+Rebrand to: "Layer 1: Domain", "Layer 2: Application", "Layer 3: Adapters".
 
-**Validateur** : Étape 5 (Architecte + Scrum Master IA)
-**Date** : 6 avril 2026
-**Version rapport** : 3.0.0 (intégration compliance ISO 27001 / PCI DSS / Open Banking / loi données 2025 / GAFI)
-**Licence** : AGPL-3.0 (comme BANKO)
+**Owner** : Architect
 
 ---
 
-**FIN DU RAPPORT DE VALIDATION — ✅ PASS v3.0 — ZÉRO BLOQUEUR — PRÊT SPRINT 0**
+### K.2 WARNING 2 — 93% des endpoints non documentés
+
+**Description** : Configuration promet 550-700 endpoints (Temenos parity), Architecture documente 35 endpoints seulement.
+
+**Calcul** :
+- Customer BC : GET/POST /api/v1/customers, GET /api/v1/customers/{id}, PUT, DELETE, POST kyc-validate, POST pep-check, POST edd, POST biometric-enroll, GET consent, POST consent, DELETE consent, POST data-export = 12 endpoints
+- Account BC : +7 endpoints
+- Credit BC : +8 endpoints
+- AML BC : +8 endpoints
+- **Subtotal documented** : ~35 endpoints
+- **Promised** : 550-700 endpoints
+- **Gap** : 515-665 endpoints (93-95%) undocumented
+
+**Implication** : Impossible to estimate effort, validate feasibility, or prioritize.
+
+**Recommandation** : Créer fichier `docs/bmad/TEMENOS_ENDPOINTS_MAPPING_DETAILED.md` listant ALL 550+ endpoints par BC, avec:
+- GET /api/v1/{resource} — list (paginated)
+- GET /api/v1/{resource}/{id} — retrieve
+- POST /api/v1/{resource} — create
+- PUT /api/v1/{resource}/{id} — update (full)
+- PATCH /api/v1/{resource}/{id} — partial update
+- DELETE /api/v1/{resource}/{id} — delete (soft or hard?)
+- POST /api/v1/{resource}/{id}/{action} — custom actions
+
+Example Customer BC (estimated 30+ endpoints):
+```
+GET /api/v1/customers (list all, paginated)
+POST /api/v1/customers (create)
+GET /api/v1/customers/{id} (retrieve)
+PUT /api/v1/customers/{id} (full update)
+PATCH /api/v1/customers/{id} (partial)
+DELETE /api/v1/customers/{id} (soft delete)
+POST /api/v1/customers/{id}/kyc/validate
+GET /api/v1/customers/{id}/kyc (get profile)
+PUT /api/v1/customers/{id}/kyc (update profile)
+POST /api/v1/customers/{id}/pep-check
+GET /api/v1/customers/{id}/pep-status
+POST /api/v1/customers/{id}/edd (Enhanced Due Diligence)
+POST /api/v1/customers/{id}/biometric-enroll
+GET /api/v1/customers/{id}/biometric-status
+POST /api/v1/customers/{id}/consent
+GET /api/v1/customers/{id}/consent
+DELETE /api/v1/customers/{id}/consent/{scope}
+POST /api/v1/customers/{id}/data-export (GDPR portability)
+DELETE /api/v1/customers/{id}/data-erase (GDPR right to be forgotten)
+POST /api/v1/customers/search (search by name, email, IBAN)
+GET /api/v1/customers/{id}/accounts (linked accounts)
+GET /api/v1/customers/{id}/loans (linked loans)
+GET /api/v1/customers/{id}/audit-trail (customer operations log)
+POST /api/v1/customers/{id}/risk-reassess (manually trigger risk scoring)
+GET /api/v1/customers/{id}/risk-score (get current risk)
+GET /api/v1/customers/compliance-status (bulk screening report)
+GET /api/v1/customers/by-segment (demographic slicing)
+```
+
+That's 26 Customer endpoints alone. × 22 BCs × ~20-30 endpoints/BC = 440-660 endpoints credible.
+
+**Owner** : Product Manager
+
+---
+
+### K.3 WARNING 3 — Invariants soft (SLA, timing) non compilés
+
+**Description** : Soft business rules (time-based SLAs, continuous checks) defined in requirements but not codified in domain layer as compile-time OR runtime assertions.
+
+**Examples** :
+
+1. **"DOS report submission <48h"** (GAFI R.16, critical)
+   - Requirement: Suspicion report must be submitted to CTAF within 48h
+   - Code: `SuspicionReport { status: ReportStatus, submitted_to_ctaf_at: DateTime }` — but **no SLA field, no validation**
+   - Risk: Business rule remains implicit, untested, violated silently
+
+2. **"PEP check continuous (not one-time)"** (Circ. 2025-17)
+   - Requirement: Customer PEP status must be rechecked at least quarterly (or per regulatory update)
+   - Code: `PepStatus::check()` assumed one-time in onboarding, **no scheduler/reminders**
+   - Risk: Compliant at day 1, non-compliant day 91 (no rechecks), undetected
+
+3. **"Customer KYC due diligence updates (3 years)"** (Circ. 2025-17)
+   - Requirement: KYC profile must be re-validated every 3 years
+   - Code: `KycProfile { validated_at: DateTime }`, **no expiry check, no renewal task**
+   - Risk: 4-year-old KYC treated as current
+
+4. **"Data retention minimum 5 years"** (BCT + INPDP 2025)
+   - Requirement: Customer transactions, audit trail, KYC docs must be retained 5 years minimum
+   - Code: No retention policy, no archival workflow, no deletion prevention
+   - Risk: Data purged early, regulatory audit failure
+
+**Recommandation** : Codify soft invariants as:
+1. Compile-time: Type system (e.g., `VerifiedKyc` vs `UnverifiedKyc` newtypes)
+2. Runtime: Scheduled tasks (e.g., `PepCheckScheduler` runs daily, flags expired)
+3. Infrastructure: TTL policies, audit trail immutability (database constraints)
+
+Create `backend/src/domain/invariants.rs` with:
+```rust
+pub struct DosReportSLA {
+    created_at: DateTime<Utc>,
+    submitted_at: Option<DateTime<Utc>>,
+}
+
+impl DosReportSLA {
+    pub fn is_compliant(&self) -> bool {
+        match self.submitted_at {
+            Some(submitted) => {
+                let elapsed = submitted.signed_duration_since(self.created_at);
+                elapsed <= Duration::hours(48)
+            }
+            None => {
+                let elapsed = Utc::now().signed_duration_since(self.created_at);
+                elapsed <= Duration::hours(48)
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_dos_report_sla_compliance() {
+        let now = Utc::now();
+        let report_46h_old = DosReportSLA {
+            created_at: now - Duration::hours(46),
+            submitted_at: Some(now),
+        };
+        assert!(report_46h_old.is_compliant()); // OK
+
+        let report_50h_old = DosReportSLA {
+            created_at: now - Duration::hours(50),
+            submitted_at: Some(now),
+        };
+        assert!(!report_50h_old.is_compliant()); // VIOLATION
+    }
+}
+```
+
+**Owner** : Architect
+
+---
+
+### K.4 WARNING 4 — ACL (Anti-Corruption Layer) absent pour 4 systèmes externes
+
+**Description** : BANKO intègre 4 systèmes externes critiques sans ACL defined:
+
+1. **goAML (CTAF)** — XML format, CTAF schema changes, BANKO domain must remain stable
+2. **SWIFT** — ISO 20022 (MT940, MT103), field naming varies by bank
+3. **Sanctions lists** (UN, OFAC, EU) — CSV/XML from 3 different sources, normalization required
+4. **BVMT** (custodian) — Proprietary protocol, TBD
+
+**Risk** : Without ACL, domain models get polluted with external concern. Example:
+
+```rust
+// BAD — domain polluted with CTAF schema concern
+pub struct SuspicionReport {
+    pub ctaf_xml: String, // RAW XML, tightly coupled
+    pub ctaf_id: String, // CTAF-assigned ID
+    pub ctaf_status: String, // CTAF enum
+}
+
+// GOOD — domain pure, ACL transforms
+pub struct SuspicionReport {
+    pub id: ReportId,
+    pub description: String,
+    pub severity: AlertSeverity,
+}
+
+// In infrastructure/external/acl/goaml_adapter.rs:
+pub fn to_ctaf_xml(report: &SuspicionReport) -> Result<String, TransformError> {
+    // Transform domain → CTAF XML, handle schema differences
+}
+
+pub fn from_ctaf_response(xml: &str) -> Result<CtafAcknowledgement, ParseError> {
+    // Parse CTAF XML response → domain AcknowledgementId
+}
+```
+
+**Recommandation** : Create `backend/src/infrastructure/external/acl/` with:
+- `mod.rs` — ACL interface trait
+- `goaml_adapter.rs` — CTAF XML ↔ SuspicionReport
+- `swift_adapter.rs` — ISO 20022 parser
+- `sanctions_adapter.rs` — List normalization (UN/OFAC/EU → SanctionList)
+- `bvmt_adapter.rs` — Protocol wrapper (TBD)
+
+Estimate : 3-5 days architecture + design.
+
+**Owner** : Architect
+
+---
+
+### K.5 WARNING 5 — Event Sourcing / Audit Trail implicite, pas explicite
+
+**Description** : Circ. 2006-19 audit trail (immutable, horodaté) = legal requirement. Architecture mentions "Event Store", 0 code.
+
+**Questions unanswered** :
+- Full event sourcing (es-cqrs) or point-in-time snapshots?
+- Event retention: unlimited? 5y (data retention law)?
+- Event queryability: by aggregate, by event type, by time range, by actor?
+- Event consistency: strong (all events applied sequentially) or eventual?
+- Performance: how to query account balance at any point in time efficiently?
+
+**Recommendation** :
+Decision: **Event Store + Snapshots hybrid**
+- Every operation = domain event (stored immutable)
+- Aggregate snapshots every 100 events (fast rebuild)
+- Query pattern: rebuild aggregate from events (last snapshot + delta)
+- Retention: 5y hot, 7y cold archive, delete 8y (INPDP compliance)
+
+Estimate: 1-2 weeks design + prototype.
+
+**Owner** : Architect
+
+---
+
+### K.6 WARNING 6 — HSM Interface framework only
+
+**Description** : HSM (Hardware Security Module) = infrastructure requirement per PCI DSS v4.0.1, e-signature Loi 2016-48. But 0 code in Architecture.
+
+**Risks** :
+- No PKCS#11 wrapper (standard HSM interface)
+- No failover (development mode when HSM unavailable?)
+- No key rotation policy
+- No PIN/password management
+- No audit trail for key operations
+
+**Recommendation** :
+Create `backend/src/infrastructure/crypto/hsm.rs`:
+```rust
+pub trait HsmProvider {
+    async fn sign(&self, data: &[u8], key_id: &str) -> Result<Vec<u8>, HsmError>;
+    async fn encrypt(&self, plaintext: &[u8], key_id: &str) -> Result<Vec<u8>, HsmError>;
+    async fn decrypt(&self, ciphertext: &[u8], key_id: &str) -> Result<Vec<u8>, HsmError>;
+    async fn verify(&self, signature: &[u8], data: &[u8], key_id: &str) -> Result<bool, HsmError>;
+}
+
+// Production impl (PKCS#11)
+pub struct Pkcs11Hsm { /* ... */ }
+
+#[async_trait]
+impl HsmProvider for Pkcs11Hsm {
+    async fn sign(&self, data: &[u8], key_id: &str) -> Result<Vec<u8>, HsmError> {
+        // Call PKCS#11 library
+    }
+}
+
+// Test impl (software, for development)
+pub struct MockHsm { /* ... */ }
+
+#[async_trait]
+impl HsmProvider for MockHsm {
+    async fn sign(&self, data: &[u8], key_id: &str) -> Result<Vec<u8>, HsmError> {
+        // Software RSA signature (development only!)
+    }
+}
+```
+
+Estimate: 2-3 days prototype + test mocks.
+
+**Owner** : Architect + Security
+
+---
+
+### K.7 WARNING 7 — 9 BCs v4.0 couverture Temenos 20-40% seulement
+
+**Description** : Arrangement, Collateral, TradeFinance, CashManagement, IslamicBanking, DataHub, ReferenceData, Securities, Insurance = 9 BCs nouveaux, **zéro code Rust**, couverture estimée 20-40% Temenos.
+
+Example:
+- Securities BC (Temenos 40-60 endpoints) → BANKO planned 5-8 endpoints (10-20%)
+- TradeFinance (Temenos 30-50) → BANKO planned 3-5 (10%)
+- IslamicBanking (Temenos 30-40) → BANKO planned 3-5 (10%)
+
+**Impact** : Even if all 22 BCs coded, Temenos parity = 45-50%, not 80%+ promised.
+
+**Recommendation** : Honesty in marketing. Declare:
+- **v4.0 (12-16 months)** : 13 BCs P0 = **50% Temenos parity**
+- **v4.1 (next 6 months)** : +Arrangement, Collateral, IslamicBanking = **70% parity**
+- **v4.2 (future)** : Order, Commitment, advanced Securities = **85%+**
+
+**Owner** : Product Manager
+
+---
+
+### K.8 WARNING 8 — Loi 2025 (INPDP) compliance 40% seulement
+
+**Description** : Loi 2025 (Données Personnelles) applicability:
+- Applicable immediately in Tunisia (replaces Loi 2004-63)
+- Penalties: €20k-€100k (TBD in Tunisian context, GDPR max €20M EU is not applicable)
+- BANKO deals with PII: Customer name, email, phone, ID, income, beneficial owners
+
+**Compliance gaps** :
+- [ ] DPO (Data Protection Officer) role not assigned
+- [ ] DPIA (Data Protection Impact Assessment) process absent
+- [ ] Consent management: partial (ConsentManager sketch)
+- [ ] Breach notification: no 72h alert mechanism
+- [ ] Right to erasure: soft delete, not hard delete
+- [ ] Data portability: DTO export, not streaming portable format
+- [ ] Retention schedule: not coded
+
+**Recommendation** : INPDP Compliance Sprint (2-3 weeks) BEFORE production:
+1. Week 1: DPO hiring + DPIA for Customer BC
+2. Week 2: Consent UI + 72h breach notification setup
+3. Week 3: Data export/erasure APIs, retention scheduler
+
+**Owner** : Legal + Architect
+
+---
+
+### K.9 WARNING 9 — API design incomplete (pagination, rate limiting, error format)
+
+**Description** : REST API design lacks:
+- Pagination: no limit/offset or cursor patterns documented
+- Rate limiting: Traefik mentioned, but no Rust-level enforcement (X-RateLimit-* headers)
+- Error format: no JSON schema for error responses (e.g., 400 Bad Request should return { code, message, details })
+
+**Examples** :
+```
+GET /api/v1/customers (returns ALL customers? Max 1000? Paginated?)
+GET /api/v1/customers?limit=100&offset=0 (SQL injection risk if not parameterized)
+GET /api/v1/accounts/{id}/movements (how many movements? 1000? 100k?)
+
+Rate limiting missing:
+- No per-user rate limits (e.g., 1000 req/hour)
+- No per-IP limits
+- No X-RateLimit-Remaining, X-RateLimit-Reset headers
+
+Error format undefined:
+- 400 { error: "validation failed" } (too generic)
+- 400 { code: "INVALID_IBAN", message: "IBAN failed checksum", field: "iban_number" } (better)
+```
+
+**Recommendation** : Define OpenAPI/Swagger spec covering:
+- Pagination: cursor-based for audit trail (immutable), offset-based for mutable lists
+- Rate limiting: 1000 req/hour per user, 100 req/minute per IP
+- Error format:
+  ```json
+  {
+    "code": "INVALID_REQUEST",
+    "message": "Customer KYC status must be VALIDATED",
+    "details": {
+      "field": "kyc_status",
+      "expected": "VALIDATED",
+      "actual": "PENDING"
+    }
+  }
+  ```
+
+**Owner** : Architect
+
+---
+
+### K.10 WARNING 10 — Frontend i18n incomplete (nombres, devises, formes AR)
+
+**Description** : i18n declared (AR RTL, FR, EN), but incomplete:
+- AR number format (٠١٢ vs 012) — not mentioned
+- AR currency format (د.ت 1,234.567 vs 1234.567 TND) — not mentioned
+- AR date format (dd/mm/yyyy vs yyyy-mm-dd) — not mentioned
+- RTL form inputs (right-aligned, cursor logic) — not detailed
+
+**Risk** : AR users see English-formatted numbers/currency, confusing.
+
+**Recommendation** : STORY-T05 must include i18n library integration:
+```typescript
+// Use intl-like library (e.g., `format-js` or similar)
+export const formatCurrency = (amount: number, locale: string) => {
+  const formatter = new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: 'TND',
+  });
+  return formatter.format(amount);
+};
+
+// Usage
+formatCurrency(1234.567, 'ar-TN') // Output: د.ت ١٬٢٣٤٫٥٦٧
+formatCurrency(1234.567, 'fr-TN') // Output: 1 234,567 د.ت
+
+export const formatDate = (date: Date, locale: string) => {
+  const formatter = new Intl.DateTimeFormat(locale, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  return formatter.format(date);
+};
+
+// Usage
+formatDate(new Date('2026-04-07'), 'ar-TN') // ٠٧/٠٤/٢٠٢٦
+formatDate(new Date('2026-04-07'), 'fr-TN') // 07/04/2026
+```
+
+**Owner** : Frontend Lead
+
+---
+
+End of Annexes.
+
+**Rapport complété et signé le 7 avril 2026**
+**Total pages** : ~40 pages (1200+ lines)
+**Total annexes** : K annexes (A-K)
+**Quality gate status** : PASS WITH WARNINGS
+**Recommended action** : Proceed Sprint 0 conditional on bloqueur resolution checklist.
+

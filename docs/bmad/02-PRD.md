@@ -1,2489 +1,878 @@
-# PRD — BANKO
+# PRD — BANKO v4.0
 ## Méthode Maury — Phase TOGAF B-C (Business + SI)
 
-**Stack** : Rust/Actix-web + Astro/Svelte + PostgreSQL
-**Disciplines** : SOLID + DDD + Hexagonal + BDD + TDD
-**Organisation** : Scrum → Nexus → SAFe → ITIL
-**Dev** : Agents IA supervisés
-
-**Version** : 3.0.0 — 6 avril 2026
+**Version** : 4.0.0 — 7 avril 2026
 **Auteur** : GILMRY / Projet BANKO
-**Consommateur** : Étape 3 (Architecte)
+**Horizon** : 12-16 mois (avril 2026 → août 2027)
+**Profil** : Solo-dev side-project, 8h/sem moyenne, coefficients IA appliqués
 
 ---
 
 ## 1. Résumé exécutif
 
-BANKO est un système bancaire open source (AGPL-3.0) conçu pour les banques tunisiennes. Il met en œuvre de manière irréfutable la conformité réglementaire BCT, CTAF, INPDP, et les normes internationales (Bâle III, GAFI).
+BANKO v4.0 est un système bancaire open source (AGPL-3.0) conçu pour atteindre **parité fonctionnelle Temenos Transact** (550-700+ endpoints, 17 catégories) tout en implémentant à la perfection la conformité réglementaire tunisienne (BCT, CTAF, INPDP, BVMT) et internationale (Bâle III, GAFI R.16, IFRS 9, ISO 27001:2022, PCI DSS v4.0.1).
 
-**Objectif** : Fournir un Core Banking System transparent, auditable, modulaire, où chaque opération est traçable vers un texte légal [REF-XX]. Une action illégale en droit bancaire tunisien ne compile tout simplement pas.
+**Objectif stratégique** : Libérer les banques tunisiennes de la dépendance Temenos (100-500 k€/an/licence) en fournissant une alternative souveraine, auditable, gratuite, avec **22 bounded contexts** couvrant 85-90% des capacités Temenos.
 
-**MVP** : Gestion des clients (KYC), comptes, crédits, calcul prudentiel, AML, sanctions, comptabilité NCT, audit trail.
+**Cible MVP** : Petites/moyennes banques tunisiennes, établissements financiers, banques islamiques (Loi 2016-33), startups fintech, superviseurs (BCT, CTAF, INPDP).
 
-**Cible MVP** : Petites banques tunisiennes, établissements financiers, startups fintech.
+**Promesse clé** : Une action illégale en droit bancaire tunisien ne compile tout simplement pas. Chaque opération est traçable vers un texte légal (95 références BCT/INPDP/PCI/ISO mappées).
 
 ---
 
 ## 2. Objectifs produit (mesurables)
 
-| Objectif | Métrique | Cible |
-|---|---|---|
-| Conformité réglementaire | Couverture exigences BCT P0 | 100% |
-| Couverture tests domain | Tarpaulin | 100% |
-| Scénarios BDD | Count gherkin | ≥ 100 (MVP) |
-| Performance API | P95 latence | < 200ms |
-| Disponibilité | Uptime | 99.9% |
-| Piste d'audit | Complétude opérations | 100% |
-| Sécurité | Vulnérabilités critiques non mitigées | 0 |
-| Accessibilité i18n | Langues | AR (RTL) + FR + EN |
-| Conformité normes internationales | Couverture ISO 27001:2022, PCI DSS v4.0.1, loi données personnelles 2025 | 100% avant échéances respectives |
-
----
-
-## 3. Périmètre (MVP / Hors scope)
-
-### 3.1 MVP (Jalons 0-2 — Semaines 1-12)
-
-**P0 — Blocantes** :
-- C1: Gestion des clients (KYC/CDD/EDD complet Circ. 2025-17)
-- C2: Gestion des comptes (courant, épargne, DAT)
-- C3: Gestion des crédits (octroi, suivi, classification, provisionnement)
-- C4: Calcul prudentiel en temps réel (ratios solvabilité, Tier 1, C/D, concentration)
-- C5: AML — Surveillance transactionnelle (scénarios P0)
-- C6: Sanctions — Filtrage listes ONU/nationales
-- C7: Comptabilité bancaire NCT (écritures, balance, GL)
-- C10: Governance — Piste d'audit immutable, 3LoD
-- C12: Authentification sécurisée (2FA, RBAC, sessions)
-- C23: Conformité nouvelle loi données personnelles 2025 (DPO, DPIA, notification 72h, portabilité, effacement)
-- C24: Intégration goAML (CTAF) — déclarations de soupçon électroniques
-- C26: e-KYC biométrique (Circ. 2025-06)
-
-**P1 — Importantes** :
-- C6: Déclarations de soupçon (DOS) workflow
-- C8: Gel des avoirs
-- C9: Reporting réglementaire BCT (états prudentiels)
-- C11: Opérations de paiement nationales simples
-- C16: Protections INPDP (consentement, droits)
-- C20: Module Compliance transversal — SMSI ISO 27001:2022 (93 contrôles Annexe A)
-- C21: Conformité PCI DSS v4.0.1 — Tokenisation, chiffrement champ, CDE scope
-- C25: TuniCheque API — Vérification chèques temps réel (Circ. 2025-03)
-
-**P2 — Secondaires (post-MVP)** :
-- Virements SWIFT / ISO 20022
-- Opérations de change (Loi 76-18)
-- Monétique (ISO 8583) — dépriorisé P2, complexité ISO 8583 + dépendance acquéreur/processeur
-- Portail d'audit BCT (inspecteurs)
-- E-banking portail client
-- Provisionnement IFRS 9 (modèle ECL)
-- Reporting automatisé avancé
-- C22: Préparation Open Banking — APIs PSD3-ready, consent management TPP, SCA
-
-### 3.2 Hors scope MVP
-
-- Courtage, assurance
-- Gestion d'actifs (hedge funds, fonds mutuels)
-- Dérivés complexes
-- Intégrations fintech avancées (au-delà d'Open Banking PSD3-ready)
-- Blockchain, stablecoins
-- Monnaies numériques de banque centrale (CBDC)
-
----
-
-## 4. Glossaire métier (Ubiquitous Language DDD)
-
-| Terme | Définition | Contexte DDD |
-|---|---|---|
-| **Compte** | Instrument de dépôt/crédit identifié par RIB, détenu par client | Account BC |
-| **Client** | PP/PM titulaire, identifié par fiche KYC | Customer BC |
-| **Fiche KYC** | Enregistrement d'identification conforme Annexe 1 Circ. 2025-17 [REF-31][REF-33] | Customer BC |
-| **Bénéficiaire effectif** | PP qui possède/contrôle ≥25% capital ou contrôle de fait | Customer BC |
-| **PEP** | Personne Politiquement Exposée — risque AML élevé, EDD obligatoire | Customer BC |
-| **Créance** | Engagement de crédit classifiable en 5 classes (0-4) | Credit BC |
-| **Classe de créance** | Classification réglementaire (Circ. 91-24): 0=courant, 1=suivi, 2=incertain (20%), 3=préoccupant (50%), 4=compromis (100%) | Credit BC |
-| **Provision** | Montant comptabilisé pour risque de perte | Credit BC |
-| **ECL** | Expected Credit Loss — IFRS 9 sur 12m ou durée de vie | Credit BC |
-| **Ratio de solvabilité** | FPN / RWA ≥ 10% [REF-17][REF-19] | Prudential BC |
-| **Tier 1** | Fonds propres de base (CET1 + AT1) ≥ 7% [REF-17][REF-19] | Prudential BC |
-| **Ratio C/D** | Crédits / Dépôts ≤ 120% [REF-21] | Prudential BC |
-| **Ratio de concentration** | Risque / bénéficiaire ≤ 25% FPN [REF-14] | Prudential BC |
-| **Déclaration de soupçon** | Signalement CTAF d'opération suspecte [REF-28] art. 125 | AML BC |
-| **Gel des avoirs** | Blocage irrévocable sans autorisation CTAF [REF-33] | AML BC |
-| **Piste d'audit** | Enregistrement immutable de toutes opérations | Governance BC |
-| **Écriture comptable** | Enregistrement journal selon plan comptable NCT | Accounting BC |
-| **RIB** | Relevé d'Identité Bancaire — identifiant compte tunisien | Account BC |
-| **DAT** | Dépôt À Terme — placement à durée fixe | Account BC |
-| **FPN** | Fonds Propres Nets — base ratios prudentiels | Prudential BC |
-| **RWA** | Risk-Weighted Assets — actifs pondérés par risque | Prudential BC |
-| **NCT** | Norme Comptable Tunisienne | Accounting BC |
-
----
-
-## 5. Bounded Contexts → Modules
-
-| # | Contexte (BC) | Responsabilité | Priorité | Entités principales |
-|---|---|---|---|---|
-| BC1 | **Customer** | Clients (PP/PM), KYC/CDD/EDD, bénéficiaires, PEP, scoring risque | P0 | Customer, KycProfile, Beneficiary, PepCheck, RiskScore |
-| BC2 | **Account** | Comptes (courant, épargne, DAT), soldes, mouvements | P0 | Account, Balance, Movement, AccountType, InterestSchedule |
-| BC3 | **Credit** | Crédits (octroi, suivi, remboursement, classification, provisionnement) | P0 | Loan, LoanSchedule, AssetClass, Provision, LoanClassification |
-| BC4 | **AML** | Surveillance transactionnelle, alertes, investigations, DOS, gel avoirs | P0 | Transaction, Alert, Investigation, SuspicionReport, AssetFreeze |
-| BC5 | **Sanctions** | Filtrage listes sanctions (ONU, UE, OFAC, nationales) | P0 | SanctionList, SanctionEntry, ScreeningResult, ScreeningMatch |
-| BC6 | **Prudential** | Ratios solvabilité, Tier 1, C/D, concentration en temps réel | P0 | PrudentialRatio, RiskWeightedAsset, RegulatoryCapital, RatioBreachAlert |
-| BC7 | **Accounting** | Comptabilité NCT (écritures, journal, GL, balance, provisionnement) | P0 | JournalEntry, Ledger, ChartOfAccounts, AccountingPeriod, TrialBalance |
-| BC8 | **Reporting** | États réglementaires BCT (prudentiels, AML, financiers) | P1 | RegulatoryReport, ReportTemplate, ReportSubmission, RegulatoryReportingPeriod |
-| BC9 | **Payment** | Virements nationaux/SWIFT, compensation, ISO 20022 | P1 | PaymentOrder, Transfer, SwiftMessage, Clearing, PaymentRoute |
-| BC10 | **ForeignExchange** | Opérations change, position change, conformité Loi 76-18 | P1 | FxOperation, FxPosition, ExchangeRate, FxLimit, FxCompliance |
-| BC11 | **Governance** | Contrôle interne, 3LoD, comités, piste d'audit | P0 | AuditTrail, Committee, ControlCheck, ComplianceReport, DocumentaryEvidence |
-| BC12 | **Identity** | Authentification, autorisations, RBAC, sessions, 2FA, MFA | P0 | User, Role, Permission, Session, TwoFactorAuth, UserConsent |
-
----
-
-## 6. Exigences fonctionnelles (30+ FRs avec BDD Gherkin)
-
-### 6.1 BC1 — Customer (Gestion des clients / KYC)
-
-#### FR-001: Création de fiche KYC — Personne Physique
-- **Description** : Un chargé de clientèle doit pouvoir créer une fiche KYC complète pour un client personne physique conforme Annexe 1 Circ. 2025-17 [REF-31][REF-33].
-- **Priorité** : MUST | P0
-- **User Story** : En tant que Karim (chargé clientèle), je veux enregistrer les données de KYC d'un nouveau client (identité, profession, revenus, adresse, PEP, source des fonds) afin de respecter les obligations de vigilance.
-- **Entité DDD** : `Customer` aggregate avec `KycProfile` value object.
-- **Invariants** :
-  - INV-01 : Fiche KYC requise avant ouverture de compte [REF-31]
-  - INV-10 : Données conservées 10 ans après clôture [REF-28]
-  - INV-13 : Consentement INPDP avant traitement [REF-54]
-- **SOLID** :
-  - **S** : `KycRepository` ≠ `KycValidator` (SRP)
-  - **O** : `KycProfileFactory` extensible pour nouvelles normes
-  - **L** : `KycProfile` → `KycProfileV2025` sans breaking change
-  - **I** : `IKycProvider` pour multiples sources données
-  - **D** : `KycValidator` reçoit `ICompletenesChecker` en injection
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Création KYC personne physique avec tous les champs obligatoires
-  Given Un nouvel client personne physique sans KYC
-  When Je renseigne les champs obligatoires (CIN, nom, prénom, date naissance, profession, adresse)
-  And Je confirme la création
-  Then Une fiche KYC est créée avec statut "EN_COURS_VALIDATION"
-  And Un enregistrement d'audit est généré [Qui: Karim, Quand: T0, Quoi: FR-001]
-
-Scenario: Création KYC échoue si CIN déjà existant
-  Given Une fiche KYC existante pour CIN = 12345678
-  When Je tente de créer une nouvelle KYC avec CIN = 12345678
-  Then L'opération est rejetée avec erreur "CIN_ALREADY_EXISTS"
-  And Aucune fiche n'est créée
-
-Scenario: KYC nécessite consentement INPDP explicite
-  Given Un formulaire KYC rempli
-  When Je n'active pas la case "J'accepte le traitement de mes données"
-  Then La création est bloquée avec message "CONSENT_REQUIRED"
-  And Aucun enregistrement n'est persévéré
-
-Scenario: Détection automatique PEP lors de création KYC
-  Given Un nouvel client nommé "Ali Ben Ali" avec profession "Ministre"
-  When J'enregistre la KYC
-  Then Une vérification PEP est lancée automatiquement
-  And La fiche est marquée "PEP_FLAGGED_AUTO"
-  And Un workflow d'EDD renforcée est déclenché
-```
-
-- **Dépendances** : BC12 (Identity — vérifier permissions créateur)
-
----
-
-#### FR-002: Validation de fiche KYC par Compliance
-- **Description** : Sonia (CMLCO) doit valider ou rejeter une fiche KYC en EN_COURS_VALIDATION.
-- **Priorité** : MUST | P0
-- **User Story** : En tant que Sonia, je veux examiner une fiche KYC et décider "VALIDÉE" ou "REJETÉE" avec motif.
-- **Entité DDD** : `KycProfile` avec state machine (EN_COURS_VALIDATION → VALIDÉE ou REJETÉE).
-- **Invariants** :
-  - Transition d'état conforme au workflow réglementaire
-  - Tout rejet doit être documenté (REF-31)
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Validation réussie d'une KYC
-  Given Une fiche KYC en statut "EN_COURS_VALIDATION"
-  And Tous les champs sont conformes
-  When Sonia clique "VALIDER"
-  Then Le statut devient "VALIDÉE"
-  And Un email de confirmation est envoyé au client
-  And La fiche est verrouillée (read-only)
-
-Scenario: Rejet de KYC avec motif
-  Given Une fiche KYC avec données incomplètes
-  When Sonia sélectionne "REJETER" avec motif "ADRESSE_NON_CONFORME"
-  Then Le statut devient "REJETÉE"
-  And La fiche retourne à l'état éditable
-  And Un message est envoyé à Karim avec motif
-
-Scenario: Workflow AML déclenché après validation KYC
-  Given Une fiche KYC validée
-  When La validation est complétée
-  Then Un appel à BC4-AML est déclenché pour initialiser la surveillance
-  And Un appel à BC5-Sanctions est déclenché pour filtrage
-```
-
-- **Dépendances** : BC4 (AML — déclenchement surveillance), BC5 (Sanctions — filtrage initial)
-
----
-
-#### FR-003: Enrichissement bénéficiaires effectifs
-- **Description** : Pour un client personne morale, Karim doit enregistrer les bénéficiaires effectifs (≥25% capital) avec KYC individuelle.
-- **Priorité** : MUST | P0
-- **Entité DDD** : `Customer` (PM) → liste `Beneficiary` aggregate.
-- **Invariants** :
-  - Chaque bénéficiaire effectif nécessite une KYC propre
-  - Bénéficiaire = PP avec ≥25% capital ou contrôle de fait
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Ajout d'un bénéficiaire effectif à une PM
-  Given Une fiche KYC pour SARL "TransTech" validée
-  When Je clique "AJOUTER BENEFICIAIRE"
-  And Je renseigne identité de Mohamed (40% capital)
-  Then Le bénéficiaire est enregistré
-  And Une sous-KYC est créée pour Mohamed
-  And La somme des % capital = 100%
-
-Scenario: Rejet si bénéficiaire sans KYC complète
-  Given Un bénéficiaire enregistré avec donnees partielles
-  When Je tente de confirmer
-  Then Le système rejette avec "KYC_INCOMPLETE_FOR_BENEFICIARY"
-
-Scenario: Détection PEP cascadée sur bénéficiaire
-  Given Un bénéficiaire effectif dont le nom matche "Benali" (ministre)
-  When La KYC du bénéficiaire est validée
-  Then Le client parent hérite du flag "PEP_EXPOSURE"
-  And Une EDD renforcée est déclenchée
-```
-
----
-
-#### FR-004: Vérification PEP et EDD (Enhanced Due Diligence)
-- **Description** : Vérification automatique + manuelle si client ou bénéficiaire est Personne Politiquement Exposée.
-- **Priorité** : MUST | P0
-- **Entité DDD** : `PepCheck` aggregate, `EddProfile` value object.
-- **Invariants** : Tout PEP détecté déclenche EDD obligatoire avant ouverture de compte [REF-31].
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Détection PEP automatique basée sur liste interne BCT
-  Given Une liste PEP interne maintenue par Sonia
-  When Un nouvel client nommé "Chadli Bennour" avec profession "Magistrat"
-  Then Une alerte PEP est générée immédiatement
-  And Le client est marqué "EDD_REQUIRED"
-  And Sonia reçoit une notification
-
-Scenario: EDD renforcée pour PEP avec questionnaire
-  Given Un client marqué PEP
-  When Sonia initialise l'EDD
-  Then Un questionnaire EDD (source revenus, patrimoine, bénéficiaires) est envoyé
-  And Documents justificatifs sont demandés
-  And Une timeline de 10 jours ouvrables est fixée
-
-Scenario: Rejet si EDD incomplet après délai
-  Given EDD initié depuis 10 jours sans réponse
-  When Le délai expire
-  Then La fiche KYC devient "REJET_AUTO_EDD_EXPIRE"
-  And Karim et client reçoivent notification de rejet
-```
-
----
-
-#### FR-005: Scoring de risque client (RiskScore)
-- **Description** : Calcul automatique d'un score de risque (0-100) basé sur secteur, pays origine, montants, antécédents AML.
-- **Priorité** : SHOULD | P0
-- **Entité DDD** : `RiskScore` value object (immutable, calculé à la demande).
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Calcul RiskScore pour client de secteur normal
-  Given Un client salarié d'une entreprise formelle
-  When Le score est calculé
-  Then RiskScore est entre 10-30 (bas risque)
-  And Catégorie = "GREEN"
-
-Scenario: RiskScore élevé pour secteur risqué
-  Given Un client avec profession "Transports de valeurs" (secteur GAFI sensible)
-  When Le score est calculé
-  Then RiskScore est entre 60-80 (risque moyen-élevé)
-  And Catégorie = "ORANGE"
-
-Scenario: RiskScore maximum si antécédent AML
-  Given Un client avec 3 alertes AML antérieures résolues
-  When Le score est recalculé
-  Then RiskScore ≥ 85 (risque élevé)
-  And Catégorie = "RED"
-  And Surveillance renforcée est activée
-```
-
----
-
-### 6.2 BC2 — Account (Gestion des comptes)
-
-#### FR-006: Ouverture de compte courant
-- **Description** : Ouverture d'un compte courant (RIB) pour un client avec KYC validée [REF-31].
-- **Priorité** : MUST | P0
-- **User Story** : En tant que Karim, je veux ouvrir un compte courant pour un client ayant une KYC validée.
-- **Entité DDD** : `Account` aggregate avec state (OUVERT, SUSPENDU, CLÔTURÉ).
-- **Invariants** :
-  - INV-01 : Compte nécessite KYC validée avant ouverture
-  - Solde initial = 0 TND
-  - RIB unique par compte
-- **SOLID** :
-  - **S** : `AccountRepository` ≠ `RibGenerator` (SRP)
-  - **O** : Types de comptes extensibles (courant → crédit → DAT)
-  - **L** : Tout Account hérite des règles d'immuabilité
-  - **I** : `IAccountValidator` pour règles pluggables
-  - **D** : `RibGenerator` injecté dans factory
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Ouverture réussie de compte courant
-  Given Un client avec KYC validée (status = VALIDÉE)
-  When Je clique "OUVRIR_COMPTE_COURANT"
-  And Je sélectionne type = "COURANT"
-  Then Un compte est créé avec:
-    - RIB généré et unique
-    - Solde = 0 TND
-    - Devise = TND
-    - Statut = OUVERT
-    - DateOuverture = now
-  And Une écriture comptable débite le compte actif (2011)
-
-Scenario: Ouverture refusée si KYC non validée
-  Given Un client avec KYC en statut EN_COURS_VALIDATION
-  When Je clique "OUVRIR_COMPTE_COURANT"
-  Then L'opération est bloquée avec message "KYC_NOT_VALIDATED"
-
-Scenario: Ouverture refusée si client RiskScore trop élevé sans approbation
-  Given Un client avec RiskScore = 90 (RED)
-  When Je tente l'ouverture sans approbation direction
-  Then L'opération est bloquée
-  And Un workflow d'approbation direction est créé
-
-Scenario: Génération audit trail pour ouverture
-  Given Un compte créé avec succès
-  When L'ouverture est complétée
-  Then Un enregistrement audit immutable est généré:
-    - Qui: Karim (user_id)
-    - Quand: T0 (timestamp cryptographique)
-    - Quoi: ACCOUNT_OPENED (action)
-    - Où: RIB (ressource)
-```
-
-- **Dépendances** : BC1 (Customer — vérifier KYC), BC12 (Identity — permissions), BC11 (Governance — audit trail)
-
----
-
-#### FR-007: Ouverture de compte DAT (Dépôt À Terme)
-- **Description** : DAT avec taux garanti, durée fixe (6/12/24 mois), intérêts capitalisés.
-- **Priorité** : MUST | P0
-- **Entité DDD** : `Account` type = DAT, `InterestSchedule` value object.
-- **Invariants** : Montant > 1000 TND, taux immutable pendant durée.
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Ouverture DAT avec durée et taux
-  Given Client avec solde suffisant dans compte courant
-  When Je crée un DAT:
-    - Montant = 50 000 TND
-    - Durée = 12 mois
-    - Taux = 8% par an
-  Then Le DAT est créé avec:
-    - DateEchéance = now + 12 mois
-    - TauxFixe = 8.00%
-    - IntérêtsCapitalisés = MONTHLY
-  And Une écriture comptable débite 1027 (DAT) et crédite 1011 (courant)
-
-Scenario: Calcul intérêts mensuels DAT
-  Given Un DAT actif depuis 2 mois (50k @ 8%)
-  When Le calcul d'intérêts s'exécute
-  Then IntérêtsAccumulés = 50000 * 0.08 / 12 * 2 = 667 TND
-  And Le solde du DAT passe à 50667 TND
-  And Une écriture comptable crédite les intérêts (4010)
-
-Scenario: Restitution DAT à échéance
-  Given Un DAT arrivé à échéance
-  When La date d'échéance est atteinte
-  Then Le DAT est automatiquement restitué au compte courant
-  And Le solde courant augmente de principal + intérêts
-  And Une notification de restitution est envoyée au client
-```
-
----
-
-#### FR-008: Consultation et recherche de comptes
-- **Description** : Karim doit pouvoir consulter les comptes d'un client, soldes, mouvements récents.
-- **Priorité** : MUST | P0
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Consultation solde compte
-  Given Un compte ouvert depuis 3 jours avec solde = 15000 TND
-  When Je clique "CONSULTER" sur le compte
-  Then Je vois:
-    - RIB: 01-234-0001234-56
-    - Solde: 15000.00 TND
-    - DateOuverture: 2026-04-01
-    - Devise: TND
-    - Statut: OUVERT
-
-Scenario: Filtrage mouvements par période
-  Given Un compte avec 50 mouvements (derniers 90 jours)
-  When Je filtre par période "Depuis 7 jours"
-  Then Seulement 12 mouvements s'affichent
-  And Chaque mouvement montre (Date, Type, Montant, Solde après)
-
-Scenario: Recherche compte par RIB
-  Given L'interface de recherche
-  When Je saisis RIB = "01-234-0001234-56"
-  Then Le compte s'affiche avec toutes ses données
-```
-
----
-
-### 6.3 BC3 — Credit (Gestion des crédits)
-
-#### FR-009: Demande de crédit et analyse risque
-- **Description** : Octroi d'un crédit avec analyse risque, classification et provisionnement.
-- **Priorité** : MUST | P0
-- **User Story** : En tant que Karim, je veux instruire une demande de crédit. En tant que Rachid, je veux analyser le dossier et proposer une classification.
-- **Entité DDD** : `Loan` aggregate, `LoanSchedule`, `LoanClassification`.
-- **Invariants** :
-  - INV-05 : Risque / bénéficiaire ≤ 25% FPN [REF-14]
-  - INV-06 : Créance classée dans exactement une classe (0-4)
-  - INV-07 : Provisionnement minimum par classe [REF-14]
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Création demande crédit
-  Given Un client avec KYC validée et RiskScore acceptable
-  When Karim crée une demande:
-    - Montant: 100 000 TND
-    - Durée: 60 mois
-    - Objet: Crédit immobilier
-    - Garanties: Hypothèque sur bien
-  Then La demande passe en statut "EN_INSTRUCTION"
-  And Un dossier est créé
-  And Rachid reçoit une alerte d'analyse
-
-Scenario: Analyse risque par Rachid
-  Given Une demande en EN_INSTRUCTION
-  When Rachid analyse:
-    - Capacité de remboursement (ratio D/E)
-    - Garanties (LGD)
-    - Probabilité défaut (PD estimée)
-  Then Il propose une classification initiale:
-    - Classe proposée: 0 (courant) si bon profil
-    - Taux proposé: 7.5%
-  And Un comité crédit est créé pour approbation
-
-Scenario: Comité crédit approuve
-  Given Une analyse risque proposée par Rachid
-  When Le comité (3 membres) vote "APPROUVE"
-  Then La demande passe en "APPROUVEE"
-  And Un contrat de crédit est généré
-  And Déblocage peut s'effectuer
-
-Scenario: Déblocage crédit transfère montant
-  Given Un crédit approuvé
-  When Karim clique "DEBLOQUER"
-  And Montant = 100 000 TND
-  Then Le solde du compte client augmente de 100 000
-  And Une créance est enregistrée au bilan (classe 0)
-  And Un échéancier de remboursement est généré (60 mensualités)
-  And Écritures comptables:
-    - Débit 2111 (Crédits de consommation)
-    - Crédit 1012 (Compte courant client)
-```
-
-- **Dépendances** : BC1 (Customer), BC6 (Prudential — vérifier concentration), BC7 (Accounting)
-
----
-
-#### FR-010: Classification de créance (Circ. 91-24)
-- **Description** : Classification automatique et manuelle des créances en classe 0-4 selon Circ. 91-24 + Circ. 2023-02 [REF-14][REF-24].
-- **Priorité** : MUST | P0
-- **Entité DDD** : `LoanClassification` aggregate (déclenché par analyse retards).
-- **Invariants** :
-  - Classe 0 : En jour
-  - Classe 1 : Retard 1-30 jours
-  - Classe 2 : Retard 31-90 jours → provision 20%
-  - Classe 3 : Retard 91-180 jours → provision 50%
-  - Classe 4 : Retard > 180 jours → provision 100%
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Classification automatique — créance en jour
-  Given Un crédit déblocké depuis 5 mois, sans aucun retard
-  When L'analyse de classification s'exécute (mensuel)
-  Then Classe = 0 (courant)
-  And Provision = 0 TND
-  And Aucune écriture comptable de provision
-
-Scenario: Rétrogradation classe due à retard
-  Given Un crédit avec 2 échéances impayées (45 jours de retard)
-  When L'analyse s'exécute
-  Then Classe rétrograde de 0 → 2
-  And Provision minimum = 20% du solde restant dû
-  And Amina reçoit une alerte pour écriture comptable
-
-Scenario: Classification manuelle Rachid avec justification
-  Given Une créance en classe 2 sans raison apparent
-  When Rachid change manuellement la classe:
-    - Nouvelle classe: 1
-    - Justification: "Accord de restructuration signé"
-  Then La classification change
-  And Un enregistrement audit documente la décision
-  And Email notification à Amina
-
-Scenario: Provision recalculée après reclassification
-  Given Créance 100 000 TND classe 0 (provision = 0)
-  When Elle est reclassée classe 3 (retard 120j)
-  Then Provision passe à 50 000 (50% minimum)
-  And Différentielle de provision (+50 000) est comptabilisée
-  And Écriture: Débit 6125 (Dotation), Crédit 3012 (Provision)
-```
-
----
-
-#### FR-011: Calcul et suivi d'échéancier de remboursement
-- **Description** : Génération automatique de l'échéancier avec mensualité fixe (amortissement constant).
-- **Priorité** : MUST | P0
-- **Entité DDD** : `LoanSchedule` immutable après génération.
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Génération échéancier crédit
-  Given Crédit déblocké:
-    - Principal: 120 000 TND
-    - Durée: 60 mois
-    - Taux: 7.5% annuel
-  When L'échéancier est généré
-  Then Mensualité = 2 429.94 TND (fixe)
-  And 60 lignes d'échéance sont créées:
-    - Mois 1: Intérêts = 750, Principal = 1679.94, Solde = 118320.06
-    - Mois 2: Intérêts = 737.63, Principal = 1692.31, Solde = 116627.75
-    - ...
-    - Mois 60: Intérêts = 15.09, Principal = 2414.85, Solde = 0
-
-Scenario: Suivi d'une échéance impayée
-  Given Échéance due le 2026-05-01 de 2 429.94 TND
-  When La date d'échéance passe sans paiement
-  Then:
-    - Jour 1-30: Statut = "RETARD_1_30J"
-    - Jour 31-90: Statut = "RETARD_31_90J"
-    - Jour 91+: Statut = "RETARD_90J_PLUS"
-  And Emails de relance sont envoyés J+15, J+45
-  And Rachid reçoit alerte risque
-
-Scenario: Remboursement anticipé
-  Given Client qui rembourse 60 000 (50%) avant terme
-  When Le paiement est reçu
-  Then L'échéancier est réamorcé sur 30 mois restants
-  And Nouvelle mensualité = 1 215.89
-  And Intérêts économisés = ~9000 TND
-  And Écriture comptable débit 2111 (réduction créance)
-```
-
----
-
-### 6.4 BC4 — AML (Lutte anti-blanchiment)
-
-#### FR-012: Surveillance transactionnelle (monitoring)
-- **Description** : Détection automatique d'opérations suspectes selon scénarios AML [REF-28][REF-33].
-- **Priorité** : MUST | P0
-- **Entité DDD** : `Transaction` aggregate, `Alert` aggregate.
-- **Invariants** :
-  - INV-08 : Opération ≥ 5 000 TND espèces déclenche vérification [REF-28]
-  - Tout virement ≥ 10 000 TND filtré sanctions [REF-33]
-- **SOLID** :
-  - **S** : `AmlEngine` ≠ `AlertRepository` (SRP)
-  - **O** : Scénarios AML pluggables (stratégie pattern)
-  - **L** : Tout Alert hérite des règles d'immutabilité
-  - **I** : `IAmlScenario` pour scénarios extensibles
-  - **D** : Scénarios injectés dans engine
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Détection transaction > 5000 TND espèces
-  Given Un client retirant 7 500 TND en espèces
-  When La transaction est saisie
-  Then Un scénario AML "ESPECES_IMPORTANTS" est déclenché
-  And Une alerte "ESPECES_IMPORTANTS_ALERT" est créée
-  And Statut alerte = "EN_INVESTIGATION"
-  And Sonia reçoit une notification
-
-Scenario: Détection structuring (plusieurs petits retrait < seuil)
-  Given Un client effectuant 4 retraits de 4 800 TND (j+1, j+2, j+3, j+4)
-  When Le 4ème retrait est effectué
-  Then Un scénario "STRUCTURING" détecte la pattern (total = 19 200)
-  And Une alerte STRUCTURING_ALERT est générée
-  And Sonia reçoit notification avec contexte
-
-Scenario: Détection virement à destination haut-risque
-  Given Un virement de 15 000 TND vers pays GAFI gris
-  When Le virement est initié
-  Then AML check déclenche vérification destination
-  And Si score risque destination > 70, alerte "HR_DESTINATION"
-  And Virement mis en attente validation Sonia
-
-Scenario: Détection premier virement client nouveau
-  Given Client ouvert depuis 5j, premier virement 25 000 TND
-  When Le virement est initié
-  Then Alerte "ANOMALOUS_BEHAVIOR" créée (premier op large = risque)
-  And Sonia doit valider avant envoi
-```
-
-- **Dépendances** : BC2 (Account), BC5 (Sanctions), BC4 (AML — autre scenario)
-
----
-
-#### FR-013: Investigation d'alerte AML
-- **Description** : Sonia doit pouvoir enquêter sur une alerte, collecter docs, décider transmission CTAF.
-- **Priorité** : MUST | P0
-- **Entité DDD** : `Investigation` aggregate, state machine.
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Sonia ouvre investigation sur alerte
-  Given Une alerte AML_ESPECES_IMPORTANTS
-  When Sonia clique "OUVRIR_INVESTIGATION"
-  Then Une investigation est créée:
-    - Statut: EN_COURS
-    - AlertId: référence
-    - Investigateur: Sonia
-    - DateOuverture: now
-  And Sonia peut ajouter des notes et documents
-
-Scenario: Collecte de documents pour investigation
-  Given Une investigation ouverte
-  When Sonia:
-    - Consulte les transactions du client (3 mois)
-    - Demande des justificatifs au client
-    - Consulte les rapports d'alerte précédents
-  Then Tous les documents sont attachés à l'investigation
-  And Historique des consultations est tracé (audit)
-
-Scenario: Conclusion investigation — Innocence
-  Given Une investigation sur structuring avec justification métier valide
-  When Sonia conclut "BENIN" (pas de soupçon)
-  Then:
-    - Statut investigation: CLOTUREE_BENIN
-    - Alerte fermée
-    - Aucune DOS transmise
-    - Client reste sous surveillance normale
-
-Scenario: Conclusion investigation — Soupçon justifié
-  Given Une investigation confirmant pattern blanchiment
-  When Sonia conclut "SOUPCON_FONDE"
-  Then:
-    - Une DOS (Déclaration de Soupçon) est créée
-    - Workflow transmission CTAF s'initialise
-    - Client est marqué "SOUPCON_DECLAIRE"
-    - Compte peut être gelé si demandé CTAF
-```
-
-- **Dépendances** : BC4 (AML), BC11 (Governance — audit)
-
----
-
-#### FR-014: Déclaration de soupçon (DOS) — transmission CTAF
-- **Description** : Transmission structurée d'une DOS à la CTAF conformément art. 125 Loi 2015-26 [REF-28].
-- **Priorité** : MUST | P0
-- **Entité DDD** : `SuspicionReport` aggregate, immutable après génération.
-- **Invariants** : Tout soupçon = DOS obligatoire à la CTAF dans délai réglementaire.
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Génération DOS structurée
-  Given Une investigation conclue "SOUPCON_FONDE"
-  When Sonia génère une DOS
-  Then Le formulaire DOS contient:
-    - Identité client (CIN/Registre commerce)
-    - Description opérations suspectes
-    - Montants et dates
-    - Motif du soupçon
-    - Déclarant (Sonia)
-    - DateDéclaration
-  And Le format respecte le modèle CTAF officiel
-
-Scenario: Transmission DOS à CTAF
-  Given Une DOS générée et signée électroniquement
-  When Sonia clique "TRANSMETTRE_CTAF"
-  Then:
-    - Connexion sécurisée CTAF (si API disponible) ou envoi protégé
-    - Numéro de transmission généré
-    - Statut DOS: TRANSMISE
-    - DateTransmission: now
-    - Récépissé numéroté archivé
-
-Scenario: Notification client de DOS
-  Given Une DOS transmise (sauf si court-circuitage pour raisons de sécurité)
-  When La transmission est confirmée
-  Then Un notif est envoyée au client:
-    - "Vos opérations font l'objet d'une investigation"
-    - Pas de détails (secret professionnel CTAF)
-    - Client peut contacter agence
-
-Scenario: Gel des avoirs déclenché par DOS
-  Given Une DOS transmise avec demande de gel (priorité haute)
-  When Sonia coche "DEMANDER_GEL_IMMEDIAT"
-  Then Le gel est immédiat sans attendre CTAF [REF-33]
-  And Les avoirs du client sont bloqués (mouvements interdits)
-  And Notification CTAF transmise parallèlement
-```
-
-- **Dépendances** : BC4 (AML), BC2 (Account — blocage), BC5 (Sanctions — gel appliqué)
-
----
-
-### 6.5 BC5 — Sanctions (Filtrage listes sanctions)
-
-#### FR-015: Filtrage sanctions listes ONU/EU/OFAC/nationales
-- **Description** : Screening automatique des clients/bénéficiaires/créanciers contre listes sanctions.
-- **Priorité** : MUST | P0
-- **Entité DDD** : `SanctionList` (données), `ScreeningResult` (résultats).
-- **Invariants** :
-  - Match = blocage immédiat sans approbation
-  - Tous les mouvements filtrent avant exécution [REF-33]
-- **SOLID** :
-  - **S** : `SanctionRepository` ≠ `MatchingEngine` (SRP)
-  - **O** : Multiples algorithmes matching (exact, fuzzy, phonétique)
-  - **L** : Tout ScreeningResult immutable
-  - **I** : `ISanctionListProvider` pluggable
-  - **D** : Providers injectés dans engine
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Screening client à la création KYC
-  Given Un nouvel client "Jamal Al-Wazir" (nom arabe)
-  When La KYC est créée
-  Then Screening automatique contre:
-    - Liste ONU (UN_OFAC, UN_UNSC)
-    - Liste EU (CONSOLIDATED_LIST)
-    - Liste OFAC (SDN, Sanctions_Names)
-    - Liste nationale BCT
-  And Si match = pas de création, erreur "SANCTIONED_PERSON"
-  And Si fuzzy match (Score > 85%) = alerte manuelle Sonia
-
-Scenario: Screening exact match — blocage immédiat
-  Given Un virement vers bénéficiaire "Ali Al-Qaeda" (sur SDN OFAC)
-  When Le virement est initié
-  Then Screening exact match (Levenshtein distance = 0)
-  And Virement BLOQUE immédiatement
-  And Message d'erreur: "SANCTIONED_DESTINATION_BLOCKED"
-  And Audit trail généré avec raison bloc
-
-Scenario: Fuzzy match — escalade manuelle
-  Given Un virement vers "Ahmed El-Ansari" (fuzzy match à 87% avec liste)
-  When Screening détecte fuzzy match > 85%
-  Then Virement mis en attente manuelle
-  And Sonia reçoit alerte avec:
-    - Nom saisi: Ahmed El-Ansari
-    - Nom liste: Ahmad Al-Insari (SDN)
-    - Confiance: 87%
-  And Sonia peut approuver ou bloquer après investigation
-
-Scenario: Renouvellement lists sanctions (daily batch)
-  Given Les listes sont mises à jour quotidiennement (T+1)
-  When Les nouvelles listes sont téléchargées depuis source officielle
-  Then:
-    - Avant 06:00 UTC: nouvelles listes en staging
-    - À 06:00: activation atomique des listes
-    - Tous les clients actifs sont re-screenés contre nouvelles listes
-    - Matches nouveaux génèrent alertes
-```
-
----
-
-#### FR-016: Gel des avoirs (Asset Freeze)
-- **Description** : Blocage irrévocable des avoirs en cas match sanctions ou DOS [REF-33].
-- **Priorité** : MUST | P0
-- **Entité DDD** : `AssetFreeze` aggregate, immutable, documentée.
-- **Invariants** :
-  - Gel = immédiat, irrévocable sans autorisation CTAF
-  - Tous mouvements compte gelé = rejetés
-  - Durée = jusqu'à déblocage explicite CTAF
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Gel automatique suite match sanctions
-  Given Un client avec match exact à liste ONU
-  When Le screening détecte le match
-  Then Le gel est appliqué immédiatement:
-    - Compte mis en statut "GELE"
-    - Tous les mouvements (débits, virements) rejetés
-    - Crédit des intérêts DAT suspendu
-    - Message d'erreur au client: "Compte gelé conformément régulation"
-
-Scenario: Gel manuel par Sonia après investigation
-  Given Une investigation AML conclue "SOUPCON_FONDE"
-  When Sonia décide de geler les avoirs
-  Then:
-    - AssetFreeze créée avec motif "DOS_INVESTIGATION"
-    - Compte gelé immédiatement
-    - Notification CTAF transmise
-    - Client notifié (sans détails)
-    - Gel enregistré à l'audit trail
-
-Scenario: Déblocage suite décision CTAF
-  Given Un compte gelé depuis 3 mois
-  When CTAF envoie l'ordre de déblocage (API ou notification officielle)
-  Then:
-    - Gel levé
-    - Compte retourne en statut OUVERT
-    - Mouvements remis en service
-    - Audit trail documenta déblocage CTAF
-
-Scenario: Requête client — accès avoirs gelés
-  Given Un client avec compte gelé (soupçon)
-  When Client demande accès aux fonds
-  Then:
-    - Message standard: "Vos avoirs sont soumis à mesures de conformité"
-    - Pas de détails motif (secret investigation)
-    - Direction apporte assistance si déblocage justifié
-```
-
----
-
-### 6.6 BC6 — Prudential (Ratios prudentiels en temps réel)
-
-#### FR-017: Calcul ratio de solvabilité (10% minimum)
-- **Description** : Fonds propres réglementaires / RWA ≥ 10% [REF-17][REF-19].
-- **Priorité** : MUST | P0
-- **Entité DDD** : `PrudentialRatio`, `RiskWeightedAsset`, `RegulatoryCapital`.
-- **Invariants** : INV-02 ratio ≥ 10% (violation = alerte P0).
-- **SOLID** :
-  - **S** : `RwaCaclulator` ≠ `RatioAggregator` (SRP)
-  - **O** : Pondérations risque extensibles par circulaire
-  - **L** : Ratios immuables post-calcul
-  - **I** : `IRwaMethodology` (standard / advanced IRB)
-  - **D** : Méthodologies injectées
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Calcul RWA crédits clientèle
-  Given Portefeuille crédits:
-    - Crédit A: 50M TND, classe 0, pondération 100% → RWA = 50M
-    - Crédit B: 30M TND, classe 2, pondération 100% → RWA = 30M
-    - Crédit C: 20M TND, classe 4, pondération 150% → RWA = 30M
-  When RWA est calculé
-  Then RWA total crédits = 110M TND
-
-Scenario: Calcul ratio solvabilité
-  Given:
-    - FPN (fonds propres nets) = 15M TND
-    - RWA total (crédits + marché + opérationnel) = 130M TND
-  When Ratio est calculé
-  Then Ratio = 15 / 130 = 11.54%
-  And Status = "CONFORME" (≥ 10%)
-  And Alerte = NONE
-
-Scenario: Alerte ratio solvabilité sous seuil
-  Given Ratio solvabilité calculé = 9.8% (< 10%)
-  When Le calcul complète
-  Then:
-    - Status = "NON_CONFORME"
-    - Une RatioBreachAlert est créée P0
-    - Rachid (Risques) + Directeur reçoivent alerte urgente
-    - Plan d'action remédiation déclenché
-
-Scenario: Simulation avant octroi crédit
-  Given Directeur analyse demande crédit de 5M
-  When Il demande "simulation impact ratio"
-  Then Le système calcule:
-    - Ratio actuel: 11.54%
-    - RWA nouveau: 130M + 5M = 135M
-    - Ratio projeté: 15 / 135 = 11.11%
-  And Décision d'octroi = OK, ratio reste conforme
-```
-
-- **Dépendances** : BC3 (Credit), BC7 (Accounting)
-
----
-
-#### FR-018: Calcul Tier 1 ratio (7% minimum)
-- **Description** : Fonds propres de base (CET1 + AT1) / RWA ≥ 7% [REF-17][REF-19].
-- **Priorité** : MUST | P0
-- **Invariants** : INV-03 Tier1 ≥ 7%.
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Composition Tier 1
-  Given:
-    - Capital social: 10M TND
-    - Réserves légales: 2M TND
-    - Bénéfices non distribués: 2.5M TND
-    - Autres ajustements: -0.5M TND
-  When Tier 1 est calculé
-  Then CET1 = 14M, AT1 = 0, Tier 1 = 14M
-
-Scenario: Tier 1 ratio conforme
-  Given Tier 1 = 14M, RWA = 200M
-  When Ratio calculé
-  Then Ratio = 14 / 200 = 7%
-  And Status = "CONFORME_LIMITE" (= 7% exactly)
-  And Vigilance recommandée
-
-Scenario: Tier 1 ratio critique
-  Given Tier 1 = 12M, RWA = 200M
-  When Ratio calculé
-  Then Ratio = 6%
-  And Status = "NON_CONFORME"
-  And Alerte P0 "TIER1_BELOW_MIN"
-  And Direction doit augmenter capital ou réduire RWA
-```
-
----
-
-#### FR-019: Ratio Crédits/Dépôts ≤ 120%
-- **Description** : Suivi liquidité [REF-21].
-- **Priorité** : MUST | P0
-- **Invariants** : INV-04 C/D ≤ 120%.
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Calcul ratio C/D
-  Given:
-    - Total crédits actifs: 240M TND
-    - Total dépôts: 200M TND
-  When Ratio calculé
-  Then C/D = 240 / 200 = 120%
-  And Status = "CONFORME_LIMITE"
-
-Scenario: Dépassement C/D
-  Given C/D = 122%
-  When Ratio calculé
-  Then:
-    - Status = "NON_CONFORME"
-    - Alerte "CD_RATIO_EXCEEDED"
-    - Plan d'action trimestriel requis
-
-Scenario: Prévention dépassement C/D avant octroi
-  Given C/D actuellement = 119%
-  When Demande crédit +5M initiée
-  Then Simulation: C/D futur = 121%
-  And Octroi bloqué jusqu'à réduction dépôts
-```
-
----
-
-#### FR-020: Ratio de concentration ≤ 25% FPN
-- **Description** : Risque sur un même bénéficiaire ≤ 25% des fonds propres nets [REF-14].
-- **Priorité** : MUST | P0
-- **Invariants** : INV-05.
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Vérification concentration avant octroi crédit
-  Given:
-    - FPN = 20M TND
-    - Limite concentration = 25% * 20M = 5M TND
-    - Expositions existantes sur bénéficiaire X: 4.5M
-  When Demande crédit +1M sur même bénéficiaire
-  Then:
-    - Exposition future = 5.5M (> 5M limit)
-    - Octroi BLOQUE
-    - Message: "CONCENTRATION_LIMIT_EXCEEDED"
-
-Scenario: Concentration conforme
-  Given Exposition X = 4M (80% de limite)
-  When Nouveau crédit +200k sur X
-  Then:
-    - Exposition future = 4.2M (84% limite)
-    - Status = CONFORME
-    - Octroi approuvé
-
-Scenario: Dashboard concentration
-  Given Dashboard Rachid
-  When Il consulte "Concentration par bénéficiaire"
-  Then Liste des 20 plus importants bénéficiaires:
-    - Rang 1: Groupe STEG 3.8M (19% FPN) — vert
-    - Rang 2: Sicar Tunis 2.1M (10.5%) — vert
-    - ...
-    - Rouge si > 25%
-```
-
----
-
-### 6.7 BC7 — Accounting (Comptabilité bancaire NCT)
-
-#### FR-021: Plan comptable bancaire et chart of accounts
-- **Description** : Implémentation du plan comptable bancaire tunisien (NCT 01-30) avec tous les comptes.
-- **Priorité** : MUST | P0
-- **Entité DDD** : `ChartOfAccounts` (immuable), `Account` (plan comptable).
-- **Invariants** : INV-11 écritures équilibrées, INV-07 provisionnement minimum.
-- **SOLID** :
-  - **S** : `ChartRepository` ≠ `TrialBalanceCalculator` (SRP)
-  - **O** : Plans extensibles par circulaire
-  - **L** : Comptes immuables après utilisation
-  - **I** : `IAccountingStandard` (NCT / IFRS)
-  - **D** : Standards injectés dans factory
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Vérification plan comptable bancaire complet
-  Given Le système au démarrage
-  When Le chart of accounts est chargé
-  Then Tous les comptes NCT sont présents:
-    - Classe 1 (Actifs) : 1011, 1012, 1021, 1027, 2111, 2112, etc.
-    - Classe 2 (Passifs) : 4010, 4011, etc.
-    - Classe 6 (Charges) : 6111, 6125, etc.
-  And Chaque compte a label, code, nature (D/C)
-
-Scenario: Consultation chart of accounts
-  Given Interface Amina
-  When Elle recherche compte "2111" (Crédits consommation)
-  Then Affichage:
-    - Intitulé: "Crédits à la clientèle — Crédits de consommation"
-    - Nature: Débit (actif)
-    - Classe: 2
-    - Sous-classe: 211
-```
-
----
-
-#### FR-022: Écritures comptables automatiques — déblocage crédit
-- **Description** : Chaque opération débite/crédite les comptes appropriés automatiquement.
-- **Priorité** : MUST | P0
-- **Entité DDD** : `JournalEntry` aggregate (immutable après validation).
-- **Invariants** : INV-11 débit = crédit.
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Écriture déblocage crédit de 100k
-  Given Crédit déblocké pour 100 000 TND
-  When L'écriture est générée
-  Then:
-    - Débit 2111 (Crédits clientèle) : 100 000 TND
-    - Crédit 1012 (Compte courant client) : 100 000 TND
-    - Total débit = Total crédit = 100 000 ✓
-  And JournalEntry créée avec:
-    - JournalCode: "CREANCES"
-    - DateEcriture: T
-    - ReferenceDocument: LoanId
-    - Immutable après validation
-
-Scenario: Écriture dépôt initial client
-  Given Client dépose 50 000 TND en espèces
-  When Dépôt comptabilisé
-  Then:
-    - Débit 1010 (Encaisse/Caisse) : 50 000
-    - Crédit 1012 (Compte client) : 50 000
-    - Journal: "OPERATIONS_COURANTES"
-
-Scenario: Écriture provisionnement créance classe 2
-  Given Créance 30 000 passée classe 2 (20% provision)
-  When Provision est enregistrée
-  Then:
-    - Débit 6125 (Dotation provision) : 6 000
-    - Crédit 3012 (Provision créances) : 6 000
-    - Balance: 0 ✓
-
-Scenario: Rejet écriture déséquilibrée
-  Given Une écriture mal formée:
-    - Débit 2111: 100 000
-    - Crédit 1012: 99 000
-  When Validation
-  Then L'écriture est rejetée
-  And Message: "IMBALANCED_ENTRY" (débits ≠ crédits)
-```
-
----
-
-#### FR-023: Journal, Grand Livre et Balance
-- **Description** : Enregistrement chronologique, GL par compte, TB équilibrée.
-- **Priorité** : MUST | P0
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Journal des opérations courantes
-  Given Journal du mois (avril 2026)
-  When Amina consulte le journal
-  Then Liste chronologique des écritures:
-    - 2026-04-01: CREANCES (+100k) — Débit 2111 / Crédit 1012
-    - 2026-04-02: PROVISIONS (+6k) — Débit 6125 / Crédit 3012
-    - 2026-04-05: INTERETS_DAT (+667) — Débit 1027 / Crédit 4010
-  And Total débits = Total crédits
-
-Scenario: Grand Livre compte 2111
-  Given Compte 2111 (Crédits clientèle)
-  When Amina ouvre le GL
-  Then Solde par opération:
-    - Crédit A déblocage 100k: solde = 100k
-    - Crédit B déblocage 80k: solde = 180k
-    - Remboursement mensuel -2.4k: solde = 177.6k
-    - ...
-  And Solde final = 177.6k (tous les crédits nets rembours)
-
-Scenario: Balance générale
-  Given Clôture période (fin avril 2026)
-  When Balance générée
-  Then Tous les comptes avec solde:
-    - Classe 1 (Actifs): 400M TND (débit)
-    - Classe 2 (Passifs): 350M TND (crédit)
-    - Classe 6 (Charges): 2.5M TND (débit)
-  And Total débits = Total crédits = 400M + 350M ✓
-```
-
----
-
-### 6.8 BC11 — Governance (Piste d'audit)
-
-#### FR-024: Piste d'audit immutable et cryptographique
-- **Description** : Enregistrement immutable de toutes les opérations, signé cryptographiquement [REF-35][REF-28].
-- **Priorité** : MUST | P0
-- **Entité DDD** : `AuditTrail` append-only, `AuditLogEntry` (valeur objet).
-- **Invariants** :
-  - INV-12 : Chaque opération = 1 entrée immutable
-  - Horodatage cryptographique (TSA — Time Stamp Authority)
-  - Signature ECDSA ou RSA
-- **SOLID** :
-  - **S** : `AuditRepository` ≠ `CryptographicSigner` (SRP)
-  - **O** : Signatures pluggables (ECDSA, RSA)
-  - **L** : AuditEntry immutable, append-only
-  - **I** : `ICryptographicProvider` pour HSM ou soft
-  - **D** : Providers injectés
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Création entrée audit pour chaque opération
-  Given Une opération (ouverture compte, création crédit, etc.)
-  When L'opération complète
-  Then Une AuditLogEntry est créée avec:
-    - Id: UUID unique
-    - Timestamp: UTC ISO 8601 (TSA)
-    - UserId: Karim
-    - Action: "ACCOUNT_OPENED"
-    - ResourceType: "Account"
-    - ResourceId: RIB
-    - Changes: {before: null, after: {...}}
-    - IpAddress: 192.168.1.10
-    - SessionId: session_abc123
-    - Signature: ECDSA(entry, private_key)
-    - HashPrecedent: hash(previous_entry) [chaînage]
-
-Scenario: Immuabilité audit trail
-  Given Une AuditLogEntry créée il y a 3 mois
-  When Quelqu'un tente de modifier l'entrée
-  Then:
-    - Modification REJETEE au niveau DB (NOT NULL hash)
-    - Erreur: "AUDIT_ENTRY_IMMUTABLE"
-    - Tentative est loggée comme anomalie sécurité
-
-Scenario: Vérification intégrité chaîne audit
-  Given Audit trail avec 1000 entrées
-  When Inspecteur BCT demande vérification intégrité
-  Then Système vérifie:
-    - Chaque hash_precedent = hash(entrée précédente)
-    - Aucun chaînon manquant
-    - Toutes les signatures cryptographiques valides
-  And Rapport: "INTEGRITY_OK" ou "TAMPERING_DETECTED"
-
-Scenario: Consultation audit trail par Rachid
-  Given Audittail pour Crédit 12345 depuis déblocage
-  When Rachid consulte l'historique
-  Then Affichage chronologique:
-    - 2026-03-15 14:23:45: LOAN_CREATED (Karim)
-    - 2026-03-16 09:00:00: LOAN_APPROVED (Comité)
-    - 2026-04-01 08:30:00: LOAN_DISBURSED (Karim)
-    - 2026-04-05 15:00:00: LOAN_CLASSIFIED (Auto, classe 0)
-    - 2026-04-20 10:30:00: REPAYMENT_RECEIVED (+2429.94)
-  And Chaque entrée montre les modifications (avant/après)
-```
-
----
-
-#### FR-025: Accès audit trail par inspecteur BCT
-- **Description** : Inspecteur BCT peut accéder audit trail en lecture seule via portail sécurisé.
-- **Priorité** : SHOULD | P1
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Inspecteur BCT consulte audit trail
-  Given Inspecteur BCT connecté au portail d'audit
-  When Il sélectionne "Audit trail" et filtre par période
-  Then Il voit:
-    - Opérations 2026-01-01 à 2026-04-01
-    - Possibilité de filtrer par action, user, ressource
-    - Export CSV possible pour analyse externe
-  And Les données sont en lecture seule (pas de modification possible)
-  And Chaque accès est lui-même audité
-```
-
----
-
-### 6.9 BC12 — Identity (Authentification et autorisation)
-
-#### FR-026: Authentification 2FA
-- **Description** : Authentification multi-facteur (mot de passe + SMS/Email/TOTP) [REF-31].
-- **Priorité** : MUST | P0
-- **Entité DDD** : `User`, `TwoFactorAuth`, `Session`.
-- **SOLID** :
-  - **S** : `AuthService` ≠ `TwoFactorProvider` (SRP)
-  - **O** : Providers 2FA pluggables (SMS, Email, Authenticator)
-  - **L** : Sessions immuables
-  - **I** : `ITwoFactorProvider` extensible
-  - **D** : Providers injectés
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Login avec 2FA SMS
-  Given Karim accède au login
-  When Il renseigne email + mot de passe correct
-  Then:
-    - Authentification primaire réussit
-    - SMS envoyé au +216 97 123 456 : "Code: 452789"
-    - Écran "Entrer code 2FA"
-  And Délai d'expiration code = 5 minutes
-
-Scenario: Entrée code 2FA correct
-  Given Code 452789 reçu par SMS
-  When Karim saisit le code
-  Then:
-    - Validation réussit
-    - Session créée (JWT + refresh token)
-    - Redirection vers dashboard
-    - AuditLogEntry générée (LOGIN)
-
-Scenario: Rejet code 2FA expiré
-  Given Code SMS reçu il y a 6 minutes
-  When Karim saisit le code
-  Then:
-    - Rejet: "2FA_CODE_EXPIRED"
-    - Message: "Demander un nouveau code"
-    - Tentative échouée loggée
-
-Scenario: Blocage après 3 tentatives 2FA
-  Given 3 codes incorrects saisis
-  When 4ème tentative
-  Then:
-    - Session verrouillée 30 minutes
-    - Message: "Trop de tentatives. Réessayez dans 30 min"
-    - Alerte sécurité envoyée à Karim
-```
-
----
-
-#### FR-027: Contrôle d'accès basé rôles (RBAC)
-- **Description** : Permissions par rôle (Admin, Karim, Sonia, Rachid, Amina, etc.).
-- **Priorité** : MUST | P0
-- **Entité DDD** : `Role`, `Permission`, `User` → roles mapping.
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Définition rôles et permissions
-  Given Configuration des rôles
-  Then Rôles définis:
-    - SUPER_ADMIN: tous les droits
-    - ACCOUNT_OFFICER (Karim): ouverture comptes, demandes crédit, virements
-    - COMPLIANCE_OFFICER (Sonia): validation KYC, investigations AML, DOS
-    - RISK_OFFICER (Rachid): analyses crédit, classification, ratios
-    - ACCOUNTING (Amina): comptabilité, reporting
-    - AUDIT (Inspecteur): lecture audit trail
-  And Chaque rôle a permissions spécifiques
-
-Scenario: Permission vérifiée avant action
-  Given Karim (ACCOUNT_OFFICER) sans permission "APPROVE_LOAN"
-  When Il tente d'approuver un crédit
-  Then:
-    - Action BLOQUEE
-    - Message: "INSUFFICIENT_PERMISSIONS"
-    - AuditLogEntry loggée (tentative non-autorisée)
-
-Scenario: Escalade d'accès
-  Given Un crédit > 500k TND nécessite approbation directeur
-  When Karim crée le crédit
-  Then Workflow d'escalade:
-    - Crédit en statut "AWAITING_DIRECTOR_APPROVAL"
-    - Email directeur
-    - Seul user avec rôle DIRECTOR peut approuver
-```
-
----
-
-#### FR-028: Gestion des sessions et timeout
-- **Description** : Sessions avec timeout, logout, révocation.
-- **Priorité** : MUST | P0
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Session créée avec durée de vie
-  Given User Karim authentifié
-  When Session créée
-  Then:
-    - SessionId: UUID
-    - UserId: karim_id
-    - CreatedAt: T0
-    - ExpiresAt: T0 + 8 heures (configurable)
-    - LastActivity: T0
-    - IpAddress: 192.168.1.10
-
-Scenario: Timeout session après inactivité
-  Given Session créée il y a 8h02 (timeout = 8h)
-  When Karim effectue une action
-  Then:
-    - Vérification: ExpiresAt < now
-    - Session invalidée
-    - Redirection login avec "Session expired"
-    - AuditLogEntry: SESSION_EXPIRED
-
-Scenario: Logout explicite
-  Given Karim clique "DECONNEXION"
-  When Logout déclenché
-  Then:
-    - Session marquée REVOKED
-    - JWT refresh token supprimé
-    - Redirection login
-    - AuditLogEntry: LOGOUT
-```
-
----
-
-#### FR-029: Consentement et droits INPDP
-- **Description** : Gestion des consentements pour traitement données personnelles [REF-54].
-- **Priorité** : MUST | P0
-- **Entité DDD** : `UserConsent` aggregate.
-- **Invariants** : INV-13 consentement explicite obligatoire.
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Demande consentement lors création KYC
-  Given Formulaire KYC
-  When Karim présente à client
-  Then Affichage des consentements:
-    - "J'accepte le traitement de mes données à caractère personnel"
-    - "J'accepte les communications marketing" (optionnel)
-    - "J'accepte l'analyse crédit et scoring de risque"
-  And Client doit cocher explicitement avant envoi
-
-Scenario: Conservation trace du consentement
-  Given Client a coché consentements
-  When Formulaire soumis
-  Then UserConsent enregistré:
-    - CustomerId: client_123
-    - ConsentType: "KYC_PROCESSING"
-    - Granted: true
-    - GrantedAt: 2026-04-04 14:30:00
-    - IpAddress: 196.168.1.5
-    - UserAgent: Mozilla/5.0...
-    - Version: Conditions_20260401
-
-Scenario: Droit d'opposition à marketing
-  Given Client avec consent marketing = true
-  When Il se rétracte via email/portail
-  Then:
-    - Consent marketing changé à false
-    - Aucun email marketing envoyé dorénavant
-    - Trace conservée 3 ans (INPDP)
-
-Scenario: Droit d'accès aux données personnelles
-  Given Client demande "Quelles données avez-vous sur moi?"
-  When Demande traitée
-  Then:
-    - Export JSON de toutes les données personnelles
-    - Fourni dans 30 jours (INPDP)
-    - Entrée audit: "DATA_ACCESS_REQUEST"
-```
-
----
-
-### 6.10 BC8 — Reporting (États réglementaires BCT)
-
-#### FR-030: Génération états prudentiels mensuels
-- **Description** : États prudentiels BCT (solvabilité, Tier 1, concentration, C/D) format officiel.
-- **Priorité** : SHOULD | P1
-- **Entité DDD** : `RegulatoryReport`, `ReportTemplate`.
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Génération automatique rapport prudentiel fin de mois
-  Given Clôture du mois avril 2026
-  When Batch job s'exécute le 30 avril
-  Then Rapport prudentiel généré:
-    - RatioSolvabilité: 11.54%
-    - RatioTier1: 8.2%
-    - RatioCD: 118%
-    - Concentration: 19% FPN
-    - RiskWeightedAssets: 130M TND
-  And Rapport sauvegardé en format PDF + XML officiel BCT
-  And Email d'notification envoyé à Amina
-
-Scenario: Transmission rapport à BCT
-  Given Rapport prudentiel généré
-  When Amina valide et clique "TRANSMETTRE_BCT"
-  Then:
-    - Format XML conforme schéma BCT
-    - Signature numérique de la banque
-    - Transmission sécurisée (SFTP ou API BCT)
-    - Récépissé de réception archivé
-```
-
----
-
-### 6.11 BC9 — Payment (Opérations de paiement)
-
-#### FR-031: Virement national simple
-- **Description** : Transfert fonds entre comptes en TND [REF-28][REF-33].
-- **Priorité** : SHOULD | P1
-- **Entité DDD** : `PaymentOrder`, `Transfer`.
-- **BDD Gherkin** :
-
-```gherkin
-Scenario: Initiation virement national
-  Given Client Karim veut virer 15 000 TND vers autre compte
-  When Karim remplit:
-    - Compte origine: 01-234-0001234-56
-    - RIB bénéficiaire: 02-345-0005678-90
-    - Montant: 15 000 TND
-    - Motif: "Paiement fournisseur"
-  Then:
-    - PaymentOrder créée (EN_COURS)
-    - Montant débité temporairement (suspense)
-    - Vérifications:
-      - Solvabilité compte
-      - Sanctions sur bénéficiaire
-      - Limites de transaction
-
-Scenario: Filtrage sanctions avant exécution
-  Given Virement vers RIB 02-345-0005678-90
-  When Screening lancé
-  Then Pas de match → virement peut continuer
-  And Transfert exécuté:
-    - Débit 1012 compte origine
-    - Crédit 1012 compte bénéficiaire
-    - Compensation BCT lancée
-    - DateExecution: T
-    - Statut: EXECUTED
-    - Email confirmation envoyée
-
-Scenario: Rejet virement si montant > limite quotidienne
-  Given Client limite quotidienne = 100 000 TND
-  When Il viremaximale = 100 000 TND (déjà utilisé aujourd'hui)
-  And Nouveau virement = 20 000 TND
-  Then Rejet: "DAILY_LIMIT_EXCEEDED"
-  And Message: "Limite quotidienne dépassée. Réessayez demain."
-```
-
----
-
-### 6.12 Exigences fonctionnelles — Compliance transversal
-
-**FR-COMP-01** : SMSI ISO 27001 — Le système DOIT implémenter les 93 contrôles Annexe A applicables, avec tableau de bord de suivi.
-
-**FR-COMP-02** : Registre des risques — Le système DOIT maintenir un registre des risques SI conforme ISO 31000, avec matrice 5x5, revue trimestrielle.
-
-**FR-COMP-03** : PCI DSS Tokenisation — Le système DOIT tokeniser tout PAN avant stockage (INV-16). Chiffrement AES-256-GCM au niveau champ.
-
-**FR-COMP-04** : PCI DSS MFA — Le système DOIT exiger MFA pour tout acces au CDE (INV-17).
-
-**FR-COMP-05** : Consent Management — Le système DOIT gérer le consentement granulaire (grant, revoke, expire) avec dashboard client (INV-19).
-
-**FR-COMP-06** : DPIA — Le système DOIT supporter les évaluations d'impact (DPIA) pour les traitements à haut risque.
-
-**FR-COMP-07** : Notification violations — Le système DOIT notifier l'INPDP sous 72h en cas de violation de données (INV-18).
-
-**FR-COMP-08** : Droit à la portabilité — Le système DOIT exporter les données client en format structuré (JSON/CSV) sur demande.
-
-**FR-COMP-09** : Droit à l'effacement — Le système DOIT anonymiser/supprimer les données personnelles sur demande légitime (hors obligations légales de conservation 10 ans).
-
-**FR-COMP-10** : goAML — Le système DOIT générer et transmettre les déclarations de soupçon via la plateforme goAML de la CTAF.
-
-**FR-COMP-11** : TuniCheque — Le système DOIT vérifier en temps réel la couverture des chèques via l'API TuniCheque.
-
-**FR-COMP-12** : e-KYC — Le système DOIT supporter l'enrôlement électronique avec vérification biométrique (reconnaissance faciale).
-
-**FR-COMP-13** : Travel Rule R.16 — Le système DOIT inclure les données originator ET beneficiary complètes pour tout transfert international > 1000 EUR/USD (INV-20).
-
-**FR-COMP-14** : Open Banking APIs — Le système DOIT exposer des APIs REST conformes aux standards PSD3 (accounts, balances, transactions, payments, consents).
-
-**FR-COMP-15** : SCA — Le système DOIT implémenter l'authentification forte à 2 facteurs pour les opérations sensibles (paiements, accès données).
-
----
-
-## 7. Exigences non-fonctionnelles
-
-### 7.1 Performance
-
-| Exigence | Cible | Mesure |
-|---|---|---|
-| **Latence API P95** | < 200ms | Prometheus endpoint |
-| **Throughput** | 500 req/s | Load testing |
-| **Time to First Byte (TTFB)** | < 100ms | Frontend metrics |
-| **Calcul prudentiel** | < 5s pour 1000 créances | Benchmark unit test |
-| **Screening sanctions** | < 100ms / transaction | Latency tracking |
-
-### 7.2 Sécurité
-
-| Exigence | Détail | Référence |
-|---|---|---|
-| **Authentification** | 2FA obligatoire, 3 tentatives max avant blocage 30min | [REF-31] |
-| **Chiffrement données en transit** | TLS 1.3 obligatoire, cipher suite forte | [REF-54] |
-| **Chiffrement données au repos** | AES-256-GCM ou équivalent | [REF-54] |
-| **Signatures cryptographiques** | Audit trail signé ECDSA/RSA (HSM recommandé) | [REF-35] |
-| **Gestion secrets** | Vault ou AWS Secrets Manager (pas en clair) | [REF-31] |
-| **CORS** | Whitelist strict, pas de "*" | OWASP |
-| **Rate limiting** | 100 req/min par IP pour login, 1000 pour API | OWASP |
-| **SQL injection** | Prepared statements partout, jamais de string concat | OWASP |
-| **XSS** | CSP headers strict, Svelte escaping automatique | OWASP |
-| **CSRF** | SameSite=Strict sur tous les cookies | OWASP |
-| **Audit vulnérabilités** | `cargo audit` hebdomadaire, pentest annuel | DevSecOps |
-| **Conformité ISO 27001:2022** | 93 contrôles Annexe A applicables, SMSI certifiable, revue annuelle | ISO 27001:2022 |
-| **Conformité PCI DSS v4.0.1** | 12 exigences, CDE scope minimisé par tokenisation, SAQ-D ou ROC selon périmètre | PCI DSS v4.0.1 |
-| **Tests d'intrusion ANCS** | Tests d'intrusion biennaux obligatoires pour e-KYC (Circ. 2025-06) | [REF-73] |
-
-### 7.3 Conformité INPDP — Loi données personnelles 2025 (remplace Loi 2004-63, application 11 juillet 2026)
-
-| Exigence | Détail |
-|---|---|
-| **Consentement granulaire** | Explicite avant traitement, tracé, révocable, avec dashboard client (FR-029, FR-COMP-05) |
-| **DPO obligatoire** | Désignation d'un Délégué à la Protection des Données, rôle interne ou externe |
-| **DPIA** | Évaluation d'impact obligatoire pour traitements à haut risque (FR-COMP-06) |
-| **Notification violations 72h** | Notification INPDP sous 72h en cas de violation de données (FR-COMP-07) |
-| **Droit d'accès** | Export données personnelles en 30 jours |
-| **Droit de rectification** | Client peut modifier données fausses |
-| **Droit d'opposition** | Marketing, analyse crédit (FR-029) |
-| **Droit à la portabilité** | Export données client en format structuré JSON/CSV sur demande (FR-COMP-08) |
-| **Droit à l'effacement** | Anonymisation/suppression sur demande légitime, hors obligations légales de conservation 10 ans (FR-COMP-09) |
-| **Anonymisation et pseudonymisation** | Données test non-réelles, chiffrement + pseudonymisation obligatoires pour données sensibles |
-| **DPA (Data Protection Agreement)** | Si tiers (cloud, payment provider) |
-| **Amendes proportionnelles CA** | Amendes proportionnelles au chiffre d'affaires en cas de non-conformité (loi 2025) |
-
-### 7.3bis Conformité réglementaire transversale
-
-| Exigence | Détail |
-|---|---|
-| **Référentiel légal** | 95 références légales (REFERENTIEL v0.3.0) couvrant BCT, CTAF, INPDP, GAFI, normes internationales |
-| **ISO 27001:2022** | SMSI certifiable, 93 contrôles Annexe A, registre des risques SI conforme ISO 31000 |
-| **PCI DSS v4.0.1** | 12 exigences, tokenisation PAN, chiffrement AES-256-GCM, MFA pour CDE |
-| **PSD3/PSR** | APIs Open Banking ready (accounts, balances, transactions, payments, consents) |
-| **FIDA** | Framework for Financial Data Access — anticipation réglementation données financières |
-| **Loi données personnelles 2025** | DPO, DPIA, notification 72h, amendes proportionnelles CA, portabilité, effacement |
-| **GAFI 5ème cycle** | Évaluation mutuelle 2026, effectivité LBC/FT, Travel Rule R.16 élargie |
-
-### 7.4 i18n — Langues et RTL
-
-| Langue | Direction | Priorité | Domaines |
+| Objectif | Métrique | Cible v4.0 | Jalon |
 |---|---|---|---|
-| **Arabe (ar-TN)** | RTL | P0 | UI complète + rapports |
-| **Français (fr-FR)** | LTR | P0 | UI complète + légal |
-| **Anglais (en-US)** | LTR | P1 | API docs + support |
-
-**Format nombres/devises** : TND avec 3 décimales pour montants, virgule français.
-**Formats dates** : DD/MM/YYYY (français) ou DD/MM/YYYY (arabe).
-
-### 7.5 ITIL — Gestion de service
-
-| Domaine | Exigence |
-|---|---|
-| **Incident Management** | SLA P1 = 4h, P2 = 24h, CMDB, runbooks |
-| **Change Management** | CAB (Change Advisory Board), test env obligatoire |
-| **Availability Management** | RTO = 4h, RPO = 1h (données), 99.9% target |
-| **Capacity Planning** | Monitoring CPU/RAM/Disk, alertes à 80% |
-| **Service Catalog** | Documenter tous les services (API, reporting) |
-
----
-
-## 8. Frontend UX (Parcours par persona)
-
-### 8.1 Karim — Chargé de clientèle
-
-**Workflow principal** : Ouverture compte → Crédit → Virements
-
-**Écrans clés** :
-1. **Dashboard** : Liste clients à traiter, demandes en attente
-2. **Fiche client** : KYC, comptes, crédits, mouvements, scoring risque
-3. **Ouverture compte** : Formulaire structuré, validation temps réel
-4. **Demande crédit** : Workflow pas à pas, upload docs, simulation intérêts
-5. **Virement** : Saisie RIB bénéficiaire, validation sanctions, confirmation
-
-**Accessibilité** : Arabe (RTL) + Français, grand texte pour agence, clavier navigation
+| **Couverture endpoints Temenos** | # endpoints implémentés / 550-700 | 450+ (80%) | Jalon 3 |
+| **Conformité BCT P0** | % exigences critiques implémentées | 100% | Jalon 0 |
+| **Tests domain (coverage)** | Tarpaulin cobertura | 95%+ | Chaque jalon |
+| **Scénarios BDD** | Count gherkin (Cucumber) | ≥400 | Jalon 4 |
+| **Performance API P99** | Latence interne | <5ms | Chaque jalon |
+| **Performance API E2E** | Latence incluant persistance | <200ms | Chaque jalon |
+| **Disponibilité** | Uptime SLA | 99.9% | Production |
+| **Piste d'audit** | Couverture opérations | 100% immutable | Jalon 0 |
+| **Sécurité critiques** | Vulnérabilités non mitigées | 0 | Chaque release |
+| **Accessibilité i18n** | Langues complètement supportées | AR (RTL) + FR + EN | Jalon 1 |
+| **ISO 27001:2022** | Contrôles Annexe A mappés | 93/93 (100%) | Avant certification |
+| **PCI DSS v4.0.1** | Exigences obligatoires | 100% | Avant SAQ |
+| **Loi données 2025** | Conformité RGPD-like | 100% avant 11-07-2026 | Avant deadline |
+| **GAFI R.16 travel rule** | Effectivité données originator/beneficiary | 100% | Avant nov 2026 |
+| **IFRS 9 ECL** | Provisionnement stage 1/2/3 | Live operational | Jalon 2 |
+| **Déploiements production** | Banques tunisiennes live | ≥2 | Avant déc 2026 |
 
 ---
 
-### 8.2 Sonia — Conformité AML
+## 3. Périmètre par Jalon
 
-**Workflow principal** : Validation KYC → Investigation → DOS
+### 3.1 Jalon 0 (Fondations — Semaines 1-6)
 
-**Écrans clés** :
-1. **Queue KYC** : Fiches en attente validation, avec statut complétude
-2. **Détails KYC** : Révision documents, PEP check, validation/rejet
-3. **Alertes AML** : Dashboard alerte transactionnelles, filtrage par client/type
-4. **Investigation** : Timeline, documents joints, notes, décision soupçon
-5. **DOS** : Formulaire pré-rempli, transmission CTAF, suivi
+**Objectif** : Socle technique sécurisé, identité, compliance obligatoire, audit trail immutable.
 
-**Accessibilité** : Recherche rapide client, bulk validation, export CSV
+**Contextes P0 (blocants)** :
+- **BC1-Customer** : KYC/CDD/EDD complet (Circ. 2025-17)
+- **BC2-Account** : Comptes courant, épargne, DAT
+- **BC7-Accounting** : Journal comptable NCT, balance générale
+- **BC11-Governance** : Audit trail cryptographique, 3LoD, contrôle interne
+- **BC12-Identity** : Authentification FIDO2/WebAuthn, 2FA, RBAC, sessions sécurisées
+- **BC13-Compliance** (NOUVEAU) : SMSI ISO 27001:2022 (93 contrôles Annexe A), PCI DSS v4.0.1 token, loi données 2025 (DPO, DPIA, consentement)
 
----
+**Capacités P0** :
+- C1: Gestion clients KYC/CDD/EDD complet
+- C2: Gestion comptes (courant, épargne, DAT)
+- C7: Comptabilité NCT (journal, GL, balance, provision)
+- C12: Authentification sécurisée 2FA/MFA
+- C26: e-KYC biométrique (Circ. 2025-06)
+- C23: Loi données 2025 (DPO dashboard, DPIA, consentement, portabilité, effacement)
 
-### 8.3 Rachid — Risques (CRO)
+**FRs** : ~60 FRs (FR-001 à FR-060)
 
-**Workflow principal** : Analyse crédit → Classification → Ratios prudentiels
-
-**Écrans clés** :
-1. **Dashboard ratios** : Solvabilité, Tier 1, C/D, concentration — code couleur (vert/orange/rouge)
-2. **Portefeuille crédits** : Tous les crédits actifs, classe, provision, retard
-3. **Analyse crédit** : Dossier complet (capacité remboursement, garanties, PD), notation
-4. **Classification créances** : Vue audit (avant/après), justifications
-5. **Alertes concentration** : Clients > 20% FPN, projection si nouveau crédit
-
-**Accessibilité** : Tableaux croisés dynamiques, export Excel, graphiques
+**Durée estimée** : 48h (÷3 IA) = 16h solo-dev = 2 semaines @ 8h/sem
 
 ---
 
-### 8.4 Amina — Comptabilité
+### 3.2 Jalon 1 (Core Banking essentiel — Semaines 7-14)
 
-**Workflow principal** : Comptabilité → Reporting → Balance
+**Objectif** : Crédit, prudentiel, AML, sanctions, paiement, change, arrangements.
 
-**Écrans clés** :
-1. **Journal** : Toutes les écritures du jour, filtrage par journal (CREANCES, DEPOTS, etc.)
-2. **Grand Livre** : Solde par compte, mouvements détaillés
-3. **Balance générale** : Tous les comptes, balances avant/après régularisations
-4. **Provisions** : Dotations/reprises par classe créance, réconciliation
-5. **Reporting BCT** : États prudentiels, transmission, historique
+**Contextes P1 (importants)** :
+- **BC3-Credit** : Octroi, suivi, classification (0-4), provisionnement
+- **BC4-AML** : Surveillance transactionnelle, alertes, investigations, DOS workflow, gel avoirs
+- **BC5-Sanctions** : Filtrage ONU/UE/OFAC/nationales, screening, matches
+- **BC6-Prudential** : Ratios solvabilité (10%), Tier 1 (7%), C/D (120%), concentration (25%), RWA
+- **BC8-Reporting** : États BCT prudentiels, AML, financiers
+- **BC9-Payment** : Virements nationaux, compensation, ISO 20022 ready
+- **BC10-ForeignExchange** : FX spot/forward, position, taux, conformité Loi 76-18
+- **BC14-Arrangement** (NOUVEAU) : Contrats, conditions, limites, produits associés, bundles, simulation, négociation
 
-**Accessibilité** : Drill-down depuis grand livre vers opérations, audit trail liée
+**Capacités P1** :
+- C3: Gestion crédits (octroi, classification, provision)
+- C4: Calcul prudentiel temps réel
+- C5: AML surveillance transactionnelle
+- C6: Sanctions filtrage
+- C9: Reporting BCT
+- C11: Virements nationaux simples
+- C18: Operations change de base (Loi 76-18)
+- Arrangement management (contrats, limites, produits)
 
----
+**FRs** : ~100 FRs (FR-061 à FR-160)
 
-### 8.5 Inspecteur BCT
-
-**Workflow principal** : Portail d'audit → Requêtes → Export
-
-**Écrans clés** :
-1. **Authentication** : Certificat numérique ou 2FA
-2. **Dashboard** : Vue synthétique (ratios actuels, alertes, dernières opérations)
-3. **Audit Trail** : Recherche par période/action/user, export CSV
-4. **Données prudentielles** : Consultation directe ratios, RWA, FPN
-5. **Conformité AML** : Nombre DOS transmises, alertes pendantes, investigations
-
-**Sécurité** : Lecture seule, chaque accès audité, VPN/TLS obligatoire
-
----
-
-## 9. Documentation Vivante (Flux critiques E2E)
-
-Tous les flux P0 doivent être documentés en vidéos E2E + scénarios BDD :
-
-### 9.1 Flux E2E — Ouverture de compte
-**Acteur** : Karim
-**Durée** : 10 min
-**Description** : Du formulaire KYC à la création du compte courant.
-
-### 9.2 Flux E2E — Octroi crédit
-**Acteur** : Karim → Rachid → Karim
-**Durée** : 15 min
-**Description** : Demande crédit → Analyse → Approbation → Déblocage.
-
-### 9.3 Flux E2E — Alerte AML → DOS
-**Acteur** : Système → Sonia
-**Durée** : 10 min
-**Description** : Transaction suspecte → Alerte → Investigation → DOS CTAF.
-
-### 9.4 Flux E2E — Calcul prudentiel
-**Acteur** : Système (batch)
-**Durée** : 5 min
-**Description** : Calcul fin de jour RWA → Ratios → Alertes si dépassement.
+**Durée estimée** : 120h (÷3 IA) = 40h solo-dev = 5 semaines @ 8h/sem
 
 ---
 
-## 10. Modèle de données (Entités DDD → Tables PostgreSQL)
+### 3.3 Jalon 2 (Compliance avancé + Trade Finance — Semaines 15-20)
 
-### 10.1 BC1 — Customer
+**Objectif** : Collateral, trade finance, cash management, IFRS 9 ECL complète, goAML, travel rule.
 
-```sql
--- Table customers (personnes physiques et morales)
-CREATE TABLE customers (
-  id UUID PRIMARY KEY,
-  customer_type VARCHAR(10) CHECK (customer_type IN ('PP', 'PM')), -- PP = Personne Physique
-  first_name VARCHAR(100),  -- Null si PM
-  last_name VARCHAR(100),   -- Null si PM
-  legal_name VARCHAR(200),  -- Nom SARL si PM
-  cin_passport VARCHAR(20),
-  registration_number VARCHAR(50), -- Numéro registre commerce si PM
-  birth_date DATE,
-  nationality VARCHAR(3), -- Code ISO
-  profession VARCHAR(100),
-  risk_score SMALLINT CHECK (risk_score BETWEEN 0 AND 100),
-  kyc_status VARCHAR(20) CHECK (kyc_status IN ('EN_COURS_VALIDATION', 'VALIDÉE', 'REJETÉE', 'SUSPENDUE')),
-  created_at TIMESTAMPTZ,
-  created_by UUID REFERENCES users(id),
-  updated_at TIMESTAMPTZ,
-  updated_by UUID REFERENCES users(id),
-  deleted_at TIMESTAMPTZ, -- Soft delete
-  UNIQUE(cin_passport)
-);
+**Contextes P2** :
+- **BC15-TradeFinance** : L/C (création, dénouement, documentaire), garanties bancaires, workflows UCP 600
+- **BC16-CashManagement** : Sweeps, pooling, liquidité, FX forwards, trésorerie en temps réel
+- **BC17-IslamicBanking** : Murabaha, ijara, waqf, wakala, musharaka, sukuk, Sharia board compliance
+- **BC19-ReferenceData** : Master data management, devises, pays, codes, taux BCT, jours fériés
+- **BC22-Compliance** (extension) : goAML intégrée (CTAF déclarations), travel rule (originator/beneficiary), effectiveness metrics, TuniCheque
 
--- Table kyc_profiles (détails KYC conformes Circ. 2025-17)
-CREATE TABLE kyc_profiles (
-  id UUID PRIMARY KEY,
-  customer_id UUID NOT NULL REFERENCES customers(id),
-  identity_document_type VARCHAR(20), -- CIN, PASSPORT
-  identity_document_number VARCHAR(20),
-  issue_date DATE,
-  expiry_date DATE,
-  issuing_country VARCHAR(3),
-  address_street VARCHAR(200),
-  address_city VARCHAR(100),
-  address_postal_code VARCHAR(10),
-  address_country VARCHAR(3),
-  phone_number VARCHAR(20),
-  email VARCHAR(100),
-  profession VARCHAR(100),
-  monthly_revenue DECIMAL(15, 3),
-  revenue_source VARCHAR(200),
-  pep_flag BOOLEAN DEFAULT FALSE,
-  pep_details VARCHAR(500), -- Si PEP, description
-  edd_status VARCHAR(20) DEFAULT 'NOT_REQUIRED', -- NOT_REQUIRED, IN_PROGRESS, COMPLETED
-  consent_personal_data BOOLEAN DEFAULT FALSE,
-  consent_marketing BOOLEAN DEFAULT FALSE,
-  consent_granted_at TIMESTAMPTZ,
-  validated_at TIMESTAMPTZ,
-  validated_by UUID REFERENCES users(id),
-  rejection_reason VARCHAR(500),
-  rejection_date TIMESTAMPTZ,
-  created_at TIMESTAMPTZ,
-  PRIMARY KEY (id),
-  FOREIGN KEY (customer_id) REFERENCES customers(id)
-);
+**Capacités P2** :
+- Trade finance (L/C, bank guarantees)
+- Cash management (sweeps, pooling)
+- Islamic banking produits Sharia
+- IFRS 9 ECL stage 1/2/3
+- goAML intégrée
+- Travel rule data
+- Reference data master
 
--- Table beneficiaries (bénéficiaires effectifs pour PM)
-CREATE TABLE beneficiaries (
-  id UUID PRIMARY KEY,
-  customer_id UUID NOT NULL REFERENCES customers(id), -- PM parente
-  beneficiary_id UUID NOT NULL REFERENCES customers(id), -- PP bénéficiaire
-  capital_percentage DECIMAL(5, 2) CHECK (capital_percentage > 0 AND capital_percentage <= 100),
-  control_description VARCHAR(200), -- "Droit de vote majoritaire", etc.
-  kyc_validated BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMPTZ,
-  UNIQUE(customer_id, beneficiary_id)
-);
-```
+**FRs** : ~90 FRs (FR-161 à FR-250)
 
-### 10.2 BC2 — Account
-
-```sql
-CREATE TABLE accounts (
-  id UUID PRIMARY KEY,
-  customer_id UUID NOT NULL REFERENCES customers(id),
-  rib VARCHAR(30) UNIQUE NOT NULL,  -- Relevé d'Identité Bancaire
-  account_type VARCHAR(20) CHECK (account_type IN ('COURANT', 'EPARGNE', 'DAT')),
-  currency VARCHAR(3) DEFAULT 'TND',
-  balance_current DECIMAL(15, 3) DEFAULT 0,
-  balance_reserved DECIMAL(15, 3) DEFAULT 0, -- Montants gelés/en suspense
-  account_status VARCHAR(20) CHECK (account_status IN ('OUVERT', 'SUSPENDU', 'GELE', 'CLÔTURÉ')),
-  opened_at TIMESTAMPTZ,
-  opened_by UUID REFERENCES users(id),
-  closed_at TIMESTAMPTZ,
-  close_reason VARCHAR(200),
-  interest_rate DECIMAL(5, 3) DEFAULT 0, -- Pour DAT
-  term_months SMALLINT, -- Null si COURANT
-  maturity_date DATE, -- Pour DAT
-  created_at TIMESTAMPTZ,
-  updated_at TIMESTAMPTZ
-);
-
-CREATE TABLE movements (
-  id UUID PRIMARY KEY,
-  account_id UUID NOT NULL REFERENCES accounts(id),
-  movement_type VARCHAR(20), -- DEPOT, RETRAIT, VIREMENT_ENTRANT, VIREMENT_SORTANT, INTERET, PROVISION
-  amount DECIMAL(15, 3) NOT NULL,
-  balance_after DECIMAL(15, 3),
-  description VARCHAR(500),
-  reference_document_id UUID, -- LoanId, TransferId, etc.
-  created_at TIMESTAMPTZ
-);
-
-CREATE TABLE interest_schedules (
-  id UUID PRIMARY KEY,
-  account_id UUID NOT NULL REFERENCES accounts(id),
-  interest_rate DECIMAL(5, 3),
-  capitalization VARCHAR(20), -- MONTHLY, QUARTERLY, ANNUALLY
-  accrued_interest DECIMAL(15, 3) DEFAULT 0,
-  last_capitalized_at DATE
-);
-```
-
-### 10.3 BC3 — Credit
-
-```sql
-CREATE TABLE loans (
-  id UUID PRIMARY KEY,
-  customer_id UUID NOT NULL REFERENCES customers(id),
-  principal_amount DECIMAL(15, 3) NOT NULL,
-  disbursed_amount DECIMAL(15, 3) DEFAULT 0,
-  outstanding_amount DECIMAL(15, 3), -- Principal restant dû
-  interest_rate DECIMAL(5, 3),
-  term_months SMALLINT,
-  disbursement_date DATE,
-  maturity_date DATE,
-  loan_purpose VARCHAR(200),
-  loan_status VARCHAR(20) CHECK (loan_status IN ('DEMAND', 'ANALYSIS', 'APPROVED', 'DISBURSED', 'REPAID', 'DEFAULTED')),
-  asset_class SMALLINT CHECK (asset_class IN (0, 1, 2, 3, 4)), -- 0=courant, ..., 4=compromis
-  asset_class_date DATE,
-  asset_class_set_by UUID REFERENCES users(id),
-  guarantee_type VARCHAR(100), -- Hypothèque, caution, nantissement
-  guarantee_value DECIMAL(15, 3),
-  default_days SMALLINT DEFAULT 0, -- Jours en retard
-  created_at TIMESTAMPTZ,
-  created_by UUID REFERENCES users(id)
-);
-
-CREATE TABLE loan_schedules (
-  id UUID PRIMARY KEY,
-  loan_id UUID NOT NULL REFERENCES loans(id),
-  installment_number SMALLINT,
-  due_date DATE NOT NULL,
-  principal_payment DECIMAL(15, 3),
-  interest_payment DECIMAL(15, 3),
-  total_payment DECIMAL(15, 3),
-  paid_at DATE,
-  paid_amount DECIMAL(15, 3) DEFAULT 0,
-  status VARCHAR(20), -- PENDING, PAID, OVERDUE
-  days_overdue SMALLINT DEFAULT 0
-);
-
-CREATE TABLE provisions (
-  id UUID PRIMARY KEY,
-  loan_id UUID NOT NULL REFERENCES loans(id),
-  asset_class SMALLINT,
-  provision_rate DECIMAL(5, 2), -- 0, 20, 50, 100
-  provision_amount DECIMAL(15, 3),
-  created_at TIMESTAMPTZ,
-  set_by UUID REFERENCES users(id)
-);
-```
-
-### 10.4 BC4 — AML
-
-```sql
-CREATE TABLE transactions (
-  id UUID PRIMARY KEY,
-  account_id UUID REFERENCES accounts(id),
-  transaction_type VARCHAR(20), -- DEPOSIT, WITHDRAWAL, TRANSFER, CASH_OPERATION
-  amount DECIMAL(15, 3),
-  currency VARCHAR(3),
-  description VARCHAR(500),
-  beneficiary_info VARCHAR(500),
-  initiated_at TIMESTAMPTZ,
-  executed_at TIMESTAMPTZ,
-  execution_status VARCHAR(20), -- PENDING, EXECUTED, REJECTED, SUSPENDED
-  created_at TIMESTAMPTZ
-);
-
-CREATE TABLE aml_alerts (
-  id UUID PRIMARY KEY,
-  transaction_id UUID REFERENCES transactions(id),
-  alert_type VARCHAR(50), -- ESPECES_IMPORTANTS, STRUCTURING, HR_DESTINATION, ANOMALOUS_BEHAVIOR
-  alert_score DECIMAL(5, 2), -- 0-100
-  alert_status VARCHAR(20), -- EN_INVESTIGATION, BENIN, SOUPCON_FONDE, CLOSED
-  created_at TIMESTAMPTZ
-);
-
-CREATE TABLE investigations (
-  id UUID PRIMARY KEY,
-  alert_id UUID REFERENCES aml_alerts(id),
-  customer_id UUID REFERENCES customers(id),
-  investigator_id UUID REFERENCES users(id),
-  status VARCHAR(20), -- EN_COURS, CLOTUREE_BENIN, SOUPCON_FONDE
-  opened_at TIMESTAMPTZ,
-  closed_at TIMESTAMPTZ,
-  conclusion_notes TEXT
-);
-
-CREATE TABLE suspicion_reports (
-  id UUID PRIMARY KEY,
-  investigation_id UUID REFERENCES investigations(id),
-  report_content TEXT, -- Formulaire DOS structure
-  signed_at TIMESTAMPTZ,
-  signed_by UUID REFERENCES users(id),
-  transmitted_to_ctaf_at TIMESTAMPTZ,
-  transmission_number VARCHAR(50), -- Numéro CTAF
-  ctaf_receipt_date DATE
-);
-
-CREATE TABLE asset_freezes (
-  id UUID PRIMARY KEY,
-  customer_id UUID REFERENCES customers(id),
-  account_id UUID REFERENCES accounts(id),
-  freeze_reason VARCHAR(100), -- SANCTIONS_MATCH, AML_INVESTIGATION
-  freeze_date TIMESTAMPTZ,
-  freeze_reason_detail TEXT,
-  unfrozen_at TIMESTAMPTZ,
-  unfrozen_by_ctaf_order_id VARCHAR(100)
-);
-```
-
-### 10.5 BC5 — Sanctions
-
-```sql
-CREATE TABLE sanction_lists (
-  id UUID PRIMARY KEY,
-  list_name VARCHAR(100), -- UN_OFAC, EU_CONSOLIDATED, OFAC_SDN, OFAC_SANCTIONS_NAMES, BCT_NATIONAL
-  source_url VARCHAR(500),
-  downloaded_at TIMESTAMPTZ,
-  active BOOLEAN DEFAULT TRUE,
-  entry_count INT
-);
-
-CREATE TABLE sanction_entries (
-  id UUID PRIMARY KEY,
-  list_id UUID REFERENCES sanction_lists(id),
-  name_full VARCHAR(200),
-  name_first VARCHAR(100),
-  name_last VARCHAR(100),
-  name_aliases VARCHAR(500), -- Séparés par ;
-  designation VARCHAR(200),
-  dob DATE,
-  nationality VARCHAR(3),
-  entry_type VARCHAR(20), -- INDIVIDUAL, ENTITY
-  list_source_id VARCHAR(50), -- ID original dans liste source
-  active BOOLEAN DEFAULT TRUE
-);
-
-CREATE TABLE screening_results (
-  id UUID PRIMARY KEY,
-  customer_id UUID REFERENCES customers(id),
-  list_id UUID REFERENCES sanction_lists(id),
-  match_type VARCHAR(20), -- EXACT, FUZZY
-  match_score DECIMAL(5, 2), -- 0-100 pour fuzzy
-  matched_entry_id UUID REFERENCES sanction_entries(id),
-  matched_at TIMESTAMPTZ,
-  screened_by_user_id UUID REFERENCES users(id)
-);
-```
-
-### 10.6 BC6 — Prudential
-
-```sql
-CREATE TABLE prudential_ratios (
-  id UUID PRIMARY KEY,
-  calculation_date DATE,
-  ratio_type VARCHAR(50), -- SOLVABILITY, TIER1, CD_RATIO, CONCENTRATION
-  value DECIMAL(5, 2), -- en %
-  required_minimum DECIMAL(5, 2),
-  status VARCHAR(20), -- CONFORME, NON_CONFORME
-  calculated_at TIMESTAMPTZ,
-  calculated_by VARCHAR(50) -- 'SYSTEM_BATCH'
-);
-
-CREATE TABLE risk_weighted_assets (
-  id UUID PRIMARY KEY,
-  calculation_date DATE,
-  asset_category VARCHAR(50), -- CREDIT, MARKET, OPERATIONAL
-  asset_value DECIMAL(15, 3),
-  risk_weight DECIMAL(3, 1), -- En %
-  rwa_value DECIMAL(15, 3), -- asset_value * risk_weight
-  calculated_at TIMESTAMPTZ
-);
-
-CREATE TABLE regulatory_capital (
-  id UUID PRIMARY KEY,
-  calculation_date DATE,
-  cet1_amount DECIMAL(15, 3), -- Capital Tier 1 commun
-  at1_amount DECIMAL(15, 3), -- Capital Tier 1 additionnel
-  tier1_total DECIMAL(15, 3), -- CET1 + AT1
-  tier2_amount DECIMAL(15, 3),
-  total_regulatory_capital DECIMAL(15, 3),
-  adjustments_total DECIMAL(15, 3),
-  calculated_at TIMESTAMPTZ
-);
-
-CREATE TABLE ratio_breach_alerts (
-  id UUID PRIMARY KEY,
-  ratio_type VARCHAR(50),
-  current_value DECIMAL(5, 2),
-  required_value DECIMAL(5, 2),
-  alert_severity VARCHAR(20), -- P0, P1, P2
-  breach_date DATE,
-  remediation_action VARCHAR(500),
-  resolved_at DATE
-);
-```
-
-### 10.7 BC7 — Accounting
-
-```sql
-CREATE TABLE chart_of_accounts (
-  id UUID PRIMARY KEY,
-  account_code VARCHAR(10) UNIQUE NOT NULL,
-  account_label VARCHAR(200),
-  account_class SMALLINT, -- 1-6
-  account_subclass VARCHAR(10),
-  account_nature VARCHAR(1), -- 'D' = débit, 'C' = crédit
-  is_balance_sheet BOOLEAN -- TRUE pour actif/passif, FALSE pour P&L
-);
-
-CREATE TABLE journal_entries (
-  id UUID PRIMARY KEY,
-  journal_code VARCHAR(20), -- CREANCES, DEPOTS, OPERATIONS_COURANTES, PROVISIONS
-  entry_date DATE NOT NULL,
-  entry_number BIGSERIAL, -- Numéro chronologique
-  reference_document_id UUID, -- LoanId, AccountId, etc.
-  total_debit DECIMAL(15, 3),
-  total_credit DECIMAL(15, 3),
-  created_at TIMESTAMPTZ,
-  created_by UUID REFERENCES users(id),
-  CONSTRAINT balanced_entry CHECK (total_debit = total_credit)
-);
-
-CREATE TABLE journal_lines (
-  id UUID PRIMARY KEY,
-  journal_entry_id UUID NOT NULL REFERENCES journal_entries(id),
-  account_code VARCHAR(10),
-  debit_amount DECIMAL(15, 3) DEFAULT 0,
-  credit_amount DECIMAL(15, 3) DEFAULT 0,
-  line_number SMALLINT,
-  description VARCHAR(200)
-);
-
-CREATE TABLE accounting_periods (
-  id UUID PRIMARY KEY,
-  period_start_date DATE,
-  period_end_date DATE,
-  period_label VARCHAR(20), -- '2026-04'
-  status VARCHAR(20), -- OPEN, CLOSED
-  closed_at TIMESTAMPTZ,
-  closed_by UUID REFERENCES users(id)
-);
-
-CREATE TABLE trial_balance (
-  id UUID PRIMARY KEY,
-  accounting_period_id UUID REFERENCES accounting_periods(id),
-  account_code VARCHAR(10),
-  balance_debit DECIMAL(15, 3) DEFAULT 0,
-  balance_credit DECIMAL(15, 3) DEFAULT 0,
-  calculated_at TIMESTAMPTZ
-);
-```
-
-### 10.8 BC11 — Governance
-
-```sql
-CREATE TABLE audit_log_entries (
-  id UUID PRIMARY KEY,
-  timestamp TIMESTAMPTZ NOT NULL, -- Horodatage TSA
-  user_id UUID REFERENCES users(id),
-  action VARCHAR(50), -- ACCOUNT_OPENED, LOAN_APPROVED, KYC_VALIDATED
-  resource_type VARCHAR(50), -- Account, Loan, Customer
-  resource_id UUID,
-  changes JSONB, -- {before: {...}, after: {...}}
-  ip_address VARCHAR(45),
-  session_id VARCHAR(100),
-  signature_algorithm VARCHAR(20), -- ECDSA, RSA
-  signature_value VARCHAR(1024), -- Signature hex
-  hash_previous VARCHAR(128), -- SHA-256 chaînage
-  hash_current VARCHAR(128), -- SHA-256 de cette entrée
-  created_at TIMESTAMPTZ
-);
-
--- Index pour queries rapides
-CREATE INDEX idx_audit_log_timestamp ON audit_log_entries(timestamp DESC);
-CREATE INDEX idx_audit_log_resource ON audit_log_entries(resource_type, resource_id);
-CREATE INDEX idx_audit_log_user ON audit_log_entries(user_id);
-```
-
-### 10.9 BC12 — Identity
-
-```sql
-CREATE TABLE users (
-  id UUID PRIMARY KEY,
-  username VARCHAR(50) UNIQUE NOT NULL,
-  email VARCHAR(100) UNIQUE NOT NULL,
-  first_name VARCHAR(100),
-  last_name VARCHAR(100),
-  password_hash VARCHAR(255), -- Bcrypt
-  is_active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMPTZ,
-  last_login TIMESTAMPTZ
-);
-
-CREATE TABLE roles (
-  id UUID PRIMARY KEY,
-  role_name VARCHAR(50) UNIQUE NOT NULL,
-  description VARCHAR(500)
-);
-
-CREATE TABLE user_roles (
-  user_id UUID NOT NULL REFERENCES users(id),
-  role_id UUID NOT NULL REFERENCES roles(id),
-  assigned_at TIMESTAMPTZ,
-  assigned_by UUID REFERENCES users(id),
-  PRIMARY KEY (user_id, role_id)
-);
-
-CREATE TABLE permissions (
-  id UUID PRIMARY KEY,
-  permission_name VARCHAR(100) UNIQUE NOT NULL,
-  description VARCHAR(500),
-  module VARCHAR(50) -- BC1, BC2, etc.
-);
-
-CREATE TABLE role_permissions (
-  role_id UUID NOT NULL REFERENCES roles(id),
-  permission_id UUID NOT NULL REFERENCES permissions(id),
-  PRIMARY KEY (role_id, permission_id)
-);
-
-CREATE TABLE sessions (
-  id VARCHAR(100) PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES users(id),
-  created_at TIMESTAMPTZ,
-  expires_at TIMESTAMPTZ,
-  last_activity TIMESTAMPTZ,
-  ip_address VARCHAR(45),
-  user_agent VARCHAR(500),
-  status VARCHAR(20) -- ACTIVE, REVOKED, EXPIRED
-);
-
-CREATE TABLE two_factor_auth (
-  id UUID PRIMARY KEY,
-  user_id UUID NOT NULL UNIQUE REFERENCES users(id),
-  auth_type VARCHAR(20), -- SMS, EMAIL, AUTHENTICATOR_APP
-  phone_number VARCHAR(20),
-  email_backup VARCHAR(100),
-  secret_key VARCHAR(32), -- Pour TOTP
-  backup_codes VARCHAR(500), -- Codes de récupération séparés par ;
-  enabled BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMPTZ,
-  enabled_at TIMESTAMPTZ
-);
-
-CREATE TABLE user_consents (
-  id UUID PRIMARY KEY,
-  user_id UUID REFERENCES users(id),
-  customer_id UUID REFERENCES customers(id),
-  consent_type VARCHAR(50), -- KYC_PROCESSING, MARKETING, CREDIT_ANALYSIS
-  granted BOOLEAN,
-  granted_at TIMESTAMPTZ,
-  ip_address VARCHAR(45),
-  user_agent VARCHAR(500),
-  consent_version VARCHAR(20),
-  withdrawn_at TIMESTAMPTZ,
-  withdrawn_reason VARCHAR(200)
-);
-```
-
-### 10.10 BC8 — Reporting
-
-```sql
-CREATE TABLE regulatory_reports (
-  id UUID PRIMARY KEY,
-  report_type VARCHAR(50), -- PRUDENTIAL_MONTHLY, AML_QUARTERLY, FINANCIAL_ANNUAL
-  reporting_period_start DATE,
-  reporting_period_end DATE,
-  generated_at TIMESTAMPTZ,
-  generated_by UUID REFERENCES users(id),
-  report_content BYTEA, -- PDF ou XML
-  format_version VARCHAR(20), -- Version schéma BCT
-  submission_status VARCHAR(20), -- DRAFT, SUBMITTED, ACCEPTED, REJECTED
-  submitted_to_bct_at TIMESTAMPTZ,
-  bct_receipt_number VARCHAR(50),
-  bct_receipt_date DATE
-);
-```
-
-### 10.11 BC9 — Payment
-
-```sql
-CREATE TABLE payment_orders (
-  id UUID PRIMARY KEY,
-  originating_account_id UUID NOT NULL REFERENCES accounts(id),
-  beneficiary_account_id UUID REFERENCES accounts(id), -- NULL si virement externe
-  beneficiary_rib VARCHAR(30),
-  beneficiary_name VARCHAR(200),
-  amount DECIMAL(15, 3),
-  currency VARCHAR(3),
-  payment_type VARCHAR(20), -- NATIONAL, SWIFT, IMMEDIATE
-  purpose VARCHAR(200),
-  status VARCHAR(20), -- PENDING, APPROVED, EXECUTED, REJECTED
-  created_at TIMESTAMPTZ,
-  created_by UUID REFERENCES users(id),
-  executed_at TIMESTAMPTZ,
-  execution_reason_if_rejected VARCHAR(500)
-);
-
-CREATE TABLE transfers (
-  id UUID PRIMARY KEY,
-  payment_order_id UUID REFERENCES payment_orders(id),
-  from_account_id UUID REFERENCES accounts(id),
-  to_account_id UUID REFERENCES accounts(id),
-  amount DECIMAL(15, 3),
-  execution_date DATE,
-  clearing_reference VARCHAR(50),
-  status VARCHAR(20) -- CLEARED, FAILED
-);
-
-CREATE TABLE swift_messages (
-  id UUID PRIMARY KEY,
-  payment_order_id UUID REFERENCES payment_orders(id),
-  swift_content TEXT, -- Format ISO 20022 ou MT
-  swift_reference VARCHAR(50),
-  sent_at TIMESTAMPTZ,
-  status VARCHAR(20) -- SENT, FAILED, CONFIRMED
-);
-```
-
-### 10.12 Compliance transversal
-
-```sql
--- SMSI ISO 27001 — Contrôles et suivi
-CREATE TABLE smsi_controls (
-  id UUID PRIMARY KEY,
-  control_ref VARCHAR(20) NOT NULL, -- Ex: A.5.1, A.6.1, etc.
-  control_name VARCHAR(200),
-  control_description TEXT,
-  implementation_status VARCHAR(20) CHECK (implementation_status IN ('NOT_STARTED', 'IN_PROGRESS', 'IMPLEMENTED', 'NOT_APPLICABLE')),
-  evidence_reference VARCHAR(500),
-  last_reviewed_at DATE,
-  reviewed_by UUID REFERENCES users(id),
-  created_at TIMESTAMPTZ,
-  updated_at TIMESTAMPTZ
-);
-
--- Registre des risques SI (ISO 31000)
-CREATE TABLE risk_register (
-  id UUID PRIMARY KEY,
-  risk_title VARCHAR(200),
-  risk_description TEXT,
-  risk_category VARCHAR(50), -- CONFIDENTIALITY, INTEGRITY, AVAILABILITY, COMPLIANCE
-  likelihood SMALLINT CHECK (likelihood BETWEEN 1 AND 5), -- Matrice 5x5
-  impact SMALLINT CHECK (impact BETWEEN 1 AND 5),
-  risk_level VARCHAR(20), -- LOW, MEDIUM, HIGH, CRITICAL (calculé)
-  mitigation_measures TEXT,
-  risk_owner UUID REFERENCES users(id),
-  review_frequency VARCHAR(20) DEFAULT 'QUARTERLY',
-  last_reviewed_at DATE,
-  next_review_at DATE,
-  created_at TIMESTAMPTZ,
-  updated_at TIMESTAMPTZ
-);
-
-CREATE TABLE risk_assessments (
-  id UUID PRIMARY KEY,
-  risk_id UUID NOT NULL REFERENCES risk_register(id),
-  assessment_date DATE,
-  assessed_by UUID REFERENCES users(id),
-  previous_level VARCHAR(20),
-  new_level VARCHAR(20),
-  notes TEXT,
-  created_at TIMESTAMPTZ
-);
-
-CREATE TABLE compliance_audits (
-  id UUID PRIMARY KEY,
-  audit_type VARCHAR(50), -- ISO_27001, PCI_DSS, INTERNAL, EXTERNAL
-  audit_scope TEXT,
-  auditor_name VARCHAR(200),
-  audit_date DATE,
-  findings TEXT,
-  non_conformities SMALLINT DEFAULT 0,
-  corrective_actions TEXT,
-  status VARCHAR(20) CHECK (status IN ('PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CLOSED')),
-  created_at TIMESTAMPTZ,
-  updated_at TIMESTAMPTZ
-);
-
--- PCI DSS — Tokenisation et gestion clés
-CREATE TABLE token_vault (
-  token_id UUID PRIMARY KEY,
-  masked_pan VARCHAR(20) NOT NULL, -- Ex: **** **** **** 1234
-  token_value VARCHAR(64) NOT NULL UNIQUE,
-  created_at TIMESTAMPTZ NOT NULL,
-  expires_at TIMESTAMPTZ,
-  status VARCHAR(20) DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'REVOKED', 'EXPIRED'))
-);
-
-CREATE TABLE encryption_keys (
-  key_id UUID PRIMARY KEY,
-  key_alias VARCHAR(100) NOT NULL,
-  algorithm VARCHAR(20) NOT NULL DEFAULT 'AES-256-GCM',
-  key_purpose VARCHAR(50), -- DATA_ENCRYPTION, TOKEN_ENCRYPTION, AUDIT_SIGNING
-  status VARCHAR(20) CHECK (status IN ('ACTIVE', 'ROTATED', 'REVOKED')),
-  created_at TIMESTAMPTZ NOT NULL,
-  rotated_at TIMESTAMPTZ,
-  rotated_by UUID REFERENCES users(id)
-);
-
--- Consent Management (Loi données personnelles 2025)
-CREATE TABLE consents (
-  id UUID PRIMARY KEY,
-  customer_id UUID NOT NULL REFERENCES customers(id),
-  tpp_id VARCHAR(100), -- Third Party Provider ID (Open Banking)
-  consent_type VARCHAR(50) NOT NULL, -- KYC_PROCESSING, MARKETING, CREDIT_ANALYSIS, ACCOUNT_ACCESS, PAYMENT_INITIATION
-  permissions JSONB, -- Permissions granulaires accordées
-  scope VARCHAR(200), -- Périmètre du consentement
-  granted_at TIMESTAMPTZ NOT NULL,
-  expires_at TIMESTAMPTZ,
-  revoked_at TIMESTAMPTZ,
-  revoked_reason VARCHAR(200),
-  status VARCHAR(20) CHECK (status IN ('ACTIVE', 'EXPIRED', 'REVOKED')),
-  ip_address VARCHAR(45),
-  user_agent VARCHAR(500),
-  created_at TIMESTAMPTZ
-);
-
--- DPIA — Évaluations d'impact
-CREATE TABLE impact_assessments (
-  id UUID PRIMARY KEY,
-  processing_type VARCHAR(200) NOT NULL, -- Description du traitement évalué
-  processing_purpose TEXT,
-  data_categories TEXT, -- Types de données concernées
-  risk_level VARCHAR(20) CHECK (risk_level IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL')),
-  necessity_assessment TEXT,
-  measures TEXT, -- Mesures d'atténuation
-  residual_risk VARCHAR(20),
-  approved_by UUID REFERENCES users(id),
-  approved_at TIMESTAMPTZ,
-  review_date DATE,
-  status VARCHAR(20) CHECK (status IN ('DRAFT', 'IN_REVIEW', 'APPROVED', 'REJECTED')),
-  created_at TIMESTAMPTZ,
-  updated_at TIMESTAMPTZ
-);
-
--- Notifications de violations de données
-CREATE TABLE breach_notifications (
-  id UUID PRIMARY KEY,
-  breach_type VARCHAR(50) NOT NULL, -- DATA_LEAK, UNAUTHORIZED_ACCESS, SYSTEM_COMPROMISE, RANSOMWARE
-  breach_description TEXT,
-  data_subjects_affected INT,
-  data_categories_affected TEXT,
-  detected_at TIMESTAMPTZ NOT NULL,
-  notified_inpdp_at TIMESTAMPTZ, -- Doit être < detected_at + 72h
-  notification_reference VARCHAR(100),
-  details TEXT,
-  remediation_measures TEXT,
-  status VARCHAR(20) CHECK (status IN ('DETECTED', 'INVESTIGATING', 'NOTIFIED', 'RESOLVED')),
-  resolved_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ,
-  updated_at TIMESTAMPTZ
-);
-```
+**Durée estimée** : 110h (÷3 IA) = 37h solo-dev = 5 semaines @ 8h/sem
 
 ---
 
-## 11. Intégrations externes
+### 3.4 Jalon 3 (Analytics + Securities + Insurance — Semaines 21-26)
 
-### 11.1 SWIFT / ISO 20022 (P2)
+**Objectif** : Data lake, securities, insurance, parité Temenos 80%+.
 
-**Objectif** : Virements internationaux conformes aux standards SWIFT.
-**Format** : ISO 20022 (MX) ou MT (legacy).
-**Priorité** : P1-P2 selon charge.
-**Conformité** : GAFI R.16 — Traçabilité bénéficiaire [REF-66].
+**Contextes P3** :
+- **BC18-DataHub** : ODS (Operational Data Store), ADS (Analytical Data Store), MDM (Master Data Management), data quality, real-time analytics
+- **BC20-Securities** : Valeurs mobilières, portefeuille titres, dépositaire, custody, ordres bourse, BVMT conformité
+- **BC21-Insurance** : Assurances liées (crédit, décès, risque), polices, sinistres, taux
 
-### 11.2 CTAF (Commission Tunisienne des Analyses Financières)
+**Capacités P3** :
+- Data lake operational + analytical
+- Securities portfolio management
+- Insurance integration
+- Advanced analytics dashboards
 
-**Objectif** : Transmission DOS (Déclarations de Soupçon).
-**Format** : XML structuré CTAF.
-**Fréquence** : Immédiat ou J+1 (art. 125 Loi 2015-26) [REF-28].
-**Mode** : API CTAF (si dispo) ou SFTP/email sécurisé.
+**FRs** : ~60 FRs (FR-251 à FR-310)
 
-### 11.3 Listes sanctions (ONU, EU, OFAC, nationales)
-
-**Objectif** : Téléchargement + screening quotidien.
-**Sources** :
-- UN OFAC: https://www.un.org/ (ONU SDN List)
-- EU: https://ec.europa.eu/info/business-economy-euro/banking-and-finance/...
-- OFAC: https://home.treasury.gov/policy-issues/financial-sanctions-and-embargoes (SDN, Consolidated)
-- BCT : Liste nationale maintenue par régulateur
-
-**Fréquence** : Quotidienne (06:00 UTC).
-**Format** : XML ou CSV, parsing configurable.
-
-### 11.4 BCT Reporting API (P2)
-
-**Objectif** : Transmission automatisée états prudentiels, rapports réglementaires.
-**Format** : XML conforme schéma BCT officiel.
-**Sécurité** : Certificate mutuelle TLS.
-**Mode** : API SFTP ou REST sécurisé.
-
-### 11.5 Banques correspondantes (P2)
-
-**Objectif** : Échanges SWIFT pour virements internationaux.
-**Format** : MT103, MT202.
-**Sécurité** : SWIFTNet PKI.
-
-### 11.6 goAML (CTAF) — P0
-
-**Objectif** : Déclarations de soupçon électroniques via la plateforme goAML de la CTAF.
-**Format** : XML/JSON structuré conforme au schéma goAML (UNODC).
-**Fréquence** : Immédiat (sur constitution DOS) ou J+1 maximum.
-**Mode** : API REST goAML sécurisée, accusé de réception automatique.
-**Conformité** : Circ. 2025-17 [REF-76], art. 125 Loi 2015-26 [REF-28].
-
-### 11.7 TuniCheque — P1
-
-**Objectif** : Vérification en temps réel de la couverture des chèques via l'API TuniCheque.
-**Format** : API REST, requête/réponse JSON.
-**Fréquence** : Temps réel (à chaque remise de chèque).
-**Conformité** : Circ. 2025-03 [REF-72].
-
-### 11.8 ANCS (Agence Nationale de la Cybersécurité) — P1
-
-**Objectif** : Rapports de tests d'intrusion biennaux obligatoires pour les systèmes e-KYC.
-**Format** : Rapport d'audit PDF structuré, résultats de tests de pénétration.
-**Fréquence** : Biennale (tous les 2 ans).
-**Conformité** : Circ. 2025-06 [REF-73].
-
-### 11.9 INPDP (Instance Nationale de Protection des Données Personnelles) — P0
-
-**Objectif** : Notifications de violations de données sous 72h, registre des traitements.
-**Format** : Formulaire structuré INPDP (PDF/électronique).
-**Fréquence** : Sur événement (violation) + registre permanent des traitements.
-**Conformité** : Loi données personnelles 2025, application 11 juillet 2026.
+**Durée estimée** : 80h (÷3 IA) = 27h solo-dev = 3.4 semaines @ 8h/sem
 
 ---
 
-## 12. Contraintes et hypothèses
+### 3.5 Jalon 4 (Maturité + Microservices — Semaines 27-32)
 
-### 12.1 Contraintes de conception
+**Objectif** : Microservices production-ready, open banking PSD3-ready, certification, hardening.
 
-- **Stack imposée** : Rust/Actix-web (backend) + Astro/Svelte (frontend) + PostgreSQL
-- **Disciplines** : SOLID + DDD + BDD + TDD + Hexagonal + YAGNI + DRY
-- **Licence** : AGPL-3.0 (copyleft fort, code ouvert)
-- **Langues** : AR (RTL), FR, EN
-- **Monétaire** : TND avec 3 décimales pour montants
-- **Hébergement** : Souverain (Tunisie) — conformité INPDP [REF-54]
-- **Sécurité** : HSM pour signatures critiques, LUKS pour chiffrement, audit trail immuable
-- **Calendrier** : MVP 8-12 mois en duo, 36 mois solo side-project
+**Capacités P4** :
+- Microservices orchestration (Kubernetes-ready)
+- Open Banking APIs (PSD3)
+- Certification ISO 27001
+- SAQ PCI DSS validation
+- Performance optimization (P99 <5ms)
 
-### 12.2 Hypothèses
+**FRs** : ~40 FRs (FR-311 à FR-350+)
 
-- **KYC données correctes** : Données saisies supposées valides (validation métier en ligne, pas de vérification biométrique)
-- **Connexions réseau stables** : API externes (CTAF, SWIFT) supposées disponibles 99.9%
-- **Réglementation stable** : Circulaires BCT supposées stables pendant MVP. Nouvelles circulaires = modules additifs
-- **Pas de support rétro-changement** : Les mouvements historiques ne sont jamais modifiés (immutabilité absolue)
-- **Vol de crypto-monnaies hors scope** : BANKO n'héberge pas de crypto, seulement TND
+**Durée estimée** : 60h (÷3 IA) = 20h solo-dev = 2.5 semaines @ 8h/sem
 
 ---
 
-## 13. Critères de succès MVP
+### 3.6 Hors scope v4.0
+- Dérivés complexes (swaps, options)
+- Gestion d'actifs (hedge funds, fonds mutuels)
+- Blockchain, stablecoins, CBDC
+- Courtage avancé (actions, options)
+- Intégrations fintech au-delà PSD3
 
-| Critère | Mesure | Seuil de succès |
+---
+
+## 4. Functional Requirements (FRs) — 250+ Exigences
+
+### 4.1 BC1 — Customer (Gestion clients / KYC / PEP / EDD)
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-001 | KYC personne physique complète | Création fiche KYC conforme Annexe 1 Circ. 2025-17 (CIN, identité, profession, revenu, adresse, source fonds) | Circ. 2025-17 art. 5-7 | Party/Individual | P0 | J0 |
+| FR-002 | KYC personne morale + bénéficiaires | Création SARL/SACS/EIRL avec bénéficiaires ≥25% capital, KYC individuelle chaque bénéficiaire | Circ. 2025-17 art. 8-12 | Party/Organization | P0 | J0 |
+| FR-003 | Validation KYC par Compliance | Workflow Compliance : VALIDÉE / REJETÉE avec motif, verrouillage post-validation | Circ. 2025-17 art. 15 | Party/Validation | P0 | J0 |
+| FR-004 | PEP detection (auto + manual) | Détection automatique sur liste interne + recherche manuelle, flagging EDD_REQUIRED | Circ. 2025-17 art. 13 | Party/PEP | P0 | J0 |
+| FR-005 | EDD renforcée (Enhanced Due Diligence) | Questionnaire EDD, documents justificatifs, timeline 10 jours ouvrables, rejet si expire | Circ. 2025-17 art. 14 | Party/EDD | P0 | J0 |
+| FR-006 | Risk scoring client (0-100) | Score basé profil (secteur, pays, montants), antécédents AML → GREEN/ORANGE/RED | Circ. 2025-17 | Party/Risk | P1 | J0 |
+| FR-007 | Données sensibles INPDP (chiffrement) | Chiffrement AES-256-GCM des donnees PII (CIN, passeport, adresse), accès audit trail | Loi données 2025 art. 2-4 | Party/Privacy | P0 | J0 |
+| FR-008 | Consentement INPDP explicite | Checkbox consentement obligatoire avant KYC, traçabilité consentement, droit retrait | Loi données 2025 art. 7 | Party/Consent | P0 | J0 |
+| FR-009 | Droit portabilité données | Export données client JSON/CSV (identité, comptes, mouvements) sur demande | Loi données 2025 art. 20 | Party/DataPortability | P1 | J0 |
+| FR-010 | Droit effacement ("oubli") | Suppression données non-critiques après clôture compte (90j délai, légal : 10 ans conservation) | Loi données 2025 art. 21 | Party/Erasure | P1 | J0 |
+| FR-011 | e-KYC biométrique (Circ. 2025-06) | Enrôlement électronique empreintes, visage, signature électronique FIDO2/WebAuthn | Circ. 2025-06 | Party/eKYC | P0 | J0 |
+| FR-012 | Profiling client (income, assets, behaviour) | Profil complet : revenus, patrimoine, comportement transactionnel, expositions | Circ. 2025-17 | Party/Profile | P1 | J0 |
+| FR-013 | Statut client (actif/suspendu/clôturé) | State machine : NOUVEAU→VALIDÉ→ACTIF→SUSPENDU/CLÔTURÉ, transitions auditées | Circ. 2025-17 | Party/Status | P0 | J0 |
+| FR-014 | Audit trail client (chaque modification) | Hash chain immutable : création, validations, modifications KYC, sanctions, AML | Circ. 2006-19 | Party/Audit | P0 | J0 |
+| FR-015 | Vérification OFAC + listes nationales | Filtrage automatique création client vs. OFAC, UE, listes BCT nationales, blocage si match | Circ. 2025-17 | Party/Sanctions | P0 | J1 |
+
+**Total BC1 : 15 FRs**
+
+---
+
+### 4.2 BC2 — Account (Gestion comptes / Soldes / Mouvements)
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-016 | Ouverture compte courant | RIB généré, devise TND, solde 0, statut OUVERT, audit trail | Circ. 2025-17 | Holdings/Account | P0 | J0 |
+| FR-017 | Ouverture compte épargne | Taux d'intérêt applicable, calcul mensuel composé | Circ. 2025-17 | Holdings/Savings | P0 | J0 |
+| FR-018 | Ouverture DAT (Dépôt À Terme) | Montant ≥1000 TND, durée 6/12/24 mois, taux fixe immutable, intérêts capitalisés | Circ. 2025-17 | Holdings/TermDeposit | P0 | J0 |
+| FR-019 | Consultation soldes/mouvements | Requête temps réel solde, historique 90 jours, filtrage période | Circ. 2025-17 | Holdings/Statement | P0 | J0 |
+| FR-020 | Calcul intérêts (épargne + DAT) | Formule : Principal × Taux × Jours / 365, capitalisation mensuelle, audit trail | NCT art. 32 | Holdings/Interest | P0 | J0 |
+| FR-021 | Restitution DAT à échéance | Automatique : principal + intérêts → compte courant, notification client | Circ. 2025-17 | Holdings/Maturity | P0 | J0 |
+| FR-022 | Clôture de compte | Solde résiduel remboursé, compte passe CLÔTURÉ, données conservées 10 ans | Circ. 2025-17 | Holdings/Closure | P0 | J0 |
+| FR-023 | Suspension de compte | Transition SUSPENDU (mouvements bloqués sauf virements entrants), cause auditée | Circ. 2025-17 | Holdings/Suspension | P1 | J1 |
+| FR-024 | Recherche compte (RIB, client) | Requête par RIB ou client_id, affichage complet | Circ. 2025-17 | Holdings/Search | P0 | J0 |
+| FR-025 | Conciliation solde GL ↔ mouvements | Vérification quotidienne : somme mouvements = solde GL, alertes si divergence | Circ. 91-24 | Holdings/Reconciliation | P1 | J1 |
+| FR-026 | Compte multi-devise (futur) | Support USD/EUR/GBP via FX conversions réglementaires | Circ. 2025-17 | Holdings/MultiCurrency | P2 | J4 |
+| FR-027 | Limite débit (overdraft) | Limite de découvert configurable par client, alertes dépassement, taux intérêt supp. | Circ. 2025-17 | Holdings/Overdraft | P1 | J1 |
+| FR-028 | Blocages/déblocages (Gel des avoirs) | Gel irrévocable sans autorisation CTAF, déblocage après levée, audit | Circ. 2025-17 | Holdings/Freeze | P0 | J1 |
+
+**Total BC2 : 13 FRs**
+
+---
+
+### 4.3 BC3 — Credit (Crédits / Octroi / Classification / Provisionnement)
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-029 | Demande crédit (création + analyse) | Création dossier : montant, durée, objet, garanties, passage EN_INSTRUCTION | Circ. 91-24 | Credit/Application | P0 | J1 |
+| FR-030 | Analyse risque (PD, LGD, EAD) | Évaluation probabilité défaut, loss given default, exposure at default → classification proposée | Bâle III | Credit/RiskAnalysis | P1 | J1 |
+| FR-031 | Classification créance (classes 0-4) | Classe 0 (courant) → 4 (compromis), provisionnement % obligatoire [REF-14] | Circ. 91-24 | Credit/Classification | P0 | J1 |
+| FR-032 | Comité crédit (approbation multi-niveaux) | Vote 3 membres minimum, décision APPROUVÉE/REJETÉE, quorum | Circ. 91-24 | Credit/Committee | P0 | J1 |
+| FR-033 | Déblocage crédit (transfusion montant) | Transfert montant → compte client, enregistrement créance classe 0, génération échéancier | Circ. 91-24 | Credit/Disbursement | P0 | J1 |
+| FR-034 | Échéancier remboursement (calcul) | Mensualités fixes ou variables, amortissement, intérêts calculés, solde restant dû | NCT art. 32 | Credit/Schedule | P0 | J1 |
+| FR-035 | Paiement mensualité (enregistrement) | Débit compte client, crédit compte crédit, intérêts, principal, frais | Circ. 91-24 | Credit/Payment | P0 | J1 |
+| FR-036 | Défaut paiement (moratoire + pénalité) | Retard >30j → classe 2, >60j → classe 3, >90j → classe 4, frais pénalité | Circ. 91-24 | Credit/Default | P0 | J1 |
+| FR-037 | Provision créance (% par classe) | Classe 0=0%, 1=20%, 2=50%, 3=75%, 4=100%, débit P&L | Circ. 91-24 | Credit/Provisioning | P0 | J1 |
+| FR-038 | IFRS 9 ECL (stage 1/2/3) | Stage 1 : 12m loss, Stage 2/3 : durée vie, calcul PD/LGD/EAD probabiliste | IFRS 9 | Credit/ECL | P1 | J2 |
+| FR-039 | Concentration limite (25% FPN) | Alerte et blocage si risque/client >25% fonds propres nets | Circ. 91-24 | Credit/Concentration | P0 | J1 |
+| FR-040 | Restructuration crédit (nouveau plan) | Rééchelonnement/réduction montant/taux, reclassification, nouveau contrat | Circ. 91-24 | Credit/Restructuring | P1 | J1 |
+| FR-041 | Remboursement anticipé | Paiement total/partiel avant terme, calcul intérêts jusqu'à remboursement | Circ. 91-24 | Credit/Prepayment | P1 | J1 |
+| FR-042 | Créances douteuses (recovery) | Dossiers classe 3/4, plans récupération, assignations, saisies | Circ. 91-24 | Credit/Recovery | P1 | J2 |
+
+**Total BC3 : 14 FRs**
+
+---
+
+### 4.4 BC4 — AML (Anti-blanchiment / Surveillance / DOS / Gel)
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-043 | Scénarios surveillance transactionnelle (P0) | Montant >200k TND, fréquence anormale, pays risque, secteur risque → alerte AML | Circ. 2025-17 | Risk/AML | P0 | J1 |
+| FR-044 | Investigation AML (workflow) | Alerte créée, assignée analyste AML, enquête documentée, CLOSE/ESCALATE/SAR | Circ. 2025-17 | Risk/Investigation | P0 | J1 |
+| FR-045 | Déclaration de soupçon (DOS) → goAML | Signalement électronique CTAF si transaction suspecte, numéro suivi, confirmation | Circ. 2025-17 art. 125 | Risk/SAR | P0 | J1 |
+| FR-046 | Gel des avoirs (Asset Freeze) | Blocage irrévocable sur ordre CTAF, traçabilité ordre, déblocage post-levée | Circ. 2025-17 | Risk/Freeze | P0 | J1 |
+| FR-047 | Travel rule (originator/beneficiary) | Copie données originator (CIN, nom, compte) → bénéficiaire pour transferts >250k TND | GAFI R.16 | Risk/TravelRule | P0 | J2 |
+| FR-048 | Sanctions screening (création client) | Filtrage automatique OFAC/UE/nationales à chaque KYC, blocage si match | Circ. 2025-17 | Risk/Sanctions | P0 | J1 |
+| FR-049 | Scénarios surveillance avancés (P1) | Structuring (multiplicité petits montants), round-tripping, splits, activités sans justif | Circ. 2025-17 | Risk/AdvancedScenarios | P1 | J1 |
+| FR-050 | CTR (Déclaration Transactionnel Restreint) | Signalement automatique montants >200k TND pour fichier CTAF hebdomadaire | Circ. 2025-17 | Risk/CTR | P0 | J1 |
+| FR-051 | Blocage/déblocage manuel (Sonia) | Interface override manuel, approbation CRO, trace d'audit | Circ. 2025-17 | Risk/ManualBlock | P1 | J1 |
+| FR-052 | Dashboard AML (KPIs, alertes) | Nombre alertes/jour, SAR volume, gel avoirs, clients de risque, trends | Circ. 2025-17 | Risk/Dashboard | P1 | J2 |
+| FR-053 | Statistiques AML (effectiveness) | Nombre investigations, SAR soumis, montants gélés, taux clôture, impact GAFI eval | GAFI R.16 | Risk/Statistics | P0 | J2 |
+
+**Total BC4 : 11 FRs**
+
+---
+
+### 4.5 BC5 — Sanctions (Filtrage listes / Screening / Matches)
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-054 | Listes sanctions (OFAC/UE/nationales) | Téléchargement quotidien listes, maintenance base locale, versioning | Circ. 2025-17 | Risk/SanctionList | P0 | J1 |
+| FR-055 | Screening KYC vs. sanctions | Matching fuzzy (nom, date naissance, adresse) à création client, score confidence | Circ. 2025-17 | Risk/Screening | P0 | J1 |
+| FR-056 | Gestion matches (résolution) | Match détecté → CONFIRMED/FALSE_POSITIVE/ESCALATE, documenter, audit | Circ. 2025-17 | Risk/MatchResolution | P0 | J1 |
+| FR-057 | Blocage automatique (match confirmed) | Compte bloqué si match confirmed, déblocage après levée sanctions | Circ. 2025-17 | Risk/AutoBlock | P0 | J1 |
+| FR-058 | Rapports sanctions (BCT/CTAF) | Export liste clients gélés, dates déblocage, motifs, transmission BCT trimestrielle | Circ. 2025-17 | Risk/SanctionReport | P1 | J2 |
+
+**Total BC5 : 5 FRs**
+
+---
+
+### 4.6 BC6 — Prudential (Ratios / Capital / RWA / Solvabilité)
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-059 | Calcul ratio solvabilité (FPN/RWA ≥10%) | Fonds propres nets / actifs pondérés risque, quotidien, alerte si <12% | Circ. 2025-08 | Risk/Solvency | P0 | J1 |
+| FR-060 | Calcul Tier 1 (CET1+AT1 ≥7%) | Capital core tier 1 + Additional tier 1, quotidien, alerte si <8% | Circ. 2025-08 | Risk/Tier1 | P0 | J1 |
+| FR-061 | Ratio C/D (Crédits/Dépôts ≤120%) | Somme crédits / somme dépôts, quotidien, alerte si >110% | Circ. 2025-08 | Risk/CD | P0 | J1 |
+| FR-062 | Concentration par bénéficiaire (≤25% FPN) | Somme risques/client ≤ 25% fonds propres, quotidien, alerte si >20% | Circ. 91-24 | Risk/Concentration | P0 | J1 |
+| FR-063 | RWA par asset class (crédits, opérations de marché) | Pondération 0% (contenu) → 150% (acquis), calculé quotidien | Bâle III | Risk/RWA | P0 | J1 |
+| FR-064 | Breach alerts (auto-notification) | SMS/email Rachid si ratio franchit seuil réglementaire | Circ. 2025-08 | Risk/Alert | P1 | J1 |
+| FR-065 | Rapport prudentiel quotidien | PDF/Excel synthèse : FPN, RWA, tous ratios, trends 30j | Circ. 2025-08 | Risk/Report | P1 | J2 |
+
+**Total BC6 : 7 FRs**
+
+---
+
+### 4.7 BC7 — Accounting (Comptabilité NCT / Journal / GL / Balance)
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-066 | Plan comptable NCT | 7 classes comptables, comptes standard NCT (1xxx dépôts, 2xxx crédits, 3xxx dettes, 4xxx produits, 5xxx charges, 6xxx résultat) | NCT art. 1-5 | Accounting/CoA | P0 | J0 |
+| FR-067 | Écriture comptable double (débit/crédit) | Montant D=C, devise, journaux séparés (OD = opérations diverses, OC = opérations crédit) | NCT art. 10 | Accounting/JournalEntry | P0 | J0 |
+| FR-068 | Journal par opération (OD, OC, OI, OP) | OD=opérations diverses, OC=crédit, OI=intérêts, OP=provisions, traçabilité montant | NCT art. 12 | Accounting/Journal | P0 | J0 |
+| FR-069 | Comptabilisation automatique (hooks) | Chaque mouvement compte → écriture JE automatique (débit 1xxx, crédit 2111 par ex.) | NCT art. 12 | Accounting/AutoPosting | P0 | J0 |
+| FR-070 | Balance générale (extraction GL) | Somme débits/crédits par compte, soldes période, matching T+0 | NCT art. 18 | Accounting/TrialBalance | P0 | J0 |
+| FR-071 | Closings périodiques (fin mois) | État "OPEN" → "POSTING" → "CLOSED", pas modifications post-closed, audit trail | NCT art. 25 | Accounting/Closing | P0 | J0 |
+| FR-072 | Provisionnement créances (journalisation) | Débit 5900 (charge provision) / Crédit 1900 (contre-provision) pour chaque classe 0-4 | Circ. 91-24 | Accounting/Provisioning | P0 | J0 |
+| FR-073 | Intérêts comptabilisés (journalisation) | Débit 1xxx / Crédit 4010 (produits intérêts), mensuel, calcul composé | NCT art. 32 | Accounting/Interest | P0 | J0 |
+| FR-074 | État de synthèse (bilan simplifié) | Actif (1xxx+2xxx) = Passif (3xxx) + Équité (9xxx), vérification quotidienne | NCT art. 35 | Accounting/BalanceSheet | P1 | J0 |
+| FR-075 | Exigences IFRS 9 pré-ECL | Double-booking : NCT actuel + colonnes IFRS 9 pour stage 1/2/3 (v4.0) | IFRS 9 | Accounting/IFRS9 | P1 | J2 |
+| FR-076 | Audit trail écritures (immuabilité) | Hash chain : date, montant, comptes, user, journaux, traces de modification | Circ. 2006-19 | Accounting/AuditTrail | P0 | J0 |
+| FR-077 | Requête GL (filtrage période/compte) | Export CSV : comptes, débits, crédits, soldes période, drill-down | NCT art. 18 | Accounting/Query | P0 | J0 |
+
+**Total BC7 : 12 FRs**
+
+---
+
+### 4.8 BC8 — Reporting (États BCT / Prudentiels / Financiers)
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-078 | État prudentiel (Circ. 2025-08) | Ratios solvabilité, Tier 1, C/D, concentration, PDF/Excel, mensuel → BCT | Circ. 2025-08 | Analytics/Prudential | P1 | J1 |
+| FR-079 | État AML (Circ. 2025-17) | Nombre alertes, SAR volume, montants gélés, clients suivi EDD, SAR soumis CTAF | Circ. 2025-17 | Analytics/AML | P1 | J1 |
+| FR-080 | Bilan NCT (états financiers) | Synthèse actif/passif/capital, conforme NCT, attestation, audit trail | NCT art. 35 | Analytics/Balance | P1 | J1 |
+| FR-081 | Compte résultat (P&L) | Produits - charges = résultat net, mensuel, tendances | NCT art. 38 | Analytics/PL | P1 | J1 |
+| FR-082 | Rapport crédit (classification + provisions) | Créances par classe, provisions, ratios non-performing, provisions couvrant % | Circ. 91-24 | Analytics/Credit | P1 | J1 |
+| FR-083 | Tableau de bord rapports (generation auto) | Paramétrage rapports, planification hebdo/mensuel, export email stakeholders | Circ. 2025-08 | Analytics/Scheduler | P1 | J2 |
+
+**Total BC8 : 6 FRs**
+
+---
+
+### 4.9 BC9 — Payment (Virements / Compensation / ISO 20022)
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-084 | Virement national intra-banque | Transfert compte débordement → crédit T+0, montant débité/crédité, frais transaction | Circ. 2025-17 | Payment/Domestic | P0 | J1 |
+| FR-085 | Virement national inter-banque | Initiation XML ISO 20022, transmission clearing national, compensation T+1 | Circ. 2025-17 | Payment/Interbank | P1 | J1 |
+| FR-086 | Virement SWIFT (international) | Messagerie SWIFT MT103, conforme UCP/SWIFT, débouchés devises | ISO 20022 | Payment/SWIFT | P2 | J2 |
+| FR-087 | Mandat de paiement (ordre permanent) | Virement récurrent (loyer, salaire), fréquence, montant, dates, édition/suppression | Circ. 2025-17 | Payment/Standing | P1 | J1 |
+| FR-088 | Frais transaction | Calcul tarif par montant/type, débité compte client, revenus comptabilisés | NCT art. 32 | Payment/Fees | P0 | J1 |
+| FR-089 | Compensation (clearing) | Agrégation virements du jour, transmission clearing, règlement brut T+1, réconciliation | Circ. 2025-17 | Payment/Clearing | P1 | J2 |
+| FR-090 | Statuts virement (tracking) | INITIÉ → VALIDÉ → TRANSMIS → COMPENSÉ → RÉGLÉ, audit trail | Circ. 2025-17 | Payment/Status | P0 | J1 |
+
+**Total BC9 : 7 FRs**
+
+---
+
+### 4.10 BC10 — ForeignExchange (FX / Spot / Forward / Position / Loi 76-18)
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-091 | Opération FX spot (achat/vente) | Conversion devises, taux BCP (quotidien), débit/crédit comptes montants, frais change | Loi 76-18 | FX/Spot | P1 | J1 |
+| FR-092 | Taux de change (import BCP) | Mise à jour quotidienne (avant 16h30), utilisation for all FX ops du jour | Loi 76-18 | FX/Rate | P1 | J1 |
+| FR-093 | Opération FX forward (future) | Vente/achat forward à date fixe, taux forward calculé (spot + swap points) | Loi 76-18 | FX/Forward | P1 | J2 |
+| FR-094 | Position FX (expo devises) | Somme achats/ventes devises, calcul expo court/long, limite RWA par devise | Loi 76-18 | FX/Position | P1 | J2 |
+| FR-095 | Conformité devise TND (limitation) | Montants USD/EUR plafonnés, autorisation BCP pour gros montants (>500k) | Loi 76-18 | FX/Compliance | P1 | J1 |
+| FR-096 | Confirmation FX (client) | Email/SMS confirmation opération FX, taux appliqué, frais, montants | Loi 76-18 | FX/Confirmation | P1 | J1 |
+
+**Total BC10 : 6 FRs**
+
+---
+
+### 4.11 BC11 — Governance (Audit Trail / 3LoD / Contrôle Interne / Comités)
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-097 | Audit trail immutable (hash chain) | Chaque opération : timestamp, user, action, ressource, avant/après, SHA256 chainé | Circ. 2006-19 | Governance/AuditTrail | P0 | J0 |
+| FR-098 | 3 Lignes de Défense (3LoD) | 1LoD : opérateurs (Karim), 2LoD : compliance/risque (Sonia/Rachid), 3LoD : audit interne (inspecteur BCT) | BCT governance | Governance/3LoD | P0 | J0 |
+| FR-099 | Contrôles internes (4-eyes, segregation) | Approbations multi-niveaux : comité crédit, validation KYC, comité prudentiel | BCT governance | Governance/Controls | P0 | J0 |
+| FR-100 | Comités (crédit, audit, risque) | Comité crédit (3 membres), comité audit (2 indépendants), comité risque (CRO+Risk Manager) | BCT governance | Governance/Committee | P0 | J0 |
+| FR-101 | Dashboard conformité (DPO, auditeurs) | KPIs : AML alerts, SAR, gels, ratios prudentiels, clients risque, conformité données | Circ. 2025-17 | Governance/Dashboard | P1 | J1 |
+| FR-102 | Rapports audit (extraction périodique) | Export audit trail JSON, requêtes avancées (filtrer par user/action/période), drill-down | Circ. 2006-19 | Governance/Reports | P0 | J0 |
+
+**Total BC11 : 6 FRs**
+
+---
+
+### 4.12 BC12 — Identity (Authentification / RBAC / Sessions / 2FA)
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-103 | Authentification 2FA (OTP SMS+FIDO2) | Mot de passe + OTP SMS 6d + biométrie FIDO2/WebAuthn, fallback OTP TOTP | Circ. 2025-06 | Identity/Auth2FA | P0 | J0 |
+| FR-104 | Gestion rôles (RBAC) | Rôles : OPERATEUR, COMPLIANCE, CRO, DPO, ADMIN, permissions granulaires | BCT governance | Identity/RBAC | P0 | J0 |
+| FR-105 | Sessions sécurisées (timeout) | Timeout 30 min inactivité, révocation manuelle, token JWT signé HSM | PCI DSS v4.0.1 | Identity/Session | P0 | J0 |
+| FR-106 | MFA pour opérations critiques | Confirmations MFA : virements >100k, déblocages crédit, validations KYC | PCI DSS v4.0.1 | Identity/CriticalMFA | P0 | J0 |
+| FR-107 | Audit login/logout | Trace : user, timestamp, IP, succès/échec auth, raison rejets | Circ. 2006-19 | Identity/LoginAudit | P0 | J0 |
+| FR-108 | Gestion mots de passe (complexité) | Min 12 chars, majuscule+minuscule+chiffre+spécial, pas noms clients, expiration 90j | PCI DSS v4.0.1 | Identity/PWPolicy | P0 | J0 |
+
+**Total BC12 : 6 FRs**
+
+---
+
+### 4.13 BC13 — Compliance (SMSI ISO 27001:2022 / PCI DSS v4.0.1 / Loi données 2025)
+
+| ID | Exigence | Description | Référence | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-109 | ISO 27001:2022 (93 contrôles Annexe A) | Mapping 22 BC vers 93 contrôles (A.5 org, A.6 people, A.7 phys, A.8 crypto, A.9 access, A.10 cryptog, A.11 comms, A.12 systems, A.13 suppliers, A.14 incident, A.15 business continuity) | ISO 27001:2022 | Compliance/ISO | P0 | J0 |
+| FR-110 | PCI DSS v4.0.1 (tokenisation) | Tokenisation PAN, chiffrement AES-256-GCM niveau champ, MFA CDE | PCI DSS v4.0.1 | Compliance/PCI | P1 | J0 |
+| FR-111 | Loi données 2025 — DPO (rôle obligatoire) | Désignation DPO (rôle user), accès dashboards conformité, notifications breaches | Loi données 2025 | Compliance/DPO | P0 | J0 |
+| FR-112 | Loi données 2025 — DPIA (Data Protection Impact Assessment) | Questionnaire DPIA avant traitement risqué (biométrie, géolocalisation), validation DPO | Loi données 2025 | Compliance/DPIA | P0 | J0 |
+| FR-113 | Loi données 2025 — Notification breach (72h) | Détection incident, notification INPDP/clients dans 72h, logging breach events | Loi données 2025 | Compliance/Breach | P0 | J0 |
+| FR-114 | Consentement granulaire (cookie banner) | Banneau consentement AR/FR/EN, choix granulaires (analytics/marketing/essential), traçabilité | Loi données 2025 | Compliance/Consent | P0 | J0 |
+| FR-115 | HSM (Hardware Security Module) | Signatures cryptographiques clés privées stockées HSM (Thales Luna), accès MFA | PCI DSS v4.0.1 | Compliance/HSM | P0 | J0 |
+| FR-116 | Chiffrement données sensibles (AES-256-GCM) | CIN, passeport, adresse, salaires = chiffrement AES-256-GCM, clés rotation 90j | ISO 27001:2022 | Compliance/Encryption | P0 | J0 |
+
+**Total BC13 : 8 FRs**
+
+---
+
+### 4.14 BC14 — Arrangement (Contrats / Conditions / Limites / Produits / Bundles) [NOUVEAU]
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-117 | Création arrangement (contrat) | Définir arrangement : client, produits associés (compte, crédit, DAT), conditions générales, limites | Circ. 2025-17 | Arrangement/Create | P0 | J1 |
+| FR-118 | Conditions arrangement (taux, frais, durée) | Paramètres : taux (%, montant), frais (montant, %valeur), durée (mois), renouvellement | Circ. 2025-17 | Arrangement/Terms | P0 | J1 |
+| FR-119 | Limites arrangement (crédit, débit) | Limit crédit (montant max), limit débit (découvert), limit transfer (virement), alert % | Circ. 2025-17 | Arrangement/Limits | P0 | J1 |
+| FR-120 | Produits associés arrangement | Bundle : 1 compte courant + 1 DAT + 1 crédit, éléments optionnels, pricing bundle | Circ. 2025-17 | Arrangement/Products | P1 | J1 |
+| FR-121 | Simulation arrangement (pricing) | Calcul montant + frais + intérêts, total cost of ownership, scenarios alternatifs | Circ. 2025-17 | Arrangement/Simulation | P1 | J1 |
+| FR-122 | Négociation arrangement (workflow) | Client → offre → acceptation → arrangement actif, versioning offres | Circ. 2025-17 | Arrangement/Negotiation | P1 | J1 |
+| FR-123 | Modification arrangement (amendment) | Changement taux/frais/durée, approbation, nouvel enregistrement, audit trail | Circ. 2025-17 | Arrangement/Amendment | P1 | J1 |
+| FR-124 | État arrangement (lifecycle) | PROPOSITION → OFFERTE → ACCEPTÉE → ACTIVE → SUSPENDUE/CLÔTURÉE | Circ. 2025-17 | Arrangement/Status | P0 | J1 |
+| FR-125 | Termination arrangement (clôture) | Clôture anticipée/normale, settlement dernier paiement, archivage contrat | Circ. 2025-17 | Arrangement/Termination | P1 | J1 |
+
+**Total BC14 : 9 FRs**
+
+---
+
+### 4.15 BC15 — TradeFinance (L/C / Garanties / Documentary / UCP 600) [NOUVEAU]
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-126 | Lettre de crédit (L/C creation) | L/C import : client, applicant, beneficiary, montant, devise, documents required (invoice, B/L, insurance), validité | UCP 600 | TradeFinance/LC | P1 | J2 |
+| FR-127 | Workflow LC (négociation, dénouement) | Presentation documents → vérification conformité → payment → retour docs exportateur | UCP 600 | TradeFinance/LCFlow | P1 | J2 |
+| FR-128 | Garantie bancaire (Bank Guarantee) | Garantie : soumissionnaire, bénéficiaire, montant, type (soumission, avance, performance, restitution), validité | UCP 600 | TradeFinance/BG | P1 | J2 |
+| FR-129 | Remise documentaire (Documentary Credit) | Vente documents contre paiement, échange docs/cash, escompte traites | UCP 600 | TradeFinance/DocCredit | P1 | J2 |
+| FR-130 | Conformité documents L/C | Vérification : facture vs L/C montants, dates, descriptions, signatures, certificats | UCP 600 | TradeFinance/DocCheck | P1 | J2 |
+| FR-131 | Frais trade finance (commission) | Commission L/C (%, plafond), frais dossier, frais pénalité non-conformité | Circ. 2025-17 | TradeFinance/Fees | P1 | J2 |
+| FR-132 | Reporting trade finance (statistiques) | Nombre L/C/jour, montants, devises, durée moyenne, taux de conformité, incidents | Circ. 2025-17 | TradeFinance/Report | P1 | J2 |
+
+**Total BC15 : 7 FRs**
+
+---
+
+### 4.16 BC16 — CashManagement (Sweeps / Pooling / Liquidity / FX Forward) [NOUVEAU]
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-133 | Sweep account (liquidity optimization) | Transfert automatique soldes >X vers master, collecte fonds inter-company, optimisation taux | Circ. 2025-17 | CashManagement/Sweep | P1 | J2 |
+| FR-134 | Pooling (notionnel) | Regroupement soldes logiques, calcul intérêts groupe, allocation par étape | Circ. 2025-17 | CashManagement/Pooling | P1 | J2 |
+| FR-135 | Prévision liquidité (forecast) | Projection flux 7/14/30j, alertes liquidité insuffisante, recommendations actions | Circ. 2025-17 | CashManagement/Forecast | P1 | J2 |
+| FR-136 | FX forward (future rates) | Achat/vente devises à future date, taux forward, settlement T+7/T+30, RWA impact | Loi 76-18 | CashManagement/FXForward | P1 | J2 |
+| FR-137 | Position trésorerie (dashboard temps réel) | Vue globale cash par devise, expositions, limites, actions recommandées | Circ. 2025-17 | CashManagement/Dashboard | P1 | J2 |
+| FR-138 | Optimization pricing (sweep rates) | Calcul intérêts sweep, compensation taux, overhead allocation | Circ. 2025-17 | CashManagement/Pricing | P1 | J2 |
+| FR-139 | Inter-company loans | Prêt inter-entités groupe, taux marché, conformité Loi 76-18, documentations | Circ. 2025-17 | CashManagement/IntercompanyLoan | P2 | J3 |
+
+**Total BC16 : 7 FRs**
+
+---
+
+### 4.17 BC17 — IslamicBanking (Murabaha / Ijara / Waqf / Sharia / Musharaka) [NOUVEAU]
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-140 | Murabaha (cost-plus financing) | Financement achat bien : coût + markup, versement à livraison, amortissement mensuel | Loi 2016-33 | IslamicBanking/Murabaha | P1 | J2 |
+| FR-141 | Ijara (Islamic lease) | Location bien : loyers mensuels, option achat fin de période, valeur résiduelle, Sharia compliant | Loi 2016-33 | IslamicBanking/Ijara | P1 | J2 |
+| FR-142 | Waqf (charitable endowment) | Fonds immobilisés caritatifs, revenus → organisations agréées, gestion perpétuelle, exonérations | Loi 2016-33 | IslamicBanking/Waqf | P1 | J2 |
+| FR-143 | Wakala (agency) | Client mandate banque pour investissement, banque agit comme agent, frais base %, pas intérêt | Loi 2016-33 | IslamicBanking/Wakala | P1 | J2 |
+| FR-144 | Musharaka (partnership) | Investissement partenaire : client + banque cotisent capital, PnL partagé (%), sortie clause | Loi 2016-33 | IslamicBanking/Musharaka | P1 | J2 |
+| FR-145 | Sukuk (Islamic bond) | Émission obligations Sharia, coupon % (sans intérêt), rangement, cote BVMT | Loi 2016-33 | IslamicBanking/Sukuk | P2 | J3 |
+| FR-146 | Sharia board (validation) | Validation produits par sharia board (3 érudits minimum), documentation fatwa, audit Sharia | Loi 2016-33 | IslamicBanking/Sharia | P1 | J2 |
+| FR-147 | Double-booking (Islamic accounting) | Enregistrement dual : NCT + Sharia accounting (mudaraba %), allocation revenus conforme Sharia | Loi 2016-33 | IslamicBanking/DoubleBook | P1 | J2 |
+| FR-148 | Zakat calculation (obligatoire) | Calcul zakat 2.5% assets musulmans, retenue/virement organisme agrégé, traçabilité | Loi 2016-33 | IslamicBanking/Zakat | P1 | J2 |
+
+**Total BC17 : 9 FRs**
+
+---
+
+### 4.18 BC18 — DataHub (ODS / ADS / MDM / Data Quality / Real-time Analytics) [NOUVEAU]
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-149 | ODS (Operational Data Store) | Replication temps quasi-réel (T+1 max) données opérationnelles : comptes, mouvements, crédits | Circ. 2025-17 | DataHub/ODS | P1 | J3 |
+| FR-150 | ADS (Analytical Data Store) | Historique complet (10 ans), agrégations par dimensions (client, produit, région, risque) | Circ. 2025-17 | DataHub/ADS | P1 | J3 |
+| FR-151 | MDM (Master Data Management) | Single source truth : clients, comptes, produits, organisations, hiérarchies | Circ. 2025-17 | DataHub/MDM | P1 | J3 |
+| FR-152 | Data quality (validation) | Complétude, conformité type, unicité clés, freshness, alertes anomalies | Circ. 2025-17 | DataHub/Quality | P1 | J3 |
+| FR-153 | Real-time dashboards (analytics) | KPI dashboards : clients actifs, dépôts/crédits/FX volumes, ratios prudentiels, AML trends | Circ. 2025-17 | DataHub/Dashboard | P1 | J3 |
+| FR-154 | ETL pipelines (ELT moderne) | Extraction source → transformation → chargement ADS, scheduling orchestration, monitoring | Circ. 2025-17 | DataHub/ETL | P1 | J3 |
+| FR-155 | GDPR compliance (data retention) | Purge automatique données archivées >10 ans, conformité INPDP, logs destruction | Loi données 2025 | DataHub/Retention | P1 | J3 |
+| FR-156 | Data governance (lineage) | Traçabilité données source → destination, transformations, audit trail, DPO oversight | Loi données 2025 | DataHub/Lineage | P1 | J3 |
+
+**Total BC18 : 8 FRs**
+
+---
+
+### 4.19 BC19 — ReferenceData (Master codes / Taux / Calendrier / Pays) [NOUVEAU]
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-157 | Taux de change (taux BCP quotidien) | Import taux USD/EUR/GBP vs TND quotidien, versioning, utilisation FX ops | Loi 76-18 | ReferenceData/FXRate | P1 | J2 |
+| FR-158 | Calendrier jours fériés (Tunisie) | Jours fériés nationaux/régionaux, impacte calcul jours mouvements/intérêts | Circ. 2025-17 | ReferenceData/Calendar | P0 | J1 |
+| FR-159 | Codes pays / devises / banques | ISO 3166 (pays), ISO 4217 (devises), BIC/IBAN/RIB normalisés, mappages internes | ISO 20022 | ReferenceData/CodeLists | P0 | J1 |
+| FR-160 | Tables de référence secteurs/professions | GAFI 40 recommandations risque, matching clients secteurs NPL élevés | GAFI R.16 | ReferenceData/RiskSectors | P1 | J1 |
+| FR-161 | Taux prudentiels (capital, RWA) | Pondérations risques (0% contenu, 20% banques, 100% crédits), mise à jour circulaires | Circ. 2025-08 | ReferenceData/RiskWeights | P0 | J1 |
+| FR-162 | Paramètres légaux (limites, minima) | Limite concentration 25%, ratio C/D 120%, solvabilité 10%, Tier 1 7%, configurable par circulaire | Circ. 2025-08 | ReferenceData/LegalLimits | P0 | J1 |
+| FR-163 | Listes OFAC/UE (sanctions) | Synchronisation automatique hebdo, versioning, matching fuzzy | Circ. 2025-17 | ReferenceData/SanctionsList | P0 | J1 |
+
+**Total BC19 : 7 FRs**
+
+---
+
+### 4.20 BC20 — Securities (Titres / Portefeuille / Dépositaire / Custody / BVMT) [NOUVEAU]
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-164 | Portefeuille titres (positions) | Enregistrement actions/obligations : ISIN, quantité, valeur unitaire, devise, date achat | BVMT règles | Securities/Portfolio | P1 | J3 |
+| FR-165 | Ordres bourse (achat/vente) | Ordre marché/limite, transmission courtier, exécution, règlement T+2/T+3, commission | BVMT règles | Securities/Order | P1 | J3 |
+| FR-166 | Custody (dépositaire) | Safekeeping titres, versement divides/coupons, remboursement capital, reporting | BVMT règles | Securities/Custody | P1 | J3 |
+| FR-167 | Calcul gains/losses (unrealized) | Évaluation position mark-to-market (quotidien), gain/perte non-réalisée, P&L impact | IFRS 9 | Securities/Valuation | P1 | J3 |
+| FR-168 | Dividendes / coupons | Versement automatique revenus titres, allocations portefeuille, imposition (SRE) | BVMT règles | Securities/Income | P1 | J3 |
+| FR-169 | Opérations titres avancées (splits, conversions) | Opérations d'émetteur (splits, consolidations, conversions), mise à jour positions | BVMT règles | Securities/Corporate | P2 | J3 |
+| FR-170 | Reporting BVMT (statistiques) | Positions titres, volumes traded, clients actifs bourse, audit trail complet | BVMT règles | Securities/BVMTReport | P1 | J3 |
+
+**Total BC20 : 7 FRs**
+
+---
+
+### 4.21 BC21 — Insurance (Assurances liées / Crédit / Décès / Risque / Sinistres) [NOUVEAU]
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-171 | Assurance crédit (linked) | Couverture perte crédit classification 3/4, prime mensuelle, limite montant/âge emprunteur | Circ. 2025-17 | Insurance/CreditLife | P1 | J3 |
+| FR-172 | Assurance décès (décès emprunteur) | Capital restant dû assuré si décès, bénéficiaire = banque, prime fonction montant/âge | Circ. 2025-17 | Insurance/DeathBenefit | P1 | J3 |
+| FR-173 | Assurance risque (perte emploi) | Couverture revenus emprunteur, indemnité chômage, prime fonction montant | Circ. 2025-17 | Insurance/JobLoss | P1 | J3 |
+| FR-174 | Polices liées (bundling) | Polices rattachées crédit/compte, primes auto-débitées compte, renouvellement automatique | Circ. 2025-17 | Insurance/Policy | P1 | J3 |
+| FR-175 | Déclaration sinistre (claims) | Notification sinistre, dossier sinistre, documentation réclamation, versement indemnité | Circ. 2025-17 | Insurance/Claim | P1 | J3 |
+| FR-176 | Tarification assurance (risk-based) | Prime fonction âge/montant/durée, commission assureur, marge banque | Circ. 2025-17 | Insurance/Pricing | P1 | J3 |
+
+**Total BC21 : 6 FRs**
+
+---
+
+### 4.22 BC22 — Compliance (Étendu — goAML / Travel Rule / TuniCheque / Effectiveness) [NOUVEAU v4.0]
+
+| ID | Exigence | Description | Référence BCT | Temenos Map | Priorité | Jalon |
+|---|---|---|---|---|---|---|
+| FR-177 | goAML intégrée (CTAF submission) | Déclarations soupçon électroniques CTAF via goAML API, XML conforme, numéro suivi | Circ. 2025-17 | Compliance/goAML | P0 | J2 |
+| FR-178 | Travel rule (originator/beneficiary data) | Copie identifiant originator (CIN, nom) + compte → bénéficiaire pour transferts >250k TND | GAFI R.16 rev. | Compliance/TravelRule | P0 | J2 |
+| FR-179 | TuniCheque API (verification temps réel) | Appel API TuniCheque avant encaissement chèque, vérification provision, blocage si négatif | Circ. 2025-03 | Compliance/TuniCheque | P1 | J2 |
+| FR-180 | Effectiveness metrics (GAFI evaluation) | Reporting : nombre investigations, SAR soumis, taux clôture, montants gélés, impact | GAFI R.16 | Compliance/Effectiveness | P0 | J2 |
+| FR-181 | Conformité Loi 2016-33 (banques islamiques) | Validation produits sharia board, double-booking NCT/Sharia, zakat calculation | Loi 2016-33 | Compliance/Islamic | P1 | J2 |
+| FR-182 | Intégration BioDev (biométrie ANCS) | Tests intrusion biométrie e-KYC via ANCS (Circ. 2025-06), validation security, certification | Circ. 2025-06 | Compliance/BioDev | P0 | J0 |
+
+**Total BC22 : 6 FRs**
+
+---
+
+## 5. Non-Functional Requirements (NFRs)
+
+| NFR | Spécification | Mesure | Cible |
+|---|---|---|---|
+| **Performance P99** | Latence API interne (sans persistance) | P99 latency | <5ms |
+| **Performance E2E** | Latence incluant persistance PostgreSQL | P95 latency | <200ms |
+| **Disponibilité** | SLA uptime production | % uptime | 99.9% |
+| **Sécurité** | Vulnérabilités critiques | 0 non-mitigées | Avant release |
+| **Encryption** | Chiffrement données sensibles | AES-256-GCM | 100% PII |
+| **HSM** | Signatures cryptographiques | Clés privées | Toutes dans HSM |
+| **i18n** | Langues complètement supportées | AR RTL + FR + EN | 100% UI/messages |
+| **Accessibilité** | WCAG 2.1 compliance | Niveau | AA minimum |
+| **Auditabilité** | Couverture opérations audit trail | % opérations loggées | 100% immutable |
+| **Scalabilité** | Architecture microservices-ready | Conteneurisation | Kubernetes-ready |
+| **Isolation données** | Isolation logique/physique par client (multi-tenant) | Cryptage niveau tenant | 100% |
+| **Retention** | Conformité INPDP conservation données | Archivage post-clôture | 10 ans |
+| **Compliance** | Couverture ISO 27001:2022 | % contrôles Annexe A | 93/93 (100%) |
+| **Tests** | Couverture domain layer | Tarpaulin % | 95%+ |
+| **BDD** | Scénarios Gherkin | Count | ≥400 |
+
+---
+
+## 6. Glossaire métier (Ubiquitous Language DDD)
+
+| Terme | Définition | Type Rust | BC | Référence |
+|---|---|---|---|---|
+| **Compte** | Instrument dépôt/crédit identifié RIB | `Account` struct | BC2 | Circ. 2025-17 |
+| **Client** | PP/PM titulaire fiche KYC | `Customer` aggregate | BC1 | Circ. 2025-17 |
+| **Fiche KYC** | Enregistrement identification Annexe 1 | `KycProfile` | BC1 | Circ. 2025-17 art. 5 |
+| **Bénéficiaire effectif** | PP possédant ≥25% capital | `Beneficiary` struct | BC1 | Circ. 2025-17 art. 8 |
+| **PEP** | Personne politiquement exposée | `PepCheck` aggregate | BC1 | Circ. 2025-17 art. 13 |
+| **EDD** | Enhanced Due Diligence renforcée | `EddProfile` struct | BC1 | Circ. 2025-17 art. 14 |
+| **Créance** | Engagement crédit classifiable 0-4 | `Loan` aggregate | BC3 | Circ. 91-24 |
+| **Classe créance** | Classification : 0=courant→4=compromis | `AssetClass` enum | BC3 | Circ. 91-24 |
+| **Provision** | Montant comptabilisé risque perte | `Provision` struct | BC3 | Circ. 91-24 |
+| **ECL** | Expected Credit Loss IFRS 9 | `ExpectedCreditLoss` struct | BC3/BC7 | IFRS 9 |
+| **Stage 1/2/3** | Étapes IFRS 9 risque crédit | `CreditStage` enum | BC3/BC7 | IFRS 9 |
+| **Ratio solvabilité** | FPN/RWA ≥10% | `SolvencyRatio` type | BC6 | Circ. 2025-08 |
+| **Tier 1** | CET1+AT1 ≥7% | `Tier1Ratio` type | BC6 | Circ. 2025-08 |
+| **Ratio C/D** | Crédits/Dépôts ≤120% | `CDRatio` type | BC6 | Circ. 2025-08 |
+| **Concentration** | Risque/client ≤25% FPN | `ConcentrationRisk` type | BC6 | Circ. 91-24 |
+| **RWA** | Risk-Weighted Assets | `RiskWeightedAssets` struct | BC6 | Bâle III |
+| **FPN** | Fonds Propres Nets | `RegulatoryCapital` struct | BC6 | Circ. 2025-08 |
+| **Arrangement** | Contrat client (compte+crédit+DAT) | `Arrangement` aggregate | BC14 | Circ. 2025-17 |
+| **Limite arrangement** | Plafonds crédit/débit/virement | `ArrangementLimit` struct | BC14 | Circ. 2025-17 |
+| **Déclaration soupçon** | Signalement CTAF operation suspecte | `SuspicionReport` aggregate | BC4/BC22 | Circ. 2025-17 art. 125 |
+| **Gel avoirs** | Blocage irrévocable sans CTAF | `AssetFreeze` aggregate | BC2/BC4 | Circ. 2025-17 |
+| **Travel rule** | Copie originator/beneficiary données | `TravelRuleData` struct | BC22 | GAFI R.16 |
+| **L/C** | Lettre de crédit | `LetterOfCredit` aggregate | BC15 | UCP 600 |
+| **Murabaha** | Cost-plus Islamic finance | `Murabaha` aggregate | BC17 | Loi 2016-33 |
+| **Ijara** | Islamic lease | `Ijara` aggregate | BC17 | Loi 2016-33 |
+| **Waqf** | Charitable endowment Islam. | `Waqf` aggregate | BC17 | Loi 2016-33 |
+| **Sweep** | Transfert liquidité automatique | `SweepAccount` aggregate | BC16 | Circ. 2025-17 |
+| **Pooling** | Regroupement logique soldes | `NotionalPool` aggregate | BC16 | Circ. 2025-17 |
+| **Sharia board** | Conseil validation produits Islam. | `ShariaBoard` entity | BC17 | Loi 2016-33 |
+| **ODS** | Operational Data Store | `DataStore` enum | BC18 | Circ. 2025-17 |
+| **ADS** | Analytical Data Store | `DataStore` enum | BC18 | Circ. 2025-17 |
+| **MDM** | Master Data Management | `MasterData` aggregate | BC18 | Circ. 2025-17 |
+| **Audit trail** | Enregistrement immutable opérations | `AuditEntry` aggregate | BC11 | Circ. 2006-19 |
+| **Écriture comptable** | Enregistrement journal NCT | `JournalEntry` aggregate | BC7 | NCT art. 10 |
+| **RIB** | Relevé Identité Bancaire | `RIB` value object | BC2 | Circ. 2025-17 |
+| **DAT** | Dépôt À Terme | `Account` type=DAT | BC2 | Circ. 2025-17 |
+| **RBAC** | Role-Based Access Control | `Role` enum | BC12 | BCT governance |
+| **2FA** | Two-Factor Authentication | `AuthFactor` struct | BC12 | Circ. 2025-06 |
+| **HSM** | Hardware Security Module | `HsmKey` opaque type | BC13 | PCI DSS v4.0.1 |
+| **DPO** | Data Protection Officer | `User` with role=DPO | BC13 | Loi données 2025 |
+| **DPIA** | Data Protection Impact Assessment | `DPIA` aggregate | BC13 | Loi données 2025 |
+| **Consentement** | Accord traitement données PII | `Consent` aggregate | BC13 | Loi données 2025 |
+| **Zakat** | Aumône Islam. 2.5% assets | `Zakat` struct | BC17 | Loi 2016-33 |
+| **Sukuk** | Obligation Islam. | `Sukuk` aggregate | BC17 | Loi 2016-33 |
+| **Portfolio** | Ensemble titres client | `Securities.Portfolio` struct | BC20 | BVMT |
+| **Custody** | Safekeeping titres dépositaire | `Custody` aggregate | BC20 | BVMT |
+| **Polices liées** | Assurances bundled crédit | `InsurancePolicy` aggregate | BC21 | Circ. 2025-17 |
+| **Sinistre** | Incident assuré | `InsuranceClaim` aggregate | BC21 | Circ. 2025-17 |
+
+---
+
+## 7. Invariants métier (25+ invariants traçables)
+
+| ID | Invariant | Description | Règle | Référence BCT | BC |
+|---|---|---|---|---|---|
+| INV-01 | KYC avant compte | Fiche KYC validée requise avant ouverture compte | Pas de compte sans KYC valide | Circ. 2025-17 art. 5 | BC1/BC2 |
+| INV-02 | Compte unique par devise | Un client = 1 compte courant TND max | Pas duplication comptes | Circ. 2025-17 | BC2 |
+| INV-03 | Solde invariant | Solde = Σ mouvements crédits - débits | Vérification quotidienne | Circ. 91-24 | BC2/BC7 |
+| INV-04 | Créance classée unique | Chaque créance = exactement 1 classe (0-4) | Pas multi-classe | Circ. 91-24 | BC3 |
+| INV-05 | Concentration limite | Risque/client ≤ 25% FPN | Alerte si >20%, blocage si >25% | Circ. 91-24 | BC3/BC6 |
+| INV-06 | Solvabilité minimum | FPN/RWA ≥ 10% | Alerte si <12%, breach if <10% | Circ. 2025-08 | BC6 |
+| INV-07 | Tier 1 minimum | (CET1+AT1)/RWA ≥ 7% | Alerte si <8%, breach if <7% | Circ. 2025-08 | BC6 |
+| INV-08 | Ratio C/D plafond | Crédits/Dépôts ≤ 120% | Alerte si >110%, breach if >120% | Circ. 2025-08 | BC6 |
+| INV-09 | Provision obligatoire | Classe X → provision Y% | Classe 0=0%, 1=20%, 2=50%, 3=75%, 4=100% | Circ. 91-24 | BC3/BC7 |
+| INV-10 | Rétention données KYC | Fiches conservées 10 ans post-clôture | Archivage non-destroyable | Circ. 2025-17 art. 20 | BC1 |
+| INV-11 | Audit trail immutable | Chaque opération signée cryptographiquement | Hash chain SHA256 | Circ. 2006-19 | BC11 |
+| INV-12 | Segmentation 3LoD | 1LoD opérateurs, 2LoD compliance, 3LoD audit | Rôles distincts, pas multiples | BCT governance | BC11/BC12 |
+| INV-13 | Consentement INPDP | Données PII traitées = consentement explicite | Checkbox obligatoire avant KYC | Loi données 2025 art. 7 | BC1/BC13 |
+| INV-14 | Gestion PEP/EDD | Client PEP flaggé automatiquement → EDD lancée | Workflow obligatoire 10j | Circ. 2025-17 art. 13-14 | BC1 |
+| INV-15 | DOS obligatoire | Transaction suspecte → SAR CTAF dans 24h | Pas suppressions manuelles SAR | Circ. 2025-17 art. 125 | BC4/BC22 |
+| INV-16 | Gel avoirs absolu | Compte gelé ne peut plus débiter | Sauf virements entrants | Circ. 2025-17 | BC2/BC4 |
+| INV-17 | Travel rule obligatoire | Transfert >250k TND = données originator | Copie complète vers bénéficiaire | GAFI R.16 rev. | BC22 |
+| INV-18 | Taux immutable DAT | Taux DAT fixe pendant durée contrat | Pas modification retroactive | Circ. 2025-17 | BC2 |
+| INV-19 | Double-booking Islamic | Produit Islamic = comptabilité NCT + Sharia | Deux écritures synchrones | Loi 2016-33 | BC17/BC7 |
+| INV-20 | Sharia validation | Produit Islamic approuvé sharia board avant lancement | 3 érudits minimum | Loi 2016-33 | BC17 |
+| INV-21 | ISO 27001 coverage | 93 contrôles Annexe A mappés BC | Chaque contrôle → BC responsable | ISO 27001:2022 | BC13 |
+| INV-22 | PCI DSS tokenisation | PAN jamais stocké en clair | Token AES-256-GCM | PCI DSS v4.0.1 | BC13 |
+| INV-23 | DPIA avant traitement risqué | Biométrie/géolocalisation = DPIA validation DPO | Approval DPO avant go-live | Loi données 2025 | BC13 |
+| INV-24 | Notification breach 72h | Incident données → INPDP notifiée <72h | Logging obligatoire incident | Loi données 2025 art. 33 | BC13 |
+| INV-25 | Portabilité données | Client demande → export données JSON <30j | Format standard, non-propriétaire | Loi données 2025 art. 20 | BC1/BC13 |
+
+---
+
+## 8. Data Model (Tables principales par BC)
+
+| BC | Entités principales | Tables | Clés |
+|---|---|---|---|
+| **BC1-Customer** | `Customer`, `KycProfile`, `Beneficiary`, `PepCheck`, `EddProfile`, `RiskScore` | customers, kyc_profiles, beneficiaries, pep_checks, edd_profiles, risk_scores | customer_id (PK) |
+| **BC2-Account** | `Account`, `Balance`, `Movement`, `InterestSchedule` | accounts, balances, movements, interest_schedules | account_id, rib (UNIQUE) |
+| **BC3-Credit** | `Loan`, `LoanSchedule`, `AssetClass`, `Provision` | loans, loan_schedules, asset_classes, provisions | loan_id, customer_id (FK) |
+| **BC4-AML** | `Alert`, `Investigation`, `SuspicionReport`, `AssetFreeze` | aml_alerts, investigations, suspicion_reports, asset_freezes | alert_id, investigation_id |
+| **BC5-Sanctions** | `SanctionList`, `ScreeningResult`, `SanctionMatch` | sanction_lists, screening_results, sanction_matches | list_id, screening_id |
+| **BC6-Prudential** | `PrudentialRatio`, `RiskWeightedAsset`, `RatioBreachAlert` | prudential_ratios, rwa_calculations, ratio_alerts | ratio_id, calculation_date |
+| **BC7-Accounting** | `JournalEntry`, `Ledger`, `ChartOfAccounts`, `TrialBalance` | journal_entries, ledgers, chart_of_accounts, trial_balances | entry_id, account_code |
+| **BC8-Reporting** | `RegulatoryReport`, `ReportTemplate`, `ReportSubmission` | regulatory_reports, report_templates, report_submissions | report_id, template_id |
+| **BC9-Payment** | `PaymentOrder`, `Transfer`, `SwiftMessage`, `Clearing` | payment_orders, transfers, swift_messages, clearing_batches | payment_id, transfer_id |
+| **BC10-ForeignExchange** | `FxOperation`, `FxPosition`, `ExchangeRate` | fx_operations, fx_positions, exchange_rates | operation_id, position_id |
+| **BC11-Governance** | `AuditTrail`, `Committee`, `ControlCheck`, `ComplianceReport` | audit_trails, committees, control_checks, compliance_reports | audit_id, committee_id |
+| **BC12-Identity** | `User`, `Role`, `Permission`, `Session`, `TwoFactorAuth` | users, roles, permissions, sessions, totp_seeds | user_id, role_id, session_id |
+| **BC13-Compliance** | `ComplianceControl`, `DPIA`, `ConsentRecord`, `BreachReport`, `HsmKey` | compliance_controls, dpias, consents, breach_reports, hsm_keys | control_id, dpia_id, consent_id |
+| **BC14-Arrangement** | `Arrangement`, `ArrangementTerm`, `ArrangementLimit`, `ArrangementProduct` | arrangements, arrangement_terms, arrangement_limits, arrangement_products | arrangement_id, customer_id |
+| **BC15-TradeFinance** | `LetterOfCredit`, `BankGuarantee`, `DocumentaryCredit`, `TradeDocument` | letters_of_credit, bank_guarantees, documentary_credits, trade_documents | lc_id, bg_id |
+| **BC16-CashManagement** | `SweepAccount`, `NotionalPool`, `Liquidity Forecast`, `FxForward` | sweep_accounts, notional_pools, liquidity_forecasts, fx_forwards | sweep_id, pool_id |
+| **BC17-IslamicBanking** | `Murabaha`, `Ijara`, `Waqf`, `Wakala`, `Musharaka`, `Zakat`, `ShariaBoard` | murabaha_contracts, ijara_leases, waqf_funds, wakala_agreements, musharaka_partnerships, zakat_records, sharia_boards | contract_id, customer_id |
+| **BC18-DataHub** | `DataLakeTable`, `MasterDataEntity`, `DataQualityReport` | data_lake_tables, master_data_entities, data_quality_reports, etl_runs | table_id, entity_id |
+| **BC19-ReferenceData** | `ExchangeRate`, `Country`, `Currency`, `CalendarDay`, `SectorCode`, `RiskWeightTable` | reference_exchange_rates, reference_countries, reference_currencies, calendar_holidays, sector_codes, risk_weight_tables | rate_id, country_code |
+| **BC20-Securities** | `SecurityPortfolio`, `Security`, `SecurityOrder`, `SecurityPosition`, `CustodyRecord` | security_portfolios, securities, security_orders, security_positions, custody_records | portfolio_id, security_id, order_id |
+| **BC21-Insurance** | `InsurancePolicy`, `InsuranceClaim`, `InsurancePremium` | insurance_policies, insurance_claims, insurance_premiums | policy_id, claim_id |
+| **BC22-Compliance** | `GoAMLSubmission`, `TravelRuleData`, `TuniChequeCheck`, `EffectivenessMetric` | goaml_submissions, travel_rule_data, tunicheque_checks, effectiveness_metrics | submission_id, metric_id |
+
+---
+
+## 9. ADRs (Architecture Decision Records)
+
+### ADR-001: Hexagonal Architecture (Ports & Adapters)
+**Decision** : Architecture 3-layer stricte (Domain → Application → Infrastructure).
+**Rationale** : Isolation domaine métier, testabilité maximale, évolutivité réglementaire (chaque circulaire = module injectable).
+**Status** : ACCEPTED (v3.0+)
+
+### ADR-002: Domain-Driven Design (DDD)
+**Decision** : 22 bounded contexts organisés par domaine métier, ubiquitous language, entités + value objects.
+**Rationale** : Alignement parfait code ↔ métier bancaire tunisien, traçabilité directe vers exigences légales.
+**Status** : ACCEPTED (v3.0+)
+
+### ADR-003: BDD with Gherkin (Cucumber)
+**Decision** : Tests scénario en Gherkin, exécution via Cucumber-rs, documentations vivantes.
+**Rationale** : Spécifications légales = tests automatiques, vérifiabilité auditeurs BCT, 0 ambiguïté.
+**Status** : ACCEPTED (v3.0+)
+
+### ADR-004: Async/Await with Tokio
+**Decision** : Runtime async Tokio, 1 thread-per-core, optimisation latence P99 <5ms.
+**Rationale** : Performance bancaire critique, milliers transactions/sec, PostgreSQL async via sqlx.
+**Status** : ACCEPTED (v3.0+)
+
+### ADR-005: PostgreSQL ACID + Encryption
+**Decision** : PostgreSQL 16 LUKS AES-XTS-512 (disk), PGCrypto (in-transit), chiffrement application AES-256-GCM fields sensibles.
+**Rationale** : ACID garantis conformité transaction, chiffrement multicouches PCI DSS, conformité INPDP.
+**Status** : ACCEPTED (v3.0+)
+
+### ADR-006: Hash Chain Audit Trail (Immutable)
+**Decision** : Chaque opération → SHA256 hashée chaîne précédente, stockage append-only, vérification quotidienne intégrité.
+**Rationale** : Preuve immuabilité audit trail, détection tampering, conformité Circ. 2006-19, Loi données 2025.
+**Status** : ACCEPTED (v3.0+)
+
+### ADR-007: Multi-language i18n (AR RTL + FR + EN)
+**Decision** : Arabe tunisien RTL natively, Français, English, base lexicon 500+ termes bancaires.
+**Rationale** : Accessibilité clients tunisiens, régulateurs parlent arabe/français, conformité WCAG 2.1 AA.
+**Status** : ACCEPTED (v3.0+)
+
+### ADR-008: CI/CD GitHub Actions (Lint + Test + Audit)
+**Decision** : Workflows GHA : rustfmt, clippy, cargo-tarpaulin, cargo-audit, E2E Playwright.
+**Rationale** : Qualité code guarantee, vulnérabilités détectées pre-merge, performance regression testing.
+**Status** : ACCEPTED (v3.0+)
+
+### ADR-009: HSM for Cryptographic Keys
+**Decision** : Clés privées signatures bancaires = HSM Thales Luna, accès MFA, audit trail HSM.
+**Rationale** : PCI DSS v4.0.1 mandatory 2025, conformité banking-grade sécurité, NIST FIPS 140-2 L3.
+**Status** : ACCEPTED (v3.0+)
+
+### ADR-010: SMSI ISO 27001:2022 (93 Controls)
+**Decision** : Couverture 100% contrôles Annexe A ISO 27001:2022, mapping chaque BC, certification avant production.
+**Rationale** : Certification obligatoire tunisienne (Circ. 2025-17 implicite), baseline sécurité internationale reconnue.
+**Status** : ACCEPTED (v3.0+)
+
+### ADR-011: Arrangement as Central BC (v4.0 NEW)
+**Decision** : Arrangement = aggregate root central liant Account + Loan + DAT + Products, source truth conditions/limits/pricing.
+**Rationale** : Temenos Party/Holdings integration, parité CBS, négociation client flexible (pricing engines, simulations).
+**Status** : ACCEPTED (v4.0)
+
+### ADR-012: Islamic Finance Engine (v4.0 NEW)
+**Decision** : BC17-IslamicBanking native, Sharia board validation, double-booking NCT/Islamic, waqf perpetual endowments.
+**Rationale** : Loi 2016-33 régit banques tunisiennes islamiques, parité Temenos Islamic module, zakat automation.
+**Status** : ACCEPTED (v4.0)
+
+### ADR-013: Microservices Preparation (v4.0 NEW)
+**Decision** : Application layer ready Kubernetes : service discovery (Consul), tracing (Jaeger), metrics (Prometheus), event bus (async channels).
+**Rationale** : Jalon 4 target microservices orchestration, scalabilité horizontale crédit/AML/FX, isolation domaines.
+**Status** : PROPOSED (v4.0 implementation J4)
+
+### ADR-014: GAFI R.16 Travel Rule (v4.0 NEW)
+**Decision** : Originator/beneficiary data copiée transferts >250k TND, goAML intégrée CTAF, audit effectiveness metrics.
+**Rationale** : GAFI evaluation nov 2026, R.16 revised juin 2025, travel rule non-negotiable compliance.
+**Status** : ACCEPTED (v4.0)
+
+### ADR-015: Open Banking PSD3-ready (v4.0 NEW)
+**Decision** : APIs conformes PSD3 spec (consent management, SCA, TPP access), prepared fintech sandbox (token scoping).
+**Rationale** : PSD3/PSR accord provisoire nov 2025, anticipation open banking Tunisie/Afrique, fintech partnerships leverage.
+**Status** : PROPOSED (v4.0 Jalon 4)
+
+---
+
+## 10. Temenos Mapping (22 BCs → 17 Temenos Categories)
+
+| Temenos Category | Temenos Endpoints | BANKO BC | Coverage % | Notes |
+|---|---|---|---|---|
+| **Party** | 120+ | BC1 (Customer) | 90% | KYC, bénéficiaires, PEP, scoring |
+| **Holdings** | 150+ | BC2 (Account), BC20 (Securities) | 85% | Comptes, DAT, portfolios titres |
+| **Order** | 80+ | BC9 (Payment), BC15 (TradeFinance), BC20 (Securities) | 75% | Virements, L/C, ordres bourse |
+| **Product** | 100+ | BC14 (Arrangement) | 80% | Bundles, conditions, pricing |
+| **Credit** | 180+ | BC3 (Credit), BC17 (IslamicBanking) | 85% | Crédits, murabaha, ijara |
+| **Collateral** | 60+ | BC14 (Arrangement) future | 50% | Nantissement (v4.1 planned) |
+| **FX** | 90+ | BC10 (ForeignExchange) | 75% | Spot, forward, position, taux |
+| **Risk** | 120+ | BC4 (AML), BC5 (Sanctions), BC6 (Prudential), BC22 (Compliance) | 85% | AML, sanctions, ratios, stress-test |
+| **AML** | 70+ | BC4 (AML), BC22 (Compliance) | 90% | Surveillance, DOS, goAML, travel rule |
+| **Enterprise** | 100+ | BC7 (Accounting), BC11 (Governance) | 80% | GL, audit trail, comités |
+| **Accounting** | 140+ | BC7 (Accounting), BC8 (Reporting) | 85% | NCT, IFRS 9, balance, P&L |
+| **Analytics** | 100+ | BC8 (Reporting), BC18 (DataHub) | 75% | Dashboards, ODS, ADS |
+| **Islamic Banking** | 80+ | BC17 (IslamicBanking) | 90% | Murabaha, ijara, waqf, zakat |
+| **Cash Management** | 100+ | BC16 (CashManagement) | 80% | Sweeps, pooling, forecast, liquidity |
+| **Securities** | 110+ | BC20 (Securities) | 75% | Portfolios, custody, ordres |
+| **System** | 150+ | BC11 (Governance), BC12 (Identity), BC13 (Compliance) | 80% | Auth, RBAC, audit, config |
+| **Trade Finance** | 80+ | BC15 (TradeFinance) | 85% | L/C, bank guarantees, documentary |
+
+**Total Temenos endpoints target: 450-500 (80-85% parité)**
+
+---
+
+## 11. Timeline Réaliste (Solo-dev 8h/sem, 12-16 mois)
+
+| Phase | Jalon | Contextes | Semaines | Heures IA | Heures Solo | Fin prévue |
+|---|---|---|---|---|---|---|
+| **0** | Fondations | BC1, BC2, BC7, BC11, BC12, BC13 | 1-6 | 48h | 16h | 22 mai 2026 |
+| **1** | Core Banking | BC3, BC4, BC5, BC6, BC8, BC9, BC10, BC14 | 7-14 | 120h | 40h | 16 juillet 2026 |
+| **2** | Compliance+ Trade | BC15, BC16, BC17, BC19, BC22 extended | 15-20 | 110h | 37h | 21 septembre 2026 |
+| **3** | Analytics+ Securities | BC18, BC20, BC21 | 21-26 | 80h | 27h | 2 novembre 2026 |
+| **4** | Maturité | Microservices, Open Banking, hardening | 27-32 | 60h | 20h | 14 décembre 2026 |
+| **Buffer** | Stabilité + fixes | Émergence, CI, polishing | 33-39 | 40h | 13h | 1er février 2027 |
+
+**Total: 39 semaines ~ 9 mois calendaires (avril 2026 → février 2027)**
+**Horizon conservatif (16 mois avec pauses): mai 2026 → août 2027**
+
+---
+
+## 12. Critères d'acceptation (Definition of Done)
+
+Chaque Jalon clôturé = checklist:
+
+- [ ] 100% FRs Jalon implémentés (code merged)
+- [ ] 95%+ couverture domain tests (Tarpaulin)
+- [ ] 100% scenarios BDD passe (Cucumber)
+- [ ] Lint passe (rustfmt, clippy)
+- [ ] Audit sécurité passe (cargo-audit)
+- [ ] Performance P99 <5ms interne, P95 <200ms E2E
+- [ ] i18n complete (AR/FR/EN)
+- [ ] Documentation ADRs + glossaire à jour
+- [ ] Audit trail exhaustif (100% opérations)
+- [ ] Conformité ISO 27001 (% contrôles) ✓
+- [ ] Conformité PCI DSS (tokenisation) ✓
+- [ ] Conformité Loi données 2025 (DPIA, consentement) ✓
+
+---
+
+## 13. Success Metrics (Post-MVP)
+
+| Métrique | Cible v4.0 | Mesure |
 |---|---|---|
-| **Conformité P0** | Couverture exigences BCT P0 vs référentiel | 100% implémentées |
-| **Couverture tests** | Code coverage (Tarpaulin) domain | ≥ 100% domain, ≥ 80% app |
-| **Scénarios BDD** | Count exigences avec scénarios Gherkin | ≥ 80 (MVP P0) |
-| **Performance** | P95 latence API < 200ms | ✓ |
-| **Sécurité** | Vulnérabilités critiques non mitigées | 0 |
-| **Disponibilité** | Uptime 30 jours | ≥ 99.5% |
-| **Audit trail** | Complétude traçabilité | 100% opérations tracées |
-| **i18n** | Couverture UI langues | FR + AR complètes |
-| **Documentation** | BDD vivante | Tous flux P0 documentés |
-| **Piste légale** | Traçabilité → références légales | Tous les modules référencés [REF-XX] |
+| Déploiements production (banques tunisiennes) | ≥2 | Annuaire GitHub releases |
+| Nombre utilisateurs actifs | ≥50 (sandbox + prod) | Audit login logs |
+| Forks GitHub + contributeurs | ≥10 | GitHub insights |
+| Certification ISO 27001 | Oui | Audit certificateur externe |
+| SAQ PCI DSS validée | Oui | Attestation ASV |
+| Zéro trouvailles critiques audit GAFI | Oui | Rapport évaluateurs GAFI (nov 2026) |
+| Documentation (% BC couverts) | 100% | Markdown pages |
+| Temps moyen déploiement | <30min | CI/CD logs |
 
 ---
 
-## Fin du document PRD
+## 14. Risques et Mitigations
 
-**Prochaine étape** : Phase TOGAF C (Systems Architecture)
-**Consommé par** : Architecte (design hexagonal, ports & adapters, DDD)
-**Validé par** : PM + Experts métier BCT/CTAF/INPDP
+| Risque | Probabilité | Impact | Mitigation |
+|---|---|---|---|
+| Délai compliance réglementaire (circulaires) | Haute | Critique | Veille légale bi-hebdo, changements modulaires par BC |
+| Burnout solo-dev | Moyenne | Élevé | Rythme 8h/sem réaliste, pauses programmées, code review IA |
+| Microservices complexity J4 | Moyenne | Moyen | Prototype K8s déploiement J3, documentation anticipée |
+| Performance P99 dégradation | Basse | Élevé | Benchmarking quotidien, profiling continu, alertes autom. |
+| Discontinuité API Temenos | Basse | Moyen | Mapping versionné, abstraction couche application, tests regression |
+| GAFI evaluation défaut | Très basse | Critique | Effectivité metrics v4.0, goAML depuis J2, travel rule conforme |
 
 ---
 
-**Révision** : 3.0.0
-**Date** : 6 avril 2026
-**Statut** : Approuvé pour développement Étape 3
+## Conclusion
+
+BANKO v4.0 est l'ambitieux projet de parité Temenos pour le secteur bancaire tunisien. Avec 22 bounded contexts, 250+ FRs, 93 contrôles ISO 27001:2022, conformité GAFI R.16, Loi données 2025, et support finance islamique native, BANKO offre aux banques tunisiennes une alternative souveraine, auditable, gratuite en 12-16 mois calendaires (solo-dev 8h/sem avec accélération IA).
+
+**Horizon cible** : Février 2027 (code feature-complete), avec déploiements production anticipés décembre 2026.
+
+**Engagement** : Chaque ligne de code traçable vers texte légal. Aucune action bancaire illégale ne compile.
+
+---
+
+**Document généré** : 7 avril 2026
+**Version** : 4.0.0
+**Auteur** : GILMRY / Projet BANKO
+**Licence** : AGPL-3.0 (Ce PRD est documentaire — logiciel sous AGPL-3.0)

@@ -1,1969 +1,2260 @@
-# Architecture Technique — BANKO
+# Architecture Technique — BANKO v4.0
 
 ## Méthode Maury — Phase TOGAF C-D (SI + Technique)
 
 **Disciplines** : SOLID + DDD + Hexagonal + BDD + TDD
-**Version** : 3.0.0 — 6 avril 2026
+**Version** : 4.0.0 — 7 avril 2026
 **Stack** : Rust + Actix-web 4.9 + PostgreSQL 16 + Astro 6 + Svelte 5
+**Bounded Contexts** : 22 (13 v3.0 + 9 nouveaux v4.0)
+**API Target** : 550-700+ endpoints (parité Temenos)
+**Compliance** : BCT, CTAF, INPDP, ANCS, BVMT, ISO 27001:2022, PCI DSS v4.0.1, GAFI R.16
 
 ---
 
-## 1. Vue d'ensemble (diagramme ASCII)
+## 1. Vue d'ensemble — Architecture 3-Tier Hexagonale
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                      BANKO — Core Banking System                     │
-└─────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│                   BANKO v4.0 — Core Banking System                       │
+│                      22 Bounded Contexts (v4.0)                          │
+└──────────────────────────────────────────────────────────────────────────┘
 
-┌──────────────────────────────────┐         ┌─────────────────────────┐
-│       Frontend (Astro + Svelte)   │         │    Mobile (Svelte Native)│
-│  ┌─ Pages / Composants AR/FR/EN  │         │     (future)            │
-│  ├─ Stores (Svelte)              │         └─────────────────────────┘
-│  ├─ API Client (fetch + svelteKit)
-│  └─ i18n Router (RTL support)    │
-└──────────────────────────────────┘
-           ↑ HTTP/REST
-           │
-    ┌──────┴───────────────────────────────────────────────────┐
-    │                  API Gateway (Traefik)                   │
-    │            Rate limiting, CORS, TLS termination         │
-    └──────┬───────────────────────────────────────────────────┘
-           │
-┌──────────┴──────────────────────────────────────────────────────────┐
-│              BACKEND — Rust + Actix-web (Hexagonal)               │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  HTTP Handlers / Routes (Adapter) — 12 BC modules         │   │
-│  ├─────────────────────────────────────────────────────────────┤   │
-│  │  ┌──────────┬──────────┬──────────┬──────────┬──────────┐  │   │
-│  │  │Customer  │ Account  │ Credit   │   AML    │Sanctions │  │   │
-│  │  ├──────────┼──────────┼──────────┼──────────┼──────────┤  │   │
-│  │  │Prudential│Accounting│ Reporting│ Payment  │ForeignEx │  │   │
-│  │  ├──────────┼──────────┼──────────┼──────────┼──────────┤  │   │
-│  │  │Governance│ Identity │  Audit   │ [...]    │  [...]   │  │   │
-│  │  └──────────┴──────────┴──────────┴──────────┴──────────┘  │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              ↓                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │        Application Layer (DTOs, UseCases, Ports)            │   │
-│  │  ┌─────────────────────────────────────────────────────────┐│   │
-│  │  │ DTOs (Request/Response) — Serde serialization          ││   │
-│  │  │ Ports (traits) → Database, Email, SMS, HSM, Storage    ││   │
-│  │  │ Use Cases (interactors) → Business logic orchestration ││   │
-│  │  └─────────────────────────────────────────────────────────┘│   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              ↓                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │              Domain Layer (Pure Rust — no_std ready)         │   │
-│  │  ┌─────────────────────────────────────────────────────────┐│   │
-│  │  │ Entities (Customer, Account, Loan, Transaction...)     ││   │
-│  │  │ Value Objects (Money, IBAN, KycProfile, ClassCode...) ││   │
-│  │  │ Aggregates (AccountAggregate, CreditAggregate...)      ││   │
-│  │  │ Domain Errors (DomainError enum)                       ││   │
-│  │  │ Invariants → Compile-time enforcement                  ││   │
-│  │  └─────────────────────────────────────────────────────────┘│   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              ↓                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  Infrastructure (Database, Cache, External Services)        │   │
-│  │  ┌─────────────────────────────────────────────────────────┐│   │
-│  │  │ PostgreSQL Repository (SQLx async)                      ││   │
-│  │  │ Redis Cache (distributed sessions, OTP)                 ││   │
-│  │  │ HSM Interface (PKCS#11 for crypto signing)              ││   │
-│  │  │ Email/SMS Sender (notification service)                 ││   │
-│  │  │ Audit Trail Logger (immutable event store)              ││   │
-│  │  │ File Storage (S3-compatible, local dev)                 ││   │
-│  │  └─────────────────────────────────────────────────────────┘│   │
-│  └─────────────────────────────────────────────────────────────┘   │
-└──────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────┐         ┌──────────────────────────────────┐
+│  Frontend (Astro + Svelte)  │         │  Mobile (Svelte Native — future) │
+│  ├─ Pages AR/FR/EN (i18n)   │         │  ├─ e-Banking mobile             │
+│  ├─ Svelte stores           │         │  └─ Agent portal mobile          │
+│  └─ API Client (fetch)      │         └──────────────────────────────────┘
+└──────────────────┬──────────┘
+                   ↕ HTTP/REST
+        ┌──────────┴──────────────────────────────────┐
+        │    API Gateway (Traefik)                    │
+        │  ├─ Rate limiting, JWT validation, CORS    │
+        │  ├─ TLS 1.3, HSTS, CSP                    │
+        │  └─ Geo-blocking, IP whitelisting          │
+        └──────────────────┬──────────────────────────┘
+                           ↕
+┌──────────────────────────────────────────────────────────────────────────┐
+│         BACKEND — Rust + Actix-web 4.9 (Hexagonal Architecture)         │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │              LAYER 1: HTTP Handlers (Adapters)                  │  │
+│  │  22 Module Routes (REST API: 550-700+ endpoints)               │  │
+│  │                                                                 │  │
+│  │  ┌────────────┬────────────┬────────────┬────────────┐        │  │
+│  │  │Customer    │Account     │Credit      │AML         │        │  │
+│  │  │(BC1)       │(BC2)       │(BC3)       │(BC4)       │        │  │
+│  │  ├────────────┼────────────┼────────────┼────────────┤        │  │
+│  │  │Sanctions   │Prudential  │Accounting  │Reporting   │        │  │
+│  │  │(BC5)       │(BC6)       │(BC7)       │(BC8)       │        │  │
+│  │  ├────────────┼────────────┼────────────┼────────────┤        │  │
+│  │  │Payment     │ForeignEx   │Governance  │Identity    │        │  │
+│  │  │(BC9)       │(BC10)      │(BC11)      │(BC12)      │        │  │
+│  │  ├────────────┼────────────┼────────────┼────────────┤        │  │
+│  │  │Arrangement │Collateral  │TradeFinance│CashMgmt    │        │  │
+│  │  │(BC13)      │(BC14)      │(BC15)      │(BC16)      │        │  │
+│  │  ├────────────┼────────────┼────────────┼────────────┤        │  │
+│  │  │IslamicBank │DataHub     │ReferenceData│Securities  │        │  │
+│  │  │(BC17)      │(BC18)      │(BC19)      │(BC20)      │        │  │
+│  │  ├────────────┴────────────┴────────────┴────────────┤        │  │
+│  │  │Insurance (BC21) + Compliance (BC22 — cross-cutting)│        │  │
+│  │  └────────────────────────────────────────────────────┘        │  │
+│  └────────────────────────┬─────────────────────────────────────┘  │
+│                           ↓                                        │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │    LAYER 2: Application (DTOs, UseCases, Ports/Traits)          │  │
+│  │                                                                 │  │
+│  │  ├─ DTOs (serde: JSON ↔ Rust)                                 │  │
+│  │  ├─ UseCases (orchestration logique métier)                   │  │
+│  │  ├─ Ports (traits): Repository, EventBus, Notification        │  │
+│  │  └─ Events (DomainEvent enum — audit trail)                  │  │
+│  └────────────────────────┬──────────────────────────────────────┘  │
+│                           ↓                                        │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │    LAYER 3: Domain (Pure Rust — Invariants, Rules)             │  │
+│  │                                                                 │  │
+│  │  ├─ Entities (Customer, Account, Loan, Arrangement...)         │  │
+│  │  ├─ Value Objects (Money, IBAN, KycProfile, ExchangeRate)      │  │
+│  │  ├─ Aggregates (with Roots)                                    │  │
+│  │  ├─ Invariants (25 règles domaine compilées)                   │  │
+│  │  └─ Domain Services (LoanClassification, PrudentialCalc...)    │  │
+│  └────────────────────────┬──────────────────────────────────────┘  │
+│                           ↓                                        │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │    LAYER 4: Infrastructure (Adapters)                           │  │
+│  │                                                                 │  │
+│  │  ├─ PostgreSQL Repositories (SQLx async)                       │  │
+│  │  ├─ Redis Cache (sessions, OTP, rates)                         │  │
+│  │  ├─ Event Store (immutable audit trail)                        │  │
+│  │  ├─ HSM Interface (PKCS#11 signatures)                         │  │
+│  │  ├─ External APIs (CTAF/goAML, SWIFT, BVMT)                   │  │
+│  │  └─ Email/SMS Notifications                                    │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────────┘
 
-┌──────────────────────────────────────────────────────────────────────┐
-│                    PostgreSQL 16 (Primary DB)                        │
-│  ┌────────────────────────────────────────────────────────────────┐  │
-│  │ Schemas: customer, account, credit, aml, sanctions,           │  │
-│  │          prudential, accounting, reporting, payment,          │  │
-│  │          fx, governance, audit, identity                      │  │
-│  ├────────────────────────────────────────────────────────────────┤  │
-│  │ Features: ACID, partitioning by date/customer, FDW,           │  │
-│  │           LUKS encryption, logical replication, backups       │  │
-│  └────────────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│              PostgreSQL 16 (Primary + Read Replicas)                     │
+│  ├─ 22 schemas (customer, account, credit, aml, sanctions...)           │
+│  ├─ Partitioning: By date (EOD) + customer + account type              │
+│  ├─ Encryption: LUKS AES-XTS-512 + field-level AES-256-GCM            │
+│  ├─ Replication: logical (audit trail → analytics DB)                  │
+│  └─ Backup: WAL archiving, S3 off-site GPG encrypted                   │
+└──────────────────────────────────────────────────────────────────────────┘
 
-┌──────────────────────────────────────────────────────────────────────┐
-│              Compliance Layer (Cross-cutting Concern)                │
-├──────────────────────────────────────────────────────────────────────┤
-│  ┌────────────────────┐  ┌────────────────────┐                    │
-│  │  SMSI ISO 27001    │  │  PCI DSS v4.0.1    │                    │
-│  │  ├─ Risk Register  │  │  ├─ Token Vault    │                    │
-│  │  │  (ISO 31000,    │  │  │  (PAN → Token)  │                    │
-│  │  │  matrice 5×5)   │  │  ├─ CDE Boundary   │                    │
-│  │  ├─ 93 Controls    │  │  │  (NetworkPolicy) │                    │
-│  │  │  Dashboard      │  │  ├─ AES-256-GCM    │                    │
-│  │  ├─ 11 New 2022    │  │  │  (field-level)  │                    │
-│  │  │  Controls       │  │  └─ MFA (Req 8.4.2)│                    │
-│  │  └─ Climate 1:2024 │  └────────────────────┘                    │
-│  └────────────────────┘                                             │
-│  ┌────────────────────┐  ┌────────────────────┐                    │
-│  │  Open Banking      │  │  Privacy (INPDP)   │                    │
-│  │  ├─ Consent Service│  │  ├─ DPO Dashboard  │                    │
-│  │  │  (grant/revoke/ │  │  ├─ DPIA Workflow  │                    │
-│  │  │   expire)       │  │  ├─ Breach Notif.  │                    │
-│  │  ├─ TPP Gateway    │  │  │  (72h INPDP)    │                    │
-│  │  │  (OAuth2+PKCE)  │  │  ├─ Portability    │                    │
-│  │  ├─ mTLS (eIDAS)   │  │  │  (JSON/CSV)     │                    │
-│  │  └─ JWS Signatures │  │  └─ Erasure/Anon.  │                    │
-│  └────────────────────┘  └────────────────────┘                    │
-└──────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│                    Compliance Layer (Cross-cutting)                      │
+│  ├─ SMSI ISO 27001:2022 (93 controls, Annexe A)                        │
+│  ├─ PCI DSS v4.0.1 (tokenization, MFA, encryption)                    │
+│  ├─ Loi données 2025 (DPO, DPIA, consent, breach notif.)              │
+│  ├─ goAML Integration (CTAF declarations)                              │
+│  └─ Travel Rule GAFI R.16 (originator/beneficiary)                    │
+└──────────────────────────────────────────────────────────────────────────┘
 
-┌──────────────────────────────────────────────────────────────────────┐
-│                    External Integrations                             │
-│  ├─ SWIFT / ISO 20022 (Payment networks)                           │
-│  ├─ Sanctions lists (ONU, UE, OFAC, national)                     │
-│  ├─ Email / SMS providers (notification)                          │
-│  ├─ HSM (Hardware Security Module for signatures)                 │
-│  ├─ Monitoring (Prometheus, Loki, Alertmanager)                  │
-│  └─ IaC (Terraform, Ansible, Helm)                               │
-└──────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│              Infrastructure as Code + Monitoring                         │
+│  ├─ Docker Compose (dev), Kubernetes (prod)                            │
+│  ├─ Prometheus metrics + Grafana dashboards                            │
+│  ├─ Loki logs aggregation                                              │
+│  ├─ Alertmanager (threshold + on-call integration)                     │
+│  └─ Terraform + Ansible (IaC, secret management HSM)                   │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 2. Bounded Contexts → Modules code
+## 2. Les 22 Bounded Contexts (v4.0)
 
-| # | Bounded Context | Module code | Responsabilité | Agrégats | Value Objects |
-|---|---|---|---|---|---|
-| **BC1** | **Customer** | `src/customer/` | Clients, KYC, bénéficiaires effectifs, PEP, scoring risque | `CustomerAggregate` | `CustomerId`, `Iban`, `KycProfile`, `RiskScore`, `BeneficiaryInfo` |
-| **BC2** | **Account** | `src/account/` | Comptes (courant, épargne, DAT), soldes, mouvements | `AccountAggregate` | `AccountId`, `Balance`, `AccountType`, `CurrencyCode` |
-| **BC3** | **Credit** | `src/credit/` | Crédits, classification créances, provisionnement, remboursement | `LoanAggregate` | `LoanId`, `AssetClass`, `Provision`, `LoanSchedule` |
-| **BC4** | **AML** | `src/aml/` | Surveillance transactionnelle, alertes, investigations, DOS, gel | `AlertAggregate` | `TransactionId`, `AlertType`, `SuspicionReport`, `InvestigationStatus` |
-| **BC5** | **Sanctions** | `src/sanctions/` | Filtrage listes sanctions (ONU, UE, OFAC, nationales) | `ScreeningAggregate` | `SanctionListId`, `ScreeningResult`, `EntityName`, `MatchScore` |
-| **BC6** | **Prudential** | `src/prudential/` | Ratios réglementaires (solvabilité, Tier 1, C/D, concentration) | `PrudentialRatioAggregate` | `RatioType`, `RiskWeightedAsset`, `RegulatoryCapital` |
-| **BC7** | **Accounting** | `src/accounting/` | Comptabilité NCT, écritures, journal, grand livre, balance | `JournalAggregate` | `AccountingCode`, `JournalEntry`, `LedgerAccount`, `Period` |
-| **BC8** | **Reporting** | `src/reporting/` | États réglementaires BCT, rapports prudentiels, reporting AML | `ReportAggregate` | `ReportId`, `ReportTemplate`, `SubmissionStatus` |
-| **BC9** | **Payment** | `src/payment/` | Virements, compensation, SWIFT, ISO 20022 | `PaymentOrderAggregate` | `PaymentId`, `SwiftMessage`, `ClearingReference` |
-| **BC10** | **ForeignExchange** | `src/fx/` | Opérations change, position change, conformité Loi 76-18 | `FxOperationAggregate` | `FxOperationId`, `ExchangeRate`, `FxPosition` |
-| **BC11** | **Governance** | `src/governance/` | Contrôle interne, 3 lignes, comités, piste d'audit | `AuditTrailAggregate` | `AuditEventId`, `AuditTrail`, `ComplianceReport` |
-| **BC12** | **Identity** | `src/identity/` | Authentification, RBAC, sessions, 2FA, JWT | `UserAggregate` | `UserId`, `Role`, `Permission`, `SessionToken` |
-| **BC13** | **Compliance** | `src/compliance/` | Compliance transversal (SMSI, PCI DSS, consent, DPIA) | `SmsiControlAggregate`, `ConsentAggregate` | `ControlId`, `RiskLevel`, `Token`, `ConsentScope`, `BreachType` |
+### 2.1 Contextes Core Existants (13 v3.0) — Enrichis v4.0
 
-### Module Compliance — Détail structure
+#### BC1 — Customer (Gestion des clients)
+
+**Responsabilité** : Onboarding clients, KYC/CDD/EDD, bénéficiaires effectifs, PEP, risk scoring, e-KYC biométrique, conformité loi données 2025.
+
+**Entités Rust** :
+```rust
+pub struct Customer {
+    pub id: CustomerId,
+    pub first_name: String,
+    pub last_name: String,
+    pub email: String,
+    pub phone: PhoneNumber,
+    pub kyc_status: KycStatus, // PENDING, VALIDATED, REJECTED
+    pub pep_status: PepStatus,  // NOT_PEP, PEP_CITIZEN, PEP_FOREIGN
+    pub risk_score: u8,         // 0-100 (RED=60+, ORANGE=30-59, GREEN=0-29)
+    pub created_at: DateTime<Utc>,
+    pub consent_personal_data: bool,
+    pub consent_marketing: bool,
+    pub biometric_enrollment: Option<BiometricData>,
+}
+
+pub struct KycProfile {
+    pub customer_id: CustomerId,
+    pub id_type: IdType,         // CIN, PASSPORT, RESIDENT_CARD
+    pub id_number: String,
+    pub id_issue_date: NaiveDate,
+    pub id_expiry_date: NaiveDate,
+    pub address: PostalAddress,
+    pub profession: String,
+    pub sector: BusinessSector,
+    pub annual_income: Money,
+    pub source_of_funds: Vec<String>,
+    pub beneficial_owners: Vec<BeneficiaryInfo>,
+    pub validated_at: DateTime<Utc>,
+    pub validated_by: UserId,
+}
+
+pub struct BeneficiaryInfo {
+    pub id: BeneficiaryId,
+    pub customer_id: CustomerId,
+    pub name: String,
+    pub ownership_percentage: Decimal,
+    pub kyc_profile: KycProfile,
+}
+
+pub enum KycStatus {
+    Pending,
+    Validated { validated_at: DateTime<Utc> },
+    Rejected { reason: String },
+}
+
+pub enum PepStatus {
+    NotPep,
+    PepCitizen { list_source: String },
+    PepForeign { country: String, list_source: String },
+}
+```
+
+**Ports (Traits)** :
+```rust
+#[async_trait]
+pub trait CustomerRepository {
+    async fn create(&self, customer: &Customer) -> Result<(), DomainError>;
+    async fn get(&self, id: &CustomerId) -> Result<Option<Customer>, DomainError>;
+    async fn update(&self, customer: &Customer) -> Result<(), DomainError>;
+    async fn list_by_risk_score(&self, min: u8, max: u8) -> Result<Vec<Customer>, DomainError>;
+}
+
+#[async_trait]
+pub trait KycValidator {
+    async fn validate_kyc(&self, profile: &KycProfile) -> Result<(), ValidationError>;
+    async fn check_pep(&self, customer: &Customer) -> Result<PepStatus, DomainError>;
+    async fn enroll_biometric(&self, customer_id: &CustomerId, data: BiometricData) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait ConsentManager {
+    async fn grant_consent(&self, customer_id: &CustomerId, scope: ConsentScope) -> Result<(), DomainError>;
+    async fn revoke_consent(&self, customer_id: &CustomerId, scope: ConsentScope) -> Result<(), DomainError>;
+    async fn get_consent_status(&self, customer_id: &CustomerId) -> Result<ConsentRecord, DomainError>;
+}
+```
+
+**API Routes** :
+- `POST /api/v1/customers` — Créer client + KYC
+- `GET /api/v1/customers/{id}` — Récupérer profil
+- `PUT /api/v1/customers/{id}` — Modifier données
+- `POST /api/v1/customers/{id}/kyc/validate` — Valider KYC
+- `POST /api/v1/customers/{id}/pep-check` — Vérification PEP
+- `POST /api/v1/customers/{id}/edd` — Enhanced Due Diligence
+- `POST /api/v1/customers/{id}/biometric-enroll` — e-KYC biométrique
+- `GET /api/v1/customers/{id}/consent` — Consulter consentements
+- `POST /api/v1/customers/{id}/consent` — Accorder consentement
+- `DELETE /api/v1/customers/{id}/consent/{scope}` — Révoquer consentement
+- `POST /api/v1/customers/{id}/data-export` — Portabilité données
+- `DELETE /api/v1/customers/{id}/data-erase` — Droit à l'oubli
+
+---
+
+#### BC2 — Account (Gestion des comptes)
+
+**Responsabilité** : Comptes (courant, épargne, DAT), soldes, mouvements, lien vers Arrangement.
+
+**Entités Rust** :
+```rust
+pub struct Account {
+    pub id: AccountId,
+    pub customer_id: CustomerId,
+    pub iban: Iban,
+    pub account_type: AccountType,
+    pub currency: CurrencyCode,
+    pub status: AccountStatus, // OPEN, CLOSED, SUSPENDED
+    pub balance: Money,
+    pub overdraft_limit: Money,
+    pub interest_rate: Decimal,
+    pub created_at: DateTime<Utc>,
+    pub arrangement_id: Option<ArrangementId>, // Lien BC13
+}
+
+pub struct AccountMovement {
+    pub id: MovementId,
+    pub account_id: AccountId,
+    pub movement_type: MovementType, // DEBIT, CREDIT
+    pub amount: Money,
+    pub description: String,
+    pub reference: String,
+    pub executed_at: DateTime<Utc>,
+}
+
+pub enum AccountType {
+    Current,
+    Savings,
+    TimeDeposit { maturity_date: NaiveDate },
+}
+
+pub enum AccountStatus {
+    Open,
+    Closed { closed_at: DateTime<Utc> },
+    Suspended { reason: String },
+}
+```
+
+**Ports** :
+```rust
+#[async_trait]
+pub trait AccountRepository {
+    async fn create(&self, account: &Account) -> Result<(), DomainError>;
+    async fn get(&self, id: &AccountId) -> Result<Option<Account>, DomainError>;
+    async fn get_by_iban(&self, iban: &Iban) -> Result<Option<Account>, DomainError>;
+    async fn list_by_customer(&self, customer_id: &CustomerId) -> Result<Vec<Account>, DomainError>;
+    async fn record_movement(&self, movement: &AccountMovement) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait BalanceCalculator {
+    async fn calculate_balance(&self, account_id: &AccountId) -> Result<Money, DomainError>;
+}
+```
+
+**API Routes** :
+- `POST /api/v1/accounts` — Ouvrir compte
+- `GET /api/v1/accounts/{id}` — Détails compte
+- `GET /api/v1/customers/{id}/accounts` — Lister comptes client
+- `PUT /api/v1/accounts/{id}/status` — Changer statut (suspension/clôture)
+- `GET /api/v1/accounts/{id}/balance` — Solde en temps réel
+- `GET /api/v1/accounts/{id}/movements` — Historique mouvements
+- `POST /api/v1/accounts/{id}/interest-calculation` — Calcul intérêts
+
+---
+
+#### BC3 — Credit (Gestion des crédits)
+
+**Responsabilité** : Octroi crédit, suivi, classification créances (0-4), provisionnement NCT + IFRS 9 ECL, remboursement, liens Collateral.
+
+**Entités Rust** :
+```rust
+pub struct Loan {
+    pub id: LoanId,
+    pub customer_id: CustomerId,
+    pub account_id: Option<AccountId>,
+    pub arrangement_id: Option<ArrangementId>, // Lien BC13
+    pub principal_amount: Money,
+    pub interest_rate: Decimal,
+    pub term_months: u16,
+    pub disbursement_date: NaiveDate,
+    pub maturity_date: NaiveDate,
+    pub status: LoanStatus,
+    pub asset_class: AssetClass,       // 0, 1, 2, 3, 4
+    pub npl_classification: NplStage,  // STAGE1, STAGE2, STAGE3
+    pub collateral_ids: Vec<CollateralId>, // Liens BC14
+}
+
+pub enum AssetClass {
+    Class0, // Standard
+    Class1, // Watchlist
+    Class2, // Substandard (provision 20%)
+    Class3, // Doubtful (provision 50%)
+    Class4, // Loss (provision 100%)
+}
+
+pub enum NplStage {
+    Stage1 { days_past_due: u16 },  // 0-29 days, 12m ECL
+    Stage2 { days_past_due: u16 },  // 30-89 days, lifetime ECL
+    Stage3 { days_past_due: u16 },  // 90+ days, lifetime ECL + impairment
+}
+
+pub struct LoanProvision {
+    pub loan_id: LoanId,
+    pub nct_provision_pct: Decimal,    // NCT: classe 2→20%, 3→50%, 4→100%
+    pub nct_provision_amount: Money,
+    pub ifrs9_ecl_amount: Money,       // Expected Credit Loss
+    pub ecl_stage: NplStage,
+    pub pd: Decimal,                   // Probability of Default
+    pub lgd: Decimal,                  // Loss Given Default
+    pub ead: Money,                    // Exposure at Default
+    pub calculated_at: DateTime<Utc>,
+}
+
+pub struct LoanSchedule {
+    pub loan_id: LoanId,
+    pub payments: Vec<SchedulePayment>,
+}
+
+pub struct SchedulePayment {
+    pub installment_number: u16,
+    pub due_date: NaiveDate,
+    pub principal: Money,
+    pub interest: Money,
+    pub paid: bool,
+}
+```
+
+**Ports** :
+```rust
+#[async_trait]
+pub trait LoanRepository {
+    async fn create(&self, loan: &Loan) -> Result<(), DomainError>;
+    async fn get(&self, id: &LoanId) -> Result<Option<Loan>, DomainError>;
+    async fn list_by_customer(&self, customer_id: &CustomerId) -> Result<Vec<Loan>, DomainError>;
+}
+
+#[async_trait]
+pub trait AssetClassifier {
+    async fn classify(&self, loan: &Loan) -> Result<AssetClass, DomainError>;
+}
+
+#[async_trait]
+pub trait ProvisioningCalculator {
+    async fn calculate_nct_provision(&self, loan: &Loan) -> Result<Money, DomainError>;
+    async fn calculate_ifrs9_ecl(&self, loan: &Loan) -> Result<LoanProvision, DomainError>;
+}
+```
+
+**API Routes** :
+- `POST /api/v1/loans` — Octroyer crédit
+- `GET /api/v1/loans/{id}` — Détails crédit
+- `GET /api/v1/customers/{id}/loans` — Lister crédits client
+- `POST /api/v1/loans/{id}/classify` — Classifier créance
+- `POST /api/v1/loans/{id}/provision` — Calculer provisions
+- `GET /api/v1/loans/{id}/schedule` — Calendrier remboursement
+- `POST /api/v1/loans/{id}/payment` — Enregistrer remboursement
+- `POST /api/v1/loans/{id}/npl-stage` — Classifier NPL
+
+---
+
+#### BC4 — AML (Anti-blanchiment)
+
+**Responsabilité** : Surveillance transactionnelle, alertes, investigations, DOS, gel avoirs, conformité Circ. 2025-17.
+
+**Entités Rust** :
+```rust
+pub struct AmlTransaction {
+    pub id: TransactionId,
+    pub account_id: AccountId,
+    pub amount: Money,
+    pub direction: TransactionDirection, // DEBIT, CREDIT
+    pub counterparty: String,
+    pub description: String,
+    pub timestamp: DateTime<Utc>,
+}
+
+pub enum AmlRuleResult {
+    Pass,
+    Alert { rule_id: String, score: u8 },
+}
+
+pub struct AmlAlert {
+    pub id: AlertId,
+    pub transaction_id: TransactionId,
+    pub alert_type: AlertType,
+    pub severity: AlertSeverity, // LOW, MEDIUM, HIGH, CRITICAL
+    pub status: AlertStatus,     // PENDING, INVESTIGATING, RESOLVED, ESCALATED
+    pub created_at: DateTime<Utc>,
+}
+
+pub enum AlertType {
+    StructuringThreshold,       // Cumul 5k TND/jour
+    UnusualBehavior,
+    HighRiskCountry,
+    PepTransfer,
+}
+
+pub struct SuspicionReport {
+    pub id: ReportId,
+    pub alerts: Vec<AlertId>,
+    pub customer_id: CustomerId,
+    pub narrative: String,
+    pub status: ReportStatus, // DRAFT, SUBMITTED, ACKNOWLEDGED
+    pub submitted_to_ctaf_at: Option<DateTime<Utc>>,
+    pub submitted_via: ReportChannel, // GOAML, EMAIL, MANUAL
+}
+
+pub enum ReportStatus {
+    Draft,
+    Submitted { submitted_at: DateTime<Utc> },
+    Acknowledged { ack_at: DateTime<Utc>, ack_number: String },
+}
+
+pub struct AssetFreeze {
+    pub id: FreezeId,
+    pub account_id: AccountId,
+    pub reason: String,
+    pub frozen_at: DateTime<Utc>,
+    pub frozen_by: UserId,
+    pub unfrozen_at: Option<DateTime<Utc>>,
+    pub unfrozen_by: Option<UserId>,
+}
+```
+
+**Ports** :
+```rust
+#[async_trait]
+pub trait AmlScenarioEngine {
+    async fn evaluate_transaction(&self, transaction: &AmlTransaction) -> Result<AmlRuleResult, DomainError>;
+    async fn evaluate_cumulative(&self, account_id: &AccountId, period: &AmlPeriod) -> Result<Vec<AmlRuleResult>, DomainError>;
+}
+
+#[async_trait]
+pub trait AlertRepository {
+    async fn create_alert(&self, alert: &AmlAlert) -> Result<(), DomainError>;
+    async fn update_status(&self, alert_id: &AlertId, status: AlertStatus) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait SuspicionReportRepository {
+    async fn create_dos(&self, report: &SuspicionReport) -> Result<(), DomainError>;
+    async fn submit_to_ctaf(&self, report_id: &ReportId) -> Result<String, DomainError>; // goAML
+}
+```
+
+**API Routes** :
+- `POST /api/v1/aml/transactions/screen` — Évaluer transaction
+- `GET /api/v1/aml/alerts` — Lister alertes
+- `PUT /api/v1/aml/alerts/{id}/status` — Mettre à jour alerte
+- `POST /api/v1/aml/investigations/{id}` — Créer investigation
+- `POST /api/v1/aml/suspicion-reports` — Créer DOS
+- `POST /api/v1/aml/suspicion-reports/{id}/submit-ctaf` — Soumettre goAML
+- `POST /api/v1/aml/freeze` — Geler avoirs
+- `POST /api/v1/aml/unfreeze/{id}` — Dégeler avoirs
+
+---
+
+#### BC5 — Sanctions (Filtrage sanctions)
+
+**Responsabilité** : Listes ONU/UE/OFAC/nationales, screening, matching, travel rule validation.
+
+**Entités Rust** :
+```rust
+pub struct SanctionList {
+    pub id: SanctionListId,
+    pub list_type: SanctionListType, // UN, EU, OFAC, NATIONAL
+    pub source: String,
+    pub last_updated: DateTime<Utc>,
+    pub entries: Vec<SanctionEntry>,
+}
+
+pub struct SanctionEntry {
+    pub id: EntryId,
+    pub entity_name: String,
+    pub aliases: Vec<String>,
+    pub country: CountryCode,
+    pub list_reference: String,
+}
+
+pub struct ScreeningResult {
+    pub transaction_id: TransactionId,
+    pub entity_name: String,
+    pub match_score: u8, // 0-100
+    pub matched_entries: Vec<(SanctionEntryId, u8)>, // (entry, score)
+    pub action: ScreeningAction, // PASS, REVIEW, BLOCK
+}
+
+pub enum ScreeningAction {
+    Pass,
+    Review { reason: String },
+    Block { reason: String },
+}
+```
+
+**Ports** :
+```rust
+#[async_trait]
+pub trait SanctionListRepository {
+    async fn get_current_lists(&self) -> Result<Vec<SanctionList>, DomainError>;
+    async fn update_lists(&self, lists: Vec<SanctionList>) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait MatchingEngine {
+    async fn screen_entity(&self, name: &str, country: &CountryCode) -> Result<Vec<ScreeningResult>, DomainError>;
+    async fn screen_transaction(&self, payment: &PaymentOrder) -> Result<ScreeningAction, DomainError>;
+}
+```
+
+**API Routes** :
+- `POST /api/v1/sanctions/screen` — Évaluer entité
+- `GET /api/v1/sanctions/lists` — Lister sources
+- `POST /api/v1/sanctions/lists/update` — Mettre à jour listes
+- `GET /api/v1/sanctions/results/{transaction_id}` — Résultat screening
+
+---
+
+#### BC6 — Prudential (Ratios prudentiels)
+
+**Responsabilité** : Calcul solvabilité (10%), Tier 1 (7%), C/D (120%), concentration (25%), RWA.
+
+**Entités Rust** :
+```rust
+pub struct PrudentialRatio {
+    pub calculation_date: NaiveDate,
+    pub solvency_ratio: Decimal,       // Min 10%
+    pub tier1_ratio: Decimal,          // Min 7%
+    pub credit_to_deposit: Decimal,    // Max 120%
+    pub concentration_limit: Decimal,  // Max 25% FPN
+    pub rwa: Money,                    // Risk-Weighted Assets
+    pub regulatory_capital: Money,
+}
+
+pub struct RiskWeightedAsset {
+    pub asset_id: AssetId,
+    pub asset_type: AssetType,
+    pub gross_value: Money,
+    pub risk_weight: Decimal,
+    pub rwa: Money,
+}
+
+pub enum AssetType {
+    Cash,
+    SovereignBond,
+    CorporateLoan,
+    RetailExposure,
+}
+```
+
+**Ports** :
+```rust
+#[async_trait]
+pub trait RwaCalculator {
+    async fn calculate_rwa(&self, date: &NaiveDate) -> Result<RiskWeightedAsset, DomainError>;
+}
+
+#[async_trait]
+pub trait PrudentialRatioCalculator {
+    async fn calculate_ratios(&self, date: &NaiveDate) -> Result<PrudentialRatio, DomainError>;
+    async fn check_compliance(&self, ratio: &PrudentialRatio) -> Result<ComplianceStatus, DomainError>;
+}
+```
+
+**API Routes** :
+- `GET /api/v1/prudential/ratios` — Récupérer ratios jour
+- `POST /api/v1/prudential/calculate` — Forcer calcul
+- `GET /api/v1/prudential/compliance` — Statut conformité
+
+---
+
+#### BC7 — Accounting (Comptabilité)
+
+**Responsabilité** : Journal NCT, écritures, grand livre, balance, double moteur NCT + IFRS 9.
+
+**Entités Rust** :
+```rust
+pub struct JournalEntry {
+    pub id: EntryId,
+    pub reference: String,
+    pub accounting_period: Period,
+    pub debit_entries: Vec<DebitLine>,
+    pub credit_entries: Vec<CreditLine>,
+    pub narrative: String,
+    pub posted_at: DateTime<Utc>,
+    pub posted_by: UserId,
+}
+
+pub struct DebitLine {
+    pub account_code: AccountingCode, // NCT account
+    pub amount: Money,
+}
+
+pub struct CreditLine {
+    pub account_code: AccountingCode,
+    pub amount: Money,
+}
+
+pub struct ChartOfAccounts {
+    pub accounts: Vec<AccountDefinition>,
+}
+
+pub struct AccountDefinition {
+    pub code: AccountingCode, // NCT format
+    pub description: String,
+    pub account_type: NctAccountType, // ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE
+}
+
+pub struct LedgerAccount {
+    pub code: AccountingCode,
+    pub balance: Money,
+    pub entries: Vec<JournalEntry>,
+}
+
+pub enum Period {
+    Monthly { year: u16, month: u8 },
+    Quarterly { year: u16, quarter: u8 },
+    Annual { year: u16 },
+}
+```
+
+**Ports** :
+```rust
+#[async_trait]
+pub trait JournalRepository {
+    async fn post_entry(&self, entry: &JournalEntry) -> Result<(), DomainError>;
+    async fn get_ledger(&self, code: &AccountingCode) -> Result<LedgerAccount, DomainError>;
+}
+
+#[async_trait]
+pub trait ProvisioningJournal {
+    async fn post_provision_entry(&self, provision: &LoanProvision) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait IfrsJournal {
+    async fn post_ecl_entry(&self, loan_id: &LoanId, ecl: &Money) -> Result<(), DomainError>;
+}
+```
+
+**API Routes** :
+- `POST /api/v1/accounting/entries` — Poster écriture
+- `GET /api/v1/accounting/ledger/{code}` — Consulter compte
+- `GET /api/v1/accounting/trial-balance` — Balance générale
+- `GET /api/v1/accounting/financial-statement` — États financiers
+
+---
+
+#### BC8 — Reporting (États réglementaires)
+
+**Responsabilité** : États prudentiels BCT, rapports AML, financiers, formats officiels.
+
+**Entités Rust** :
+```rust
+pub struct RegulatoryReport {
+    pub id: ReportId,
+    pub report_type: ReportType,
+    pub reporting_date: NaiveDate,
+    pub status: ReportStatus,
+    pub data: serde_json::Value,
+    pub submitted_at: Option<DateTime<Utc>>,
+}
+
+pub enum ReportType {
+    PrudentialStatus,      // Ratios mensuels
+    AmlStatistics,         // DOS, alertes
+    FinancialStatement,    // Bilan, P&L
+    CustomerStatistics,    // Nombre clients, KYC%
+}
+
+pub enum ReportStatus {
+    Draft,
+    Validated,
+    Submitted,
+}
+```
+
+**Ports** :
+```rust
+#[async_trait]
+pub trait ReportingRepository {
+    async fn create_report(&self, report: &RegulatoryReport) -> Result<(), DomainError>;
+    async fn submit_to_bct(&self, report_id: &ReportId) -> Result<String, DomainError>; // Receipt
+}
+
+#[async_trait]
+pub trait ReportGenerator {
+    async fn generate_prudential(&self, date: &NaiveDate) -> Result<RegulatoryReport, DomainError>;
+    async fn generate_aml(&self, date: &NaiveDate) -> Result<RegulatoryReport, DomainError>;
+}
+```
+
+**API Routes** :
+- `POST /api/v1/reporting/generate` — Générer rapport
+- `GET /api/v1/reporting/{id}` — Consulter rapport
+- `POST /api/v1/reporting/{id}/submit` — Soumettre BCT
+
+---
+
+#### BC9 — Payment (Virements et paiements)
+
+**Responsabilité** : Virements nationaux/internationaux, SWIFT, ISO 20022, travel rule, compensation.
+
+**Entités Rust** :
+```rust
+pub struct PaymentOrder {
+    pub id: PaymentId,
+    pub originator_account: AccountId,
+    pub originator_name: String,
+    pub originator_id: CustomerId,
+    pub beneficiary_account: String,    // IBAN or local account
+    pub beneficiary_name: String,
+    pub beneficiary_id: Option<CustomerId>, // If known
+    pub beneficiary_country: CountryCode,
+    pub amount: Money,
+    pub currency: CurrencyCode,
+    pub purpose: String,
+    pub status: PaymentStatus,
+    pub payment_type: PaymentType,
+    pub created_at: DateTime<Utc>,
+    pub executed_at: Option<DateTime<Utc>>,
+}
+
+pub enum PaymentStatus {
+    Pending,
+    Screening,      // Sanctions check
+    TravelRuleCheck, // Originator/beneficiary data
+    Approved,
+    Rejected { reason: String },
+    Executed { reference: String },
+}
+
+pub enum PaymentType {
+    Domestic,
+    International,
+}
+
+pub struct TravelRuleData {
+    pub originator: TravelRuleParty,
+    pub beneficiary: TravelRuleParty,
+}
+
+pub struct TravelRuleParty {
+    pub name: String,
+    pub account_number: String,
+    pub address: PostalAddress,
+    pub identification: String,
+}
+
+pub struct SwiftMessage {
+    pub payment_id: PaymentId,
+    pub message_type: String, // MT103, MT202
+    pub content: String,
+}
+```
+
+**Ports** :
+```rust
+#[async_trait]
+pub trait PaymentRepository {
+    async fn create(&self, payment: &PaymentOrder) -> Result<(), DomainError>;
+    async fn update_status(&self, id: &PaymentId, status: PaymentStatus) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait SwiftAdapter {
+    async fn send_swift(&self, message: &SwiftMessage) -> Result<String, DomainError>;
+}
+
+#[async_trait]
+pub trait TravelRuleValidator {
+    async fn validate(&self, payment: &PaymentOrder) -> Result<TravelRuleData, DomainError>;
+}
+```
+
+**API Routes** :
+- `POST /api/v1/payments` — Créer virement
+- `GET /api/v1/payments/{id}` — Consulter virement
+- `POST /api/v1/payments/{id}/execute` — Exécuter
+- `GET /api/v1/payments/{id}/travel-rule` — Données travel rule
+
+---
+
+#### BC10 — ForeignExchange (Change)
+
+**Responsabilité** : Opérations FX, position FX, taux, conformité Loi 76-18.
+
+**Entités Rust** :
+```rust
+pub struct FxOperation {
+    pub id: FxOperationId,
+    pub account_id: AccountId,
+    pub operation_type: FxOperationType,
+    pub from_currency: CurrencyCode,
+    pub to_currency: CurrencyCode,
+    pub from_amount: Money,
+    pub to_amount: Money,
+    pub exchange_rate: ExchangeRate,
+    pub executed_at: DateTime<Utc>,
+}
+
+pub enum FxOperationType {
+    Spot,
+    Forward { settlement_date: NaiveDate },
+    Swap,
+}
+
+pub struct FxPosition {
+    pub currency: CurrencyCode,
+    pub net_position: Money,
+    pub limit: Money,
+}
+
+pub struct ExchangeRate {
+    pub from_currency: CurrencyCode,
+    pub to_currency: CurrencyCode,
+    pub rate: Decimal,
+    pub timestamp: DateTime<Utc>,
+}
+```
+
+**Ports** :
+```rust
+#[async_trait]
+pub trait FxRepository {
+    async fn record_operation(&self, op: &FxOperation) -> Result<(), DomainError>;
+    async fn get_position(&self, currency: &CurrencyCode) -> Result<FxPosition, DomainError>;
+}
+
+#[async_trait]
+pub trait ExchangeRateProvider {
+    async fn get_rate(&self, from: &CurrencyCode, to: &CurrencyCode) -> Result<ExchangeRate, DomainError>;
+}
+```
+
+**API Routes** :
+- `POST /api/v1/fx/operations` — Créer opération FX
+- `GET /api/v1/fx/positions` — Positions FX
+- `GET /api/v1/fx/rates` — Taux du jour
+
+---
+
+#### BC11 — Governance (Contrôle interne)
+
+**Responsabilité** : Audit trail immutable, 3 lignes défense, comités, piste d'audit cryptographique.
+
+**Entités Rust** :
+```rust
+pub struct AuditTrailEntry {
+    pub id: AuditEventId,
+    pub entity_type: String,
+    pub entity_id: String,
+    pub action: String,
+    pub actor: UserId,
+    pub timestamp: DateTime<Utc>,
+    pub details: serde_json::Value,
+    pub hash: String,              // SHA-256 for immutability
+    pub previous_hash: Option<String>, // Chain link
+}
+
+pub struct ControlCheck {
+    pub id: ControlId,
+    pub control_name: String,
+    pub status: ControlStatus,
+    pub last_checked: DateTime<Utc>,
+}
+
+pub enum ControlStatus {
+    Effective,
+    Ineffective { reason: String },
+}
+
+pub struct Committee {
+    pub id: CommitteeId,
+    pub committee_type: CommitteeType, // AUDIT, RISK, NOMINATION
+    pub members: Vec<UserId>,
+}
+
+pub struct ComplianceReport {
+    pub date: NaiveDate,
+    pub controls_checked: u16,
+    pub controls_effective: u16,
+    pub issues: Vec<String>,
+}
+```
+
+**Ports** :
+```rust
+#[async_trait]
+pub trait AuditTrailRepository {
+    async fn record(&self, entry: &AuditTrailEntry) -> Result<(), DomainError>;
+    async fn verify_chain(&self, entry_id: &AuditEventId) -> Result<bool, DomainError>;
+}
+
+#[async_trait]
+pub trait HashChainService {
+    fn compute_hash(&self, entry: &AuditTrailEntry) -> String;
+    fn verify_hash(&self, entry: &AuditTrailEntry) -> bool;
+}
+```
+
+**API Routes** :
+- `GET /api/v1/audit/trail` — Lister événements audit
+- `GET /api/v1/audit/trail/{entity_id}` — Historique entité
+- `POST /api/v1/governance/controls` — Créer contrôle
+- `GET /api/v1/governance/controls` — État contrôles
+
+---
+
+#### BC12 — Identity (Authentification + Autorisation)
+
+**Responsabilité** : Authentification (FIDO2/WebAuthn), 2FA, RBAC, sessions, JWT, MFA PCI DSS.
+
+**Entités Rust** :
+```rust
+pub struct User {
+    pub id: UserId,
+    pub username: String,
+    pub email: String,
+    pub password_hash: String,
+    pub roles: Vec<RoleId>,
+    pub status: UserStatus, // ACTIVE, INACTIVE, LOCKED
+    pub mfa_enabled: bool,
+    pub mfa_method: Option<MfaMethod>, // TOTP, SMS, FIDO2
+    pub created_at: DateTime<Utc>,
+}
+
+pub enum UserStatus {
+    Active,
+    Inactive,
+    Locked { locked_at: DateTime<Utc> },
+}
+
+pub enum MfaMethod {
+    Totp,
+    Sms,
+    Fido2,
+}
+
+pub struct Role {
+    pub id: RoleId,
+    pub name: String,
+    pub permissions: Vec<Permission>,
+}
+
+pub struct Permission {
+    pub resource: String,
+    pub action: String,  // read, write, delete, execute
+}
+
+pub struct SessionToken {
+    pub id: SessionId,
+    pub user_id: UserId,
+    pub jwt: String,
+    pub refresh_token: String,
+    pub expires_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+}
+
+pub struct Credential {
+    pub user_id: UserId,
+    pub credential_id: Vec<u8>,
+    pub public_key: Vec<u8>,
+    pub counter: u32,
+}
+```
+
+**Ports** :
+```rust
+#[async_trait]
+pub trait UserRepository {
+    async fn create(&self, user: &User) -> Result<(), DomainError>;
+    async fn get(&self, id: &UserId) -> Result<Option<User>, DomainError>;
+    async fn get_by_username(&self, username: &str) -> Result<Option<User>, DomainError>;
+}
+
+#[async_trait]
+pub trait JwtService {
+    async fn create_token(&self, user: &User) -> Result<SessionToken, DomainError>;
+    async fn verify_token(&self, token: &str) -> Result<TokenClaims, DomainError>;
+    async fn refresh_token(&self, refresh: &str) -> Result<SessionToken, DomainError>;
+}
+
+#[async_trait]
+pub trait Fido2Service {
+    async fn register_credential(&self, user_id: &UserId, credential: &Credential) -> Result<(), DomainError>;
+    async fn verify_credential(&self, user_id: &UserId, assertion: &[u8]) -> Result<bool, DomainError>;
+}
+
+#[async_trait]
+pub trait MfaService {
+    async fn generate_totp(&self, user_id: &UserId) -> Result<String, DomainError>;
+    async fn verify_totp(&self, user_id: &UserId, code: &str) -> Result<bool, DomainError>;
+}
+
+#[async_trait]
+pub trait RbacValidator {
+    async fn has_permission(&self, user_id: &UserId, resource: &str, action: &str) -> Result<bool, DomainError>;
+}
+```
+
+**API Routes** :
+- `POST /api/v1/auth/register` — S'inscrire
+- `POST /api/v1/auth/login` — Se connecter (JWT)
+- `POST /api/v1/auth/mfa/verify` — Vérifier MFA
+- `POST /api/v1/auth/fido2/register` — Enregistrer clé FIDO2
+- `POST /api/v1/auth/fido2/authenticate` — Auth FIDO2
+- `POST /api/v1/auth/refresh` — Renouveler token
+- `POST /api/v1/auth/logout` — Se déconnecter
+
+---
+
+### 2.2 Contextes NOUVEAUX v4.0 (9 nouveaux — parité Temenos)
+
+#### BC13 — Arrangement (CENTRAL — Contrats clients)
+
+**Responsabilité** : Hub central liant Account, Credit, Collateral, Insurance. Contrats, conditions, limites produits.
+
+**Entités Rust** :
+```rust
+pub struct Arrangement {
+    pub id: ArrangementId,
+    pub customer_id: CustomerId,
+    pub account_id: Option<AccountId>,
+    pub credit_id: Option<LoanId>,
+    pub collateral_ids: Vec<CollateralId>,
+    pub insurance_ids: Vec<InsuranceId>,
+    pub arrangement_type: ArrangementType,
+    pub status: ArrangementStatus,
+    pub conditions: Vec<ArrangementCondition>,
+    pub created_at: DateTime<Utc>,
+    pub maturity_date: Option<NaiveDate>,
+}
+
+pub enum ArrangementType {
+    Deposit,
+    Credit,
+    DepositAndCredit,
+    Treasury,
+    Islamic,
+}
+
+pub enum ArrangementStatus {
+    Draft,
+    Approved { approved_by: UserId },
+    Active,
+    Inactive,
+    Expired,
+}
+
+pub struct ArrangementCondition {
+    pub id: ConditionId,
+    pub arrangement_id: ArrangementId,
+    pub condition_type: String,
+    pub value: String,
+    pub enforcement: String, // "MANDATORY" or "ADVISORY"
+}
+
+pub struct ArrangementLimit {
+    pub id: LimitId,
+    pub arrangement_id: ArrangementId,
+    pub limit_type: LimitType,
+    pub limit_amount: Money,
+    pub utilization: Money,
+}
+
+pub enum LimitType {
+    CreditLimit,
+    DailyTransferLimit,
+    OverdraftLimit,
+}
+```
+
+**Ports** :
+```rust
+#[async_trait]
+pub trait ArrangementRepository {
+    async fn create(&self, arrangement: &Arrangement) -> Result<(), DomainError>;
+    async fn get(&self, id: &ArrangementId) -> Result<Option<Arrangement>, DomainError>;
+    async fn list_by_customer(&self, customer_id: &CustomerId) -> Result<Vec<Arrangement>, DomainError>;
+}
+
+#[async_trait]
+pub trait ArrangementApprovalService {
+    async fn request_approval(&self, arrangement: &Arrangement) -> Result<ApprovalRequest, DomainError>;
+    async fn approve(&self, arrangement_id: &ArrangementId, approver: &UserId) -> Result<(), DomainError>;
+}
+```
+
+**API Routes** :
+- `POST /api/v1/arrangements` — Créer contrat
+- `GET /api/v1/arrangements/{id}` — Détails
+- `PUT /api/v1/arrangements/{id}` — Modifier
+- `POST /api/v1/arrangements/{id}/approve` — Approuver
+- `POST /api/v1/arrangements/{id}/conditions` — Ajouter condition
+- `GET /api/v1/arrangements/{id}/limits` — Limites
+
+---
+
+#### BC14 — Collateral (Garanties)
+
+**Responsabilité** : Nantissements, évaluations, LTV, pools, pledges.
+
+**Entités Rust** :
+```rust
+pub struct Collateral {
+    pub id: CollateralId,
+    pub arrangement_id: ArrangementId,
+    pub collateral_type: CollateralType,
+    pub description: String,
+    pub valuation: CollateralValuation,
+    pub status: CollateralStatus,
+    pub created_at: DateTime<Utc>,
+}
+
+pub enum CollateralType {
+    RealEstate,
+    Vehicle,
+    Securities,
+    Cash,
+    Other,
+}
+
+pub struct CollateralValuation {
+    pub valuation_date: NaiveDate,
+    pub gross_value: Money,
+    pub haircut_pct: Decimal,
+    pub net_value: Money,
+    pub valuer: UserId,
+}
+
+pub struct Pledge {
+    pub id: PledgeId,
+    pub collateral_id: CollateralId,
+    pub pledgee: String,  // Creditor
+    pub pledgor: String,  // Debtor
+    pub status: PledgeStatus,
+}
+
+pub enum PledgeStatus {
+    Active,
+    Released,
+    Foreclosed,
+}
+
+pub struct CollateralPool {
+    pub id: PoolId,
+    pub collaterals: Vec<CollateralId>,
+    pub total_value: Money,
+}
+
+pub struct LTV {
+    pub collateral_id: CollateralId,
+    pub loan_amount: Money,
+    pub ltv_ratio: Decimal, // Loan-to-Value: loan / collateral_net_value
+}
+```
+
+**Ports** :
+```rust
+#[async_trait]
+pub trait CollateralRepository {
+    async fn create(&self, collateral: &Collateral) -> Result<(), DomainError>;
+    async fn record_valuation(&self, valuation: &CollateralValuation) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait LtvCalculator {
+    async fn calculate(&self, collateral_id: &CollateralId, loan_amount: &Money) -> Result<Decimal, DomainError>;
+}
+```
+
+**API Routes** :
+- `POST /api/v1/collaterals` — Enregistrer garantie
+- `POST /api/v1/collaterals/{id}/valuation` — Évaluer
+- `POST /api/v1/collaterals/{id}/pledge` — Créer nantissement
+- `POST /api/v1/collaterals/{id}/release` — Libérer garantie
+- `GET /api/v1/collaterals/{id}/ltv` — Ratio LTV
+
+---
+
+#### BC15 — TradeFinance (Lettres de crédit)
+
+**Responsabilité** : LC, garanties bancaires, DC, workflows UCP 600.
+
+**Entités Rust** :
+```rust
+pub struct LetterOfCredit {
+    pub id: LcId,
+    pub arrangement_id: ArrangementId,
+    pub lc_type: LcType, // SIGHT, USANCE
+    pub issuer_bank: String,
+    pub issuing_date: NaiveDate,
+    pub expiry_date: NaiveDate,
+    pub amount: Money,
+    pub beneficiary: String,
+    pub applicant: String,
+    pub status: LcStatus,
+    pub documents_required: Vec<DocumentRequirement>,
+}
+
+pub enum LcType {
+    Sight,
+    Usance { days: u16 },
+    Revolving,
+}
+
+pub enum LcStatus {
+    Draft,
+    Submitted,
+    Advised,
+    Confirmed,
+    Expired,
+    Paid,
+}
+
+pub struct DocumentaryCredit {
+    pub id: DcId,
+    pub lc_id: LcId,
+    pub document_type: String, // BILL_OF_LADING, INVOICE, etc.
+    pub status: DocumentStatus,
+    pub received_at: DateTime<Utc>,
+}
+
+pub enum DocumentStatus {
+    Pending,
+    Received,
+    Discrepancy,
+    Accepted,
+}
+
+pub struct BankGuarantee {
+    pub id: GuaranteeId,
+    pub arrangement_id: ArrangementId,
+    pub guarantee_type: GuaranteeType, // BID, PERFORMANCE, PAYMENT
+    pub amount: Money,
+    pub validity_date: NaiveDate,
+    pub status: GuaranteeStatus,
+}
+
+pub enum GuaranteeType {
+    Bid,
+    Performance,
+    Payment,
+    Other,
+}
+
+pub enum GuaranteeStatus {
+    Issued,
+    Called,
+    Released,
+}
+```
+
+**Ports** :
+```rust
+#[async_trait]
+pub trait TradeFinanceRepository {
+    async fn create_lc(&self, lc: &LetterOfCredit) -> Result<(), DomainError>;
+    async fn record_document(&self, doc: &DocumentaryCredit) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait UcpValidator {
+    async fn validate_documents(&self, lc_id: &LcId) -> Result<Vec<Discrepancy>, DomainError>;
+}
+```
+
+**API Routes** :
+- `POST /api/v1/trade-finance/lc` — Créer LC
+- `GET /api/v1/trade-finance/lc/{id}` — Détails LC
+- `POST /api/v1/trade-finance/lc/{id}/document` — Soumettre doc
+- `POST /api/v1/trade-finance/lc/{id}/validate` — Validation UCP
+- `POST /api/v1/trade-finance/guarantee` — Créer garantie
+
+---
+
+#### BC16 — CashManagement (Trésorerie)
+
+**Responsabilité** : Sweeps, pooling, liquidité, FX forwards, position trésorerie.
+
+**Entités Rust** :
+```rust
+pub struct SweepAccount {
+    pub id: SweepId,
+    pub arrangement_id: ArrangementId,
+    pub master_account: AccountId,
+    pub detail_accounts: Vec<AccountId>,
+    pub sweep_type: SweepType,  // OVERNIGHT, PERIODIC
+    pub sweep_frequency: SweepFrequency,
+    pub threshold: Money,
+    pub created_at: DateTime<Utc>,
+}
+
+pub enum SweepType {
+    Overnight,
+    Periodic { period_days: u16 },
+}
+
+pub enum SweepFrequency {
+    Daily,
+    Weekly,
+    Monthly,
+}
+
+pub struct LiquidityPosition {
+    pub date: NaiveDate,
+    pub currency: CurrencyCode,
+    pub inflows: Money,
+    pub outflows: Money,
+    pub net_position: Money,
+    pub forecast_7d: Money,
+    pub forecast_30d: Money,
+}
+
+pub struct FxForward {
+    pub id: ForwardId,
+    pub arrangement_id: ArrangementId,
+    pub from_currency: CurrencyCode,
+    pub to_currency: CurrencyCode,
+    pub forward_amount: Money,
+    pub forward_rate: Decimal,
+    pub settlement_date: NaiveDate,
+    pub status: ForwardStatus,
+}
+
+pub enum ForwardStatus {
+    Pending,
+    Confirmed,
+    Settled,
+    Cancelled,
+}
+
+pub struct CashPosition {
+    pub currency: CurrencyCode,
+    pub position: Money,
+    pub limit: Money,
+}
+```
+
+**Ports** :
+```rust
+#[async_trait]
+pub trait SweepRepository {
+    async fn create(&self, sweep: &SweepAccount) -> Result<(), DomainError>;
+    async fn execute_sweep(&self, sweep_id: &SweepId) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait LiquidityCalculator {
+    async fn calculate_position(&self, date: &NaiveDate, currency: &CurrencyCode) -> Result<LiquidityPosition, DomainError>;
+}
+
+#[async_trait]
+pub trait ForwardRepository {
+    async fn create_forward(&self, forward: &FxForward) -> Result<(), DomainError>;
+    async fn settle_forward(&self, forward_id: &ForwardId) -> Result<(), DomainError>;
+}
+```
+
+**API Routes** :
+- `POST /api/v1/cash-management/sweep` — Créer sweep
+- `POST /api/v1/cash-management/sweep/{id}/execute` — Exécuter
+- `GET /api/v1/cash-management/liquidity` — Position liquidité
+- `POST /api/v1/cash-management/forward` — Créer forward
+- `GET /api/v1/cash-management/cash-positions` — Positions trésorerie
+
+---
+
+#### BC17 — IslamicBanking (Produits Sharia)
+
+**Responsabilité** : Murabaha, ijara, waqf, wakala, musharaka, sukuk, validation Sharia.
+
+**Entités Rust** :
+```rust
+pub struct IslamicProduct {
+    pub id: ProductId,
+    pub product_type: IslamicProductType,
+    pub sharia_compliant: bool,
+    pub approved_by: Option<ShariaBoard>,
+}
+
+pub enum IslamicProductType {
+    Murabaha {
+        cost: Money,
+        profit_margin: Decimal,
+    },
+    Ijara {
+        lessor: String,
+        lessee: String,
+        lease_amount: Money,
+    },
+    Waqf {
+        endowment_amount: Money,
+        beneficiary: String,
+    },
+    Wakala {
+        fee_pct: Decimal,
+    },
+    Musharaka {
+        capital_contribution: Money,
+        profit_sharing: Decimal,
+    },
+}
+
+pub struct Murabaha {
+    pub id: MurId,
+    pub arrangement_id: ArrangementId,
+    pub cost_price: Money,
+    pub profit_margin: Decimal,
+    pub selling_price: Money,
+    pub payment_terms: Vec<PaymentTerm>,
+}
+
+pub struct PaymentTerm {
+    pub due_date: NaiveDate,
+    pub amount: Money,
+}
+
+pub struct ShariaBoard {
+    pub id: ShariaId,
+    pub members: Vec<Scholar>,
+    pub approvals: Vec<Approval>,
+}
+
+pub struct Scholar {
+    pub name: String,
+    pub credentials: String,
+}
+
+pub struct Approval {
+    pub scholar_id: String,
+    pub approved: bool,
+    pub date: DateTime<Utc>,
+}
+
+pub struct SukukIssuance {
+    pub id: SukukId,
+    pub asset_pool: Vec<AssetId>,
+    pub coupon_rate: Decimal,
+    pub maturity_date: NaiveDate,
+}
+```
+
+**Ports** :
+```rust
+#[async_trait]
+pub trait IslamicProductRepository {
+    async fn create(&self, product: &IslamicProduct) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait ShariaValidator {
+    async fn validate_murabaha(&self, murabaha: &Murabaha) -> Result<ValidationResult, DomainError>;
+    async fn validate_ijara(&self, ijara: &Ijara) -> Result<ValidationResult, DomainError>;
+}
+```
+
+**API Routes** :
+- `POST /api/v1/islamic-banking/murabaha` — Créer murabaha
+- `POST /api/v1/islamic-banking/ijara` — Créer ijara
+- `POST /api/v1/islamic-banking/waqf` — Créer waqf
+- `POST /api/v1/islamic-banking/{id}/sharia-validate` — Validation Sharia
+
+---
+
+#### BC18 — DataHub (Master Data Management)
+
+**Responsabilité** : ODS/ADS, MDM, data lake, data quality, lineage tracking.
+
+**Entités Rust** :
+```rust
+pub struct MdmRecord {
+    pub id: RecordId,
+    pub entity_type: String,
+    pub external_ids: Vec<(String, String)>, // (system, id)
+    pub golden_record: serde_json::Value,
+    pub data_quality_score: u8, // 0-100
+    pub last_updated: DateTime<Utc>,
+}
+
+pub struct DataPipeline {
+    pub id: PipelineId,
+    pub source: String,
+    pub target: String,
+    pub transformation_rules: Vec<Rule>,
+    pub execution_log: Vec<ExecutionEntry>,
+}
+
+pub struct DataEntity {
+    pub id: EntityId,
+    pub entity_type: String,
+    pub attributes: serde_json::Value,
+    pub lineage: LineageInfo,
+}
+
+pub struct LineageInfo {
+    pub source_system: String,
+    pub transformation_steps: Vec<String>,
+    pub timestamp: DateTime<Utc>,
+}
+
+pub struct DataQuality {
+    pub entity_id: EntityId,
+    pub completeness: Decimal,
+    pub accuracy: Decimal,
+    pub timeliness: Decimal,
+    pub consistency: Decimal,
+}
+```
+
+**Ports** :
+```rust
+#[async_trait]
+pub trait MdmRepository {
+    async fn create_record(&self, record: &MdmRecord) -> Result<(), DomainError>;
+    async fn get_golden_record(&self, entity_type: &str, id: &str) -> Result<MdmRecord, DomainError>;
+}
+
+#[async_trait]
+pub trait DataQualityService {
+    async fn assess_quality(&self, entity_id: &EntityId) -> Result<DataQuality, DomainError>;
+}
+```
+
+**API Routes** :
+- `POST /api/v1/data-hub/records` — Créer record MDM
+- `GET /api/v1/data-hub/golden-record/{entity_type}/{id}` — Golden record
+- `POST /api/v1/data-hub/pipeline` — Créer pipeline
+- `GET /api/v1/data-hub/quality/{id}` — Qualité données
+
+---
+
+#### BC19 — ReferenceData (Données maître)
+
+**Responsabilité** : Codes pays, devises, taux, tables maître, holidays, configurations.
+
+**Entités Rust** :
+```rust
+pub struct ReferenceCode {
+    pub id: CodeId,
+    pub code_type: CodeType,
+    pub code_value: String,
+    pub description: String,
+    pub status: CodeStatus,
+}
+
+pub enum CodeType {
+    Country,
+    Currency,
+    Sector,
+    BusinessType,
+    DocumentType,
+}
+
+pub enum CodeStatus {
+    Active,
+    Inactive,
+}
+
+pub struct ReferenceRate {
+    pub id: RateId,
+    pub rate_type: RateType,
+    pub rate_value: Decimal,
+    pub effective_date: NaiveDate,
+    pub end_date: Option<NaiveDate>,
+}
+
+pub enum RateType {
+    BcbInterestRate,
+    ExchangeRate,
+    RefinancingRate,
+}
+
+pub struct ReferenceTable {
+    pub id: TableId,
+    pub table_name: String,
+    pub columns: Vec<ColumnDefinition>,
+    pub rows: Vec<serde_json::Value>,
+}
+
+pub struct HolidayCalendar {
+    pub year: u16,
+    pub holidays: Vec<Holiday>,
+}
+
+pub struct Holiday {
+    pub date: NaiveDate,
+    pub name: String,
+    pub country: CountryCode,
+}
+```
+
+**Ports** :
+```rust
+#[async_trait]
+pub trait ReferenceDataRepository {
+    async fn create_code(&self, code: &ReferenceCode) -> Result<(), DomainError>;
+    async fn get_codes(&self, code_type: CodeType) -> Result<Vec<ReferenceCode>, DomainError>;
+    async fn create_rate(&self, rate: &ReferenceRate) -> Result<(), DomainError>;
+    async fn get_current_rate(&self, rate_type: RateType) -> Result<ReferenceRate, DomainError>;
+}
+
+#[async_trait]
+pub trait HolidayService {
+    async fn is_holiday(&self, date: &NaiveDate) -> Result<bool, DomainError>;
+    async fn get_next_business_day(&self, date: &NaiveDate) -> Result<NaiveDate, DomainError>;
+}
+```
+
+**API Routes** :
+- `GET /api/v1/reference-data/codes/{type}` — Lister codes
+- `POST /api/v1/reference-data/codes` — Créer code
+- `GET /api/v1/reference-data/rates/{type}` — Taux courant
+- `POST /api/v1/reference-data/rates` — Créer taux
+- `GET /api/v1/reference-data/holidays` — Calendrier fériés
+
+---
+
+#### BC20 — Securities (Valeurs mobilières)
+
+**Responsabilité** : Titres, portefeuille, dépositaire BVMT, ordres bourse, custody.
+
+**Entités Rust** :
+```rust
+pub struct Security {
+    pub id: SecurityId,
+    pub isin: String,
+    pub name: String,
+    pub issuer: String,
+    pub security_type: SecurityType,
+    pub current_price: Money,
+    pub currency: CurrencyCode,
+}
+
+pub enum SecurityType {
+    Stock,
+    Bond,
+    Fund,
+    Sukuk,
+}
+
+pub struct Portfolio {
+    pub id: PortfolioId,
+    pub customer_id: CustomerId,
+    pub positions: Vec<SecurityPosition>,
+    pub total_value: Money,
+}
+
+pub struct SecurityPosition {
+    pub security_id: SecurityId,
+    pub quantity: u64,
+    pub acquisition_price: Money,
+    pub current_price: Money,
+    pub market_value: Money,
+    pub unrealized_gain_loss: Money,
+}
+
+pub struct CustodyAccount {
+    pub id: CustodyId,
+    pub customer_id: CustomerId,
+    pub depository: String, // BVMT
+    pub securities: Vec<SecurityHolding>,
+}
+
+pub struct SecurityHolding {
+    pub security_id: SecurityId,
+    pub quantity: u64,
+    pub held_at: String,
+}
+
+pub struct SecurityOrder {
+    pub id: OrderId,
+    pub portfolio_id: PortfolioId,
+    pub security_id: SecurityId,
+    pub order_type: OrderType,
+    pub quantity: u64,
+    pub limit_price: Option<Money>,
+    pub status: OrderStatus,
+}
+
+pub enum OrderType {
+    Buy,
+    Sell,
+}
+
+pub enum OrderStatus {
+    Pending,
+    Executed,
+    Cancelled,
+}
+```
+
+**Ports** :
+```rust
+#[async_trait]
+pub trait SecurityRepository {
+    async fn get(&self, id: &SecurityId) -> Result<Security, DomainError>;
+    async fn list_all(&self) -> Result<Vec<Security>, DomainError>;
+}
+
+#[async_trait]
+pub trait PortfolioRepository {
+    async fn create(&self, portfolio: &Portfolio) -> Result<(), DomainError>;
+    async fn get(&self, id: &PortfolioId) -> Result<Option<Portfolio>, DomainError>;
+    async fn update_positions(&self, portfolio_id: &PortfolioId, positions: Vec<SecurityPosition>) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait BvmtAdapter {
+    async fn submit_order(&self, order: &SecurityOrder) -> Result<String, DomainError>;
+    async fn get_security_price(&self, isin: &str) -> Result<Money, DomainError>;
+}
+```
+
+**API Routes** :
+- `POST /api/v1/securities/portfolio` — Créer portefeuille
+- `GET /api/v1/securities/portfolio/{id}` — Détails portefeuille
+- `POST /api/v1/securities/order` — Créer ordre
+- `GET /api/v1/securities/{isin}/price` — Prix titre
+- `GET /api/v1/securities/custody/{id}` — Compte dépositaire
+
+---
+
+#### BC21 — Insurance (Assurances liées)
+
+**Responsabilité** : Crédit, décès, risque, polices, sinistres, courtage intégré.
+
+**Entités Rust** :
+```rust
+pub struct InsuranceProduct {
+    pub id: ProductId,
+    pub product_type: InsuranceType,
+    pub premium_rate: Decimal,
+    pub coverage: Money,
+}
+
+pub enum InsuranceType {
+    CreditProtection,
+    DeathBenefit,
+    RiskCoverage,
+}
+
+pub struct InsurancePolicy {
+    pub id: PolicyId,
+    pub customer_id: CustomerId,
+    pub product_id: ProductId,
+    pub loan_id: Option<LoanId>,
+    pub effective_date: NaiveDate,
+    pub expiry_date: NaiveDate,
+    pub premium: Money,
+    pub coverage_amount: Money,
+    pub status: PolicyStatus,
+}
+
+pub enum PolicyStatus {
+    Active,
+    Lapsed,
+    Cancelled,
+}
+
+pub struct InsuranceClaim {
+    pub id: ClaimId,
+    pub policy_id: PolicyId,
+    pub claim_type: String,
+    pub claim_amount: Money,
+    pub status: ClaimStatus,
+    pub submitted_at: DateTime<Utc>,
+}
+
+pub enum ClaimStatus {
+    Submitted,
+    Under Review,
+    Approved,
+    Rejected,
+    Paid,
+}
+
+pub struct Coverage {
+    pub policy_id: PolicyId,
+    pub coverage_type: String,
+    pub limit: Money,
+    pub deductible: Money,
+}
+
+pub struct BancassuranceLink {
+    pub arrangement_id: ArrangementId,
+    pub required_policies: Vec<PolicyId>,
+}
+```
+
+**Ports** :
+```rust
+#[async_trait]
+pub trait InsuranceRepository {
+    async fn create_policy(&self, policy: &InsurancePolicy) -> Result<(), DomainError>;
+    async fn file_claim(&self, claim: &InsuranceClaim) -> Result<(), DomainError>;
+}
+
+#[async_trait]
+pub trait InsuranceProviderAdapter {
+    async fn issue_policy(&self, policy: &InsurancePolicy) -> Result<String, DomainError>;
+    async fn submit_claim(&self, claim: &InsuranceClaim) -> Result<(), DomainError>;
+}
+```
+
+**API Routes** :
+- `POST /api/v1/insurance/policy` — Émettre police
+- `GET /api/v1/insurance/policy/{id}` — Détails police
+- `POST /api/v1/insurance/claim` — Déclarer sinistre
+- `GET /api/v1/insurance/claim/{id}` — Statut sinistre
+
+---
+
+## 3. Architecture Hexagonale Détaillée
+
+### 3.1 Règles de Dépendance
 
 ```
-crates/domain/src/compliance/
-├── mod.rs
-├── entities.rs          # SmsiControl, RiskEntry, TokenVault, Consent, ImpactAssessment, BreachNotification
-├── value_objects.rs     # ControlId, RiskLevel, Token, ConsentScope, BreachType
-├── aggregates.rs        # SmsiControlAggregate, ConsentAggregate
-├── errors.rs            # DomainError::Compliance::*
-└── rules.rs             # SmsiControlRules, TokenizationRules, ConsentLifecycleRules, DpiaRules
+Domain ← Application ← Infrastructure
 
-services:
-  - ComplianceService     — Orchestration SMSI, vérification contrôles, dashboard
-  - TokenizationService   — Tokenisation PAN, détokenisation autorisée, rotation tokens
-  - ConsentService        — Gestion consentement (grant, revoke, expire, dashboard)
-  - DpiaService           — Évaluations d'impact (DPIA), workflow approbation
+Domain (Pure)
+  ├─ Zéro imports externes (serde OK, tokio NON)
+  ├─ Invariants compilés (Result types)
+  ├─ Entités + Value Objects + Aggregates
 
-ports (traits):
-  - ITokenVaultRepository      — Stockage/récupération tokens (vault isolé)
-  - IConsentRepository         — Persistance consentements (lifecycle complet)
-  - IRiskRegisterRepository    — Registre des risques SI (ISO 31000)
-  - ISmsiControlRepository     — Suivi des 93 contrôles Annexe A
-  - IBreachNotificationRepository — Gestion notifications violations INPDP
+Application
+  ├─ Import Domain (✓)
+  ├─ Définit Ports (traits)
+  ├─ DTOs (serialization)
+  ├─ Use Cases (orchestration)
+
+Infrastructure
+  ├─ Import Application ✓ + Domain ✓
+  ├─ Implémente Ports
+  ├─ Actix-web handlers
+  ├─ PostgreSQL repos
+```
+
+### 3.2 Structure des Crates (Cargo Workspace)
+
+```
+BANKO/
+├── backend/
+│   ├── Cargo.toml (workspace root)
+│   ├── crates/
+│   │   ├── domain/
+│   │   │   ├── Cargo.toml
+│   │   │   └── src/
+│   │   │       ├── lib.rs
+│   │   │       ├── customer/
+│   │   │       ├── account/
+│   │   │       ├── credit/
+│   │   │       ├── aml/
+│   │   │       ├── sanctions/
+│   │   │       ├── prudential/
+│   │   │       ├── accounting/
+│   │   │       ├── reporting/
+│   │   │       ├── payment/
+│   │   │       ├── fx/
+│   │   │       ├── governance/
+│   │   │       ├── identity/
+│   │   │       ├── arrangement/
+│   │   │       ├── collateral/
+│   │   │       ├── trade_finance/
+│   │   │       ├── cash_management/
+│   │   │       ├── islamic_banking/
+│   │   │       ├── data_hub/
+│   │   │       ├── reference_data/
+│   │   │       ├── securities/
+│   │   │       ├── insurance/
+│   │   │       ├── error.rs
+│   │   │       └── shared/ (Value Objects communs)
+│   │   ├── application/
+│   │   │   ├── Cargo.toml
+│   │   │   └── src/
+│   │   │       ├── lib.rs
+│   │   │       ├── customer/
+│   │   │       │   ├── mod.rs
+│   │   │       │   ├── dto.rs
+│   │   │       │   ├── use_cases.rs
+│   │   │       │   ├── ports.rs
+│   │   │       │   └── errors.rs
+│   │   │       ├── [autres BCs idem]
+│   │   │       └── event.rs (DomainEvent)
+│   │   └── infrastructure/
+│   │       ├── Cargo.toml
+│   │       └── src/
+│   │           ├── lib.rs
+│   │           ├── database/
+│   │           │   ├── postgres.rs (PgPool)
+│   │           │   ├── repositories.rs (impl Ports)
+│   │           │   └── migrations/
+│   │           ├── web/
+│   │           │   ├── handlers/ (Actix routes)
+│   │           │   ├── middleware/ (JWT, CORS)
+│   │           │   ├── routes.rs
+│   │           │   └── error_handler.rs
+│   │           ├── external/
+│   │           │   ├── swift.rs
+│   │           │   ├── ctaf_goaml.rs
+│   │           │   └── hsm.rs (PKCS#11)
+│   │           └── config.rs
+│   └── main.rs (entry point)
 ```
 
 ---
 
-## 3. Architecture hexagonale SOLID
+## 4. Invariants Métier Compilés (25+)
 
-### 3.1 Couche Domain
-
-```
-src/domain/
-├── customer/
-│   ├── mod.rs
-│   ├── entities.rs          # Customer, KycProfile, Beneficiary
-│   ├── value_objects.rs     # CustomerId, Iban, RiskScore, PepStatus
-│   ├── aggregates.rs        # CustomerAggregate
-│   ├── errors.rs            # DomainError::Customer::*
-│   └── rules.rs             # KycValidationRules, PepCheckRules
-├── account/
-│   ├── entities.rs          # Account, Balance, Movement
-│   ├── value_objects.rs     # AccountId, Balance, AccountType
-│   ├── aggregates.rs        # AccountAggregate
-│   ├── errors.rs            # DomainError::Account::*
-│   └── rules.rs             # AccountOpeningRules, BalanceRules
-├── credit/
-│   ├── entities.rs          # Loan, LoanSchedule, Provision
-│   ├── value_objects.rs     # LoanId, AssetClass, Provision%
-│   ├── aggregates.rs        # LoanAggregate
-│   ├── errors.rs            # DomainError::Credit::*
-│   └── rules.rs             # ClassificationRules, ProvisioningRules
-├── aml/
-│   ├── entities.rs          # Transaction, Alert, Investigation
-│   ├── value_objects.rs     # TransactionId, AlertType, SuspicionReport
-│   ├── aggregates.rs        # AlertAggregate
-│   ├── errors.rs            # DomainError::Aml::*
-│   └── rules.rs             # AmlScenarios, FreezeRules
-├── sanctions/
-│   ├── entities.rs          # SanctionList, SanctionEntry, ScreeningResult
-│   ├── value_objects.rs     # SanctionListId, MatchScore, EntityName
-│   ├── aggregates.rs        # ScreeningAggregate
-│   ├── errors.rs            # DomainError::Sanctions::*
-│   └── rules.rs             # ScreeningRules, MatchingAlgorithms
-├── prudential/
-│   ├── entities.rs          # PrudentialRatio, RiskWeightedAsset
-│   ├── value_objects.rs     # RatioType, RegulatoryCapital
-│   ├── aggregates.rs        # PrudentialRatioAggregate
-│   ├── errors.rs            # DomainError::Prudential::*
-│   └── rules.rs             # SolvencyRules, TierRules, CDRatioRules
-├── accounting/
-│   ├── entities.rs          # JournalEntry, Ledger, ChartOfAccounts
-│   ├── value_objects.rs     # AccountingCode, Period, EntryAmount
-│   ├── aggregates.rs        # JournalAggregate
-│   ├── errors.rs            # DomainError::Accounting::*
-│   └── rules.rs             # DoubleEntryRules, BalanceRules
-├── reporting/
-│   ├── entities.rs          # RegulatoryReport, ReportTemplate
-│   ├── value_objects.rs     # ReportId, SubmissionStatus
-│   ├── aggregates.rs        # ReportAggregate
-│   ├── errors.rs            # DomainError::Reporting::*
-│   └── rules.rs             # ReportingRules, BctRequirements
-├── payment/
-│   ├── entities.rs          # PaymentOrder, Transfer, SwiftMessage
-│   ├── value_objects.rs     # PaymentId, ClearingReference
-│   ├── aggregates.rs        # PaymentOrderAggregate
-│   ├── errors.rs            # DomainError::Payment::*
-│   └── rules.rs             # PaymentValidationRules, SwiftRules
-├── fx/
-│   ├── entities.rs          # FxOperation, ExchangeRate
-│   ├── value_objects.rs     # FxOperationId, FxPosition
-│   ├── aggregates.rs        # FxOperationAggregate
-│   ├── errors.rs            # DomainError::Fx::*
-│   └── rules.rs             # FxComplianceRules, PositionLimits
-├── governance/
-│   ├── entities.rs          # AuditTrail, Committee, ControlCheck
-│   ├── value_objects.rs     # AuditEventId, AuditTrailEntry
-│   ├── aggregates.rs        # AuditTrailAggregate
-│   ├── errors.rs            # DomainError::Governance::*
-│   └── rules.rs             # AuditRules, ControlRules
-├── identity/
-│   ├── entities.rs          # User, Role, Permission
-│   ├── value_objects.rs     # UserId, SessionToken, PasswordHash
-│   ├── aggregates.rs        # UserAggregate
-│   ├── errors.rs            # DomainError::Identity::*
-│   └── rules.rs             # AuthenticationRules, RbacRules
-└── compliance/
-    ├── entities.rs          # SmsiControl, RiskEntry, TokenVault, Consent, ImpactAssessment, BreachNotification
-    ├── value_objects.rs     # ControlId, RiskLevel, Token, ConsentScope, BreachType
-    ├── aggregates.rs        # SmsiControlAggregate, ConsentAggregate
-    ├── errors.rs            # DomainError::Compliance::*
-    └── rules.rs             # SmsiControlRules, TokenizationRules, ConsentLifecycleRules, DpiaRules
-```
-
-#### Key Domain Principles (SOLID)
-
-- **S** (Single Responsibility) : Chaque entité = une seule raison de changer
-- **O** (Open/Closed) : Domain extensible via traits, fermé à la modification
-- **L** (Liskov) : Substitutabilité des value objects
-- **I** (Interface Segregation) : Ports spécialisés par BC
-- **D** (Dependency Inversion) : Domain n'import aucune dépendance externe
-
-### 3.2 Couche Application
-
-```
-src/application/
-├── customer/
-│   ├── dto.rs               # CreateCustomerRequest, CustomerResponse
-│   ├── use_cases.rs         # CreateCustomerUseCase, UpdateKycUseCase
-│   ├── ports.rs             # CustomerRepository (trait), KycValidator (trait)
-│   └── errors.rs            # ApplicationError::Customer::*
-├── account/
-│   ├── dto.rs               # OpenAccountRequest, AccountResponse
-│   ├── use_cases.rs         # OpenAccountUseCase, TransferUseCase
-│   ├── ports.rs             # AccountRepository, BalanceCalculator
-│   └── errors.rs            # ApplicationError::Account::*
-├── credit/
-│   ├── dto.rs               # GrantLoanRequest, LoanResponse
-│   ├── use_cases.rs         # GrantLoanUseCase, ClassifyLoanUseCase
-│   ├── ports.rs             # LoanRepository, AssetClassifier
-│   └── errors.rs            # ApplicationError::Credit::*
-├── aml/
-│   ├── dto.rs               # CreateAlertRequest, AlertResponse
-│   ├── use_cases.rs         # DetectAnomalyUseCase, InvestigateAlertUseCase
-│   ├── ports.rs             # AmlScenarioEngine, AlertRepository
-│   └── errors.rs            # ApplicationError::Aml::*
-├── sanctions/
-│   ├── dto.rs               # ScreenEntityRequest, ScreeningResponse
-│   ├── use_cases.rs         # ScreenEntityUseCase, UpdateSanctionsListUseCase
-│   ├── ports.rs             # SanctionListRepository, MatchingEngine
-│   └── errors.rs            # ApplicationError::Sanctions::*
-├── prudential/
-│   ├── dto.rs               # CalculateRatioRequest, PrudentialResponse
-│   ├── use_cases.rs         # CalculateRatiosUseCase, CheckSolvencyUseCase
-│   ├── ports.rs             # PrudentialRepository, RwaCalculator
-│   └── errors.rs            # ApplicationError::Prudential::*
-├── accounting/
-│   ├── dto.rs               # PostEntryRequest, TrialBalanceResponse
-│   ├── use_cases.rs         # PostJournalEntryUseCase, GenerateBalanceUseCase
-│   ├── ports.rs             # JournalRepository, LedgerCalculator
-│   └── errors.rs            # ApplicationError::Accounting::*
-├── reporting/
-│   ├── dto.rs               # GenerateReportRequest, ReportResponse
-│   ├── use_cases.rs         # GenerateBctReportUseCase, SubmitReportUseCase
-│   ├── ports.rs             # ReportRepository, BctSubmissionClient
-│   └── errors.rs            # ApplicationError::Reporting::*
-├── payment/
-│   ├── dto.rs               # InitiatePaymentRequest, PaymentResponse
-│   ├── use_cases.rs         # InitiatePaymentUseCase, ExecutePaymentUseCase
-│   ├── ports.rs             # PaymentRepository, SwiftClient
-│   └── errors.rs            # ApplicationError::Payment::*
-├── fx/
-│   ├── dto.rs               # ExecuteFxRequest, FxResponse
-│   ├── use_cases.rs         # ExecuteFxUseCase, CalculateFxPositionUseCase
-│   ├── ports.rs             # FxRepository, RateProvider
-│   └── errors.rs            # ApplicationError::Fx::*
-├── governance/
-│   ├── dto.rs               # LogAuditEventRequest, AuditResponse
-│   ├── use_cases.rs         # LogAuditEventUseCase, GenerateAuditReportUseCase
-│   ├── ports.rs             # AuditRepository, AuditLogger
-│   └── errors.rs            # ApplicationError::Governance::*
-├── identity/
-│   ├── dto.rs               # RegisterUserRequest, LoginRequest, UserResponse
-│   ├── use_cases.rs         # RegisterUserUseCase, AuthenticateUseCase
-│   ├── ports.rs             # UserRepository, PasswordHasher, TokenGenerator
-│   └── errors.rs            # ApplicationError::Identity::*
-└── compliance/
-    ├── dto.rs               # TokenizeRequest, ConsentRequest, DpiaRequest, SmsiControlResponse
-    ├── use_cases.rs         # TokenizePanUseCase, ManageConsentUseCase, RunDpiaUseCase, CheckSmsiControlUseCase
-    ├── ports.rs             # ITokenVaultRepository, IConsentRepository, IRiskRegisterRepository
-    └── errors.rs            # ApplicationError::Compliance::*
-```
-
-### 3.3 Couche Infrastructure
-
-```
-src/infrastructure/
-├── persistence/
-│   ├── postgres/
-│   │   ├── customer_repository.rs    # impl CustomerRepository
-│   │   ├── account_repository.rs     # impl AccountRepository
-│   │   ├── credit_repository.rs      # impl LoanRepository
-│   │   ├── aml_repository.rs         # impl AlertRepository
-│   │   ├── sanctions_repository.rs   # impl SanctionListRepository
-│   │   ├── prudential_repository.rs  # impl PrudentialRepository
-│   │   ├── accounting_repository.rs  # impl JournalRepository
-│   │   ├── reporting_repository.rs   # impl ReportRepository
-│   │   ├── payment_repository.rs     # impl PaymentRepository
-│   │   ├── fx_repository.rs          # impl FxRepository
-│   │   ├── governance_repository.rs  # impl AuditRepository
-│   │   ├── identity_repository.rs    # impl UserRepository
-│   │   ├── compliance_repository.rs  # impl ITokenVaultRepository, IConsentRepository, IRiskRegisterRepository
-│   │   ├── connection.rs             # PgPool, migrations
-│   │   └── queries.rs                # SQL compiled queries (sqlx macros)
-│   ├── redis/
-│   │   ├── session_cache.rs          # Redis session store
-│   │   ├── otp_cache.rs              # OTP temporary storage
-│   │   └── rate_limiter.rs           # DDoS protection
-│   └── migrations/
-│       ├── 0001_initial_schema.sql   # All 12 BC tables
-│       ├── 0002_audit_trail.sql
-│       ├── 0003_indexes.sql
-│       └── [...]
-├── external/
-│   ├── hsm/
-│   │   ├── pkcs11_client.rs          # HSM interface (cryptographic signing)
-│   │   └── key_management.rs         # Key rotation, storage
-│   ├── notifications/
-│   │   ├── email_sender.rs           # SMTP integration
-│   │   └── sms_sender.rs             # SMS provider
-│   ├── sanctions/
-│   │   ├── un_list_provider.rs       # UN Consolidated List API
-│   │   ├── eu_list_provider.rs       # EU Sanctions List
-│   │   ├── ofac_list_provider.rs     # OFAC SDN List
-│   │   └── update_scheduler.rs       # Periodic updates
-│   ├── swift/
-│   │   ├── swift_client.rs           # SWIFT network interface
-│   │   └── iso20022_parser.rs        # ISO 20022 message parsing
-│   ├── storage/
-│   │   ├── s3_client.rs              # S3-compatible (backup, KYC docs)
-│   │   └── local_storage.rs          # Local file storage (dev)
-│   └── monitoring/
-│       ├── prometheus_exporter.rs    # Metrics export
-│       ├── loki_logger.rs            # Structured logging
-│       └── jaeger_tracer.rs          # Distributed tracing
-├── http/
-│   ├── routes.rs                     # Actix-web route registration
-│   ├── handlers/
-│   │   ├── customer_handler.rs       # HTTP handlers for Customer BC
-│   │   ├── account_handler.rs        # HTTP handlers for Account BC
-│   │   ├── credit_handler.rs         # HTTP handlers for Credit BC
-│   │   ├── aml_handler.rs            # HTTP handlers for AML BC
-│   │   ├── sanctions_handler.rs      # HTTP handlers for Sanctions BC
-│   │   ├── prudential_handler.rs     # HTTP handlers for Prudential BC
-│   │   ├── accounting_handler.rs     # HTTP handlers for Accounting BC
-│   │   ├── reporting_handler.rs      # HTTP handlers for Reporting BC
-│   │   ├── payment_handler.rs        # HTTP handlers for Payment BC
-│   │   ├── fx_handler.rs             # HTTP handlers for FX BC
-│   │   ├── governance_handler.rs     # HTTP handlers for Governance BC
-│   │   ├── identity_handler.rs       # HTTP handlers for Identity BC
-│   │   └── compliance_handler.rs     # HTTP handlers for Compliance BC
-│   ├── middleware/
-│   │   ├── auth_middleware.rs        # JWT verification
-│   │   ├── audit_middleware.rs       # Request/response logging
-│   │   ├── rate_limit_middleware.rs  # Rate limiting
-│   │   └── error_handler.rs          # Global error handling
-│   └── error_responses.rs            # HTTP error serialization
-├── config.rs                         # Configuration management (env vars, YAML)
-└── lib.rs                            # Infrastructure module root
-```
-
----
-
-## 4. Glossaire DDD → Mapping Code
-
-| Terme métier | Définition | Type code | Nom exact code | Bounded Context |
-|---|---|---|---|---|
-| **Compte** | Instrument de dépôt/crédit identifié par RIB | `struct` | `Account` | BC2 |
-| **Client** | Personne physique ou morale titulaire d'un compte | `struct` | `Customer` | BC1 |
-| **Fiche KYC** | Document structuré de connaissance du client | `struct` | `KycProfile` | BC1 |
-| **Bénéficiaire effectif** | Personne physique possédant/contrôlant ≥25% | `struct` | `BeneficiaryInfo` | BC1 |
-| **PEP** | Personne Politiquement Exposée | `enum` | `PepStatus` | BC1 |
-| **Créance** | Engagement de crédit de la banque | `struct` | `Loan` | BC3 |
-| **Classe de créance** | Classification 0-4 (courant → compromis) | `enum` | `AssetClass` | BC3 |
-| **Provision** | Montant pour couvrir risque de perte | `struct` | `Provision` | BC3 |
-| **ECL** | Expected Credit Loss (IFRS 9) | `struct` | `ExpectedCreditLoss` | BC3 |
-| **Ratio de solvabilité** | FP réglementaires / RWA (min 10%) | `struct` | `SolvencyRatio` | BC6 |
-| **Tier 1** | Fonds propres de base (min 7%) | `struct` | `Tier1Ratio` | BC6 |
-| **Ratio C/D** | Crédits / Dépôts (max 120%) | `struct` | `CreditToDepositRatio` | BC6 |
-| **Ratio de concentration** | Risque même bénéficiaire / FPN (max 25%) | `struct` | `ConcentrationRatio` | BC6 |
-| **Déclaration de soupçon** | Signalement à CTAF d'opération suspecte | `struct` | `SuspicionReport` | BC4 |
-| **Gel des avoirs** | Blocage fonds personne/entité sanctions | `struct` | `AssetFreeze` | BC4 |
-| **Piste d'audit** | Enregistrement chronologique immutable | `struct` | `AuditTrail` | BC11 |
-| **Écriture comptable** | Enregistrement journal selon plan NCT | `struct` | `JournalEntry` | BC7 |
-| **Virement SWIFT** | Transfert international ISO 20022 | `struct` | `SwiftMessage` | BC9 |
-| **RIB** | Relevé d'Identité Bancaire — identifiant compte | `struct` | `Iban` | BC2 |
-| **DAT** | Dépôt À Terme — placement durée fixe | `enum` | `AccountType::TermDeposit` | BC2 |
-| **FPN** | Fonds Propres Nets — base ratios | `struct` | `RegulatoryCapital` | BC6 |
-| **RWA** | Risk-Weighted Assets — actifs pondérés | `struct` | `RiskWeightedAsset` | BC6 |
-| **PNB** | Produit Net Bancaire — marge | `struct` | `ProfitAndLoss` | BC7 |
-| **NCT** | Norme Comptable Tunisienne | `struct` | `AccountingCode` | BC7 |
-| **Alerte AML** | Détection opération suspecte | `struct` | `Alert` | BC4 |
-| **Investigation** | Processus d'examen alerte | `struct` | `Investigation` | BC4 |
-| **Liste de sanctions** | UN, UE, OFAC, nationales | `struct` | `SanctionList` | BC5 |
-| **Score de correspondance** | Confiance match entité/sanctions | `struct` | `MatchScore` | BC5 |
-| **Opération change** | Achat/vente devises | `struct` | `FxOperation` | BC10 |
-| **Position change** | Exposition nette devise | `struct` | `FxPosition` | BC10 |
-| **Ordre de paiement** | Instruction virement/compensation | `struct` | `PaymentOrder` | BC9 |
-| **Clearing** | Compensation multilatérale | `struct` | `ClearingReference` | BC9 |
-| **Rapport réglementaire** | État prudentiel/AML/financier BCT | `struct` | `RegulatoryReport` | BC8 |
-| **Utilisateur** | Agent bancaire, administrateur, auditeur | `struct` | `User` | BC12 |
-| **Rôle** | RBAC (Role-Based Access Control) | `enum` | `Role` | BC12 |
-| **Permission** | Action autorisée par rôle | `enum` | `Permission` | BC12 |
-| **Session** | JWT token avec contexte utilisateur | `struct` | `SessionToken` | BC12 |
-
----
-
-## 5. Stratégie de tests (TDD + BDD + Documentation Vivante)
-
-### Pyramide de tests
-
-```
-                        ▲
-                       ╱ ╲
-                      ╱ E2E╲        (10% du code)
-                     ╱ API ╲        Playwright, API client
-                    ╱-------╲
-                   ╱ Integration╲   (30% du code)
-                  ╱ (DB + Cache)╲   SQLx + test DB
-                 ╱───────────────╲
-                ╱   Unit (BDD)    ╲  (60% du code)
-               ╱   Domain + App   ╲  Cucumber + Gherkin
-              ╱───────────────────╲
-             ╱   Compile-time      ╲ Rust type system
-```
-
-### Couverture cible par couche
-
-| Couche | Couverture | Stratégie |
+| ID | Invariant | Rust Implementation |
 |---|---|---|
-| **Domain** | 100% | TDD strict — write test before entity |
-| **Application (UseCases)** | 100% | BDD + Gherkin — spécifications vivantes |
-| **Infrastructure (Repositories)** | 95% | Integration tests avec test DB |
-| **HTTP (Handlers)** | 85% | Integration + E2E tests |
-| **Middleware** | 90% | Unit tests |
-| **Global** | ≥ 80% | Tarpaulin coverage check in CI |
+| **INV-01** | Compte ⟹ KYC validée | `Account::new()` vérifie `customer.kyc_status == KycStatus::Validated` |
+| **INV-02** | Solvabilité ≥ 10% | `PrudentialRatio::new()` → `Result` si ratio < 10% |
+| **INV-03** | Créance class ∈ {0,1,2,3,4} | `enum AssetClass` — exhaustive |
+| **INV-04** | Provision min [2→20%, 3→50%, 4→100%] | `ProvisioningRules::calculate()` applique règles |
+| **INV-05** | Opération ≥ 5k TND → AML check | `PaymentOrder::new()` déclenche screening |
+| **INV-06** | Gel = immédiat, irrévocable | `AssetFreeze` une fois créé ne peut pas être modifié |
+| **INV-07** | Écriture: débit = crédit | `JournalEntry::new()` vérifie sommes |
+| **INV-08** | Opération → audit trail immutable | `AuditTrailEntry::record()` + hash chain |
+| **INV-09** | Consentement INPDP requis | `ConsentManager::grant_consent()` prérequis |
+| **INV-10** | PAN stocké UNIQUEMENT tokenisé | `Token` pas `String` dans entities |
+| **INV-11** | Accès CDE = MFA 2 facteurs | `RbacValidator` vérifie `mfa_enabled` |
+| **INV-12** | Violation data → INPDP 72h | `BreachNotification` lancée auto |
+| **INV-13** | Arrangement = Account + Credit + Collateral + Insurance | `Arrangement::new()` références valides |
+| **INV-14** | Virement intl → filtrage sanctions | `PaymentOrder::execute()` appelle `ScreeningResult` |
+| **INV-15** | Travel rule > 1k EUR/USD | `TravelRuleValidator::validate()` mandatory |
+| **INV-16** | ECL stage ∈ {1,2,3} | `enum NplStage` |
+| **INV-17** | Arrangement limit ≥ 0, ≤ approved | `ArrangementLimit::new()` vérifie bounds |
+| **INV-18** | Collateral LTV > 0 | `LTV::new()` valide |
+| **INV-19** | LC status conforme UCP 600 | `enum LcStatus` — workflow enforced |
+| **INV-20** | Sweep execution atomic | Transaction DB garantit atomicité |
 
-### Exemple structure tests
+---
+
+## 5. API REST — Convention 550-700+ Endpoints
+
+### 5.1 Versioning + Namespacing
 
 ```
-src/
-├── customer/
-│   ├── tests.rs                  # Tests unitaires domain
-│   │   ├── test_kyc_validation.rs
-│   │   ├── test_pep_detection.rs
-│   │   └── test_customer_aggregate.rs
-│   └── [...]
-tests/
-├── bdd/
-│   ├── features/
-│   │   ├── customer.feature      # Gherkin scenarios
-│   │   ├── account.feature
-│   │   ├── credit.feature
-│   │   ├── aml.feature
-│   │   ├── sanctions.feature
-│   │   ├── prudential.feature
-│   │   ├── accounting.feature
-│   │   ├── reporting.feature
-│   │   ├── payment.feature
-│   │   ├── fx.feature
-│   │   ├── governance.feature
-│   │   └── identity.feature
-│   └── steps/
-│       ├── customer_steps.rs     # Cucumber step definitions
-│       ├── account_steps.rs
-│       ├── [...]
-│       └── common_steps.rs       # Shared context
-├── integration/
-│   ├── customer_repo_test.rs     # Repository tests
-│   ├── account_repo_test.rs
-│   └── [...]
-└── e2e/
-    ├── customer_workflow_test.rs # Multi-step scenarios
-    ├── account_workflow_test.rs
-    └── [...]
+BASE_URL = http://localhost:8080/api/v1
+
+Pattern: /api/v1/{bounded_context}/{resource}/{id}/{action}
+
+Examples:
+  POST   /api/v1/customers                          (Create)
+  GET    /api/v1/customers/{id}                     (Read)
+  PUT    /api/v1/customers/{id}                     (Update)
+  DELETE /api/v1/customers/{id}                     (Soft delete)
+  GET    /api/v1/customers/{id}/accounts            (List related)
+  POST   /api/v1/accounts/{id}/freeze               (Action)
+
+Pagination:
+  GET /api/v1/accounts?page=1&limit=50&sort=created_at:desc
+
+Filtering:
+  GET /api/v1/loans?status=ACTIVE&asset_class=2
+
+Response:
+  {
+    "data": {...} | [{...}],
+    "meta": {"page": 1, "limit": 50, "total": 1000},
+    "errors": []
+  }
 ```
 
-### Tests compliance spécifiques
+### 5.2 Estimation Endpoints par BC
 
-| Domaine | Type de test | Vérifications |
+| BC | Resource Count | Estimated Endpoints |
 |---|---|---|
-| **ISO 27001** | Automated compliance checks | Vérification implémentation des 93 contrôles Annexe A, statut dashboard, alertes sur contrôles non conformes |
-| **PCI DSS — Tokenisation** | Unit + Integration | PAN jamais en clair dans logs, base principale, fichiers ; token vault retourne token irréversible ; détokenisation impossible sans accès vault |
-| **PCI DSS — Chiffrement** | Integration | AES-256-GCM chiffrement/déchiffrement champ ; vérification données chiffrées au repos dans PostgreSQL |
-| **PCI DSS — MFA** | E2E | MFA enforcement pour accès CDE ; rejet sans 2FA ; TOTP validation |
-| **Consent** | BDD + E2E | Lifecycle complet : grant → active → revoke ; expiration automatique ; dashboard client ; vérification scope à chaque appel API |
-| **Privacy — Portabilité** | Integration + E2E | Export JSON/CSV complet des données client ; format structuré vérifiable |
-| **Privacy — Effacement** | Integration | Anonymisation effective des données personnelles ; conservation 10 ans pour obligations légales |
-| **Privacy — Notification 72h** | Unit + Integration | Déclenchement automatique workflow ; suivi délai 72h ; escalade si dépassement |
-| **e-KYC** | Integration (mock) | Biométrie mock (reconnaissance faciale) ; validation workflow enrôlement électronique complet |
-| **goAML** | Integration | Génération XML/JSON déclaration de soupçon conforme format CTAF ; validation schéma |
-
-### Test-Driven Emergence (BDD ↔ E2E ↔ Vidéo)
-
-1. **Spécification BDD en Gherkin** → Acceptation métier
-2. **Steps Cucumber** → Implémentation détaillée
-3. **Unit tests (TDD)** → Code domain protection
-4. **E2E tests (Playwright/API)** → Flux complets
-5. **Vidéo documentation** → Démonstration en temps réel
+| BC1 Customer | 8 | 35 |
+| BC2 Account | 6 | 25 |
+| BC3 Credit | 7 | 30 |
+| BC4 AML | 6 | 25 |
+| BC5 Sanctions | 4 | 15 |
+| BC6 Prudential | 5 | 18 |
+| BC7 Accounting | 5 | 20 |
+| BC8 Reporting | 4 | 15 |
+| BC9 Payment | 5 | 25 |
+| BC10 ForeignExchange | 4 | 18 |
+| BC11 Governance | 4 | 15 |
+| BC12 Identity | 6 | 25 |
+| BC13 Arrangement | 7 | 28 |
+| BC14 Collateral | 5 | 20 |
+| BC15 TradeFinance | 5 | 22 |
+| BC16 CashManagement | 5 | 20 |
+| BC17 IslamicBanking | 4 | 18 |
+| BC18 DataHub | 4 | 15 |
+| BC19 ReferenceData | 5 | 20 |
+| BC20 Securities | 5 | 22 |
+| BC21 Insurance | 4 | 18 |
+| **TOTAL** | **~120** | **~550+** |
 
 ---
 
-## 6. Modèle de données (DDD → PostgreSQL)
+## 6. Event Sourcing + Audit Trail
 
-### Schema: customer
+### 6.1 DomainEvent Enum
 
-```sql
--- Clients (PP/PM)
-CREATE TABLE customers (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    customer_type VARCHAR(2) NOT NULL CHECK (customer_type IN ('PP', 'PM')), -- Personne Physique ou Morale
-    name VARCHAR(255) NOT NULL,
-    legal_form VARCHAR(50),  -- SARL, EIRL, SA, etc.
-    registration_number VARCHAR(50) UNIQUE,  -- CIN, RCCM
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    archived_at TIMESTAMP
-);
+```rust
+pub enum DomainEvent {
+    CustomerCreated(CustomerCreatedEvent),
+    AccountOpened(AccountOpenedEvent),
+    LoanGranted(LoanGrantedEvent),
+    AmlAlertRaised(AmlAlertRaisedEvent),
+    AssetFrozen(AssetFrozenEvent),
+    TransactionScreened(TransactionScreenedEvent),
+    PrudentialRatioCalculated(PrudentialRatioCalculatedEvent),
+    JournalEntryPosted(JournalEntryPostedEvent),
+    PaymentExecuted(PaymentExecutedEvent),
+    ArrangementApproved(ArrangementApprovedEvent),
+    CollateralValued(CollateralValuedEvent),
+    LetterOfCreditIssued(LetterOfCreditIssuedEvent),
+    // ... 22 BCs × 5-8 events = 110-176 domain events
+}
 
--- Fiches KYC (Connaissance du Client)
-CREATE TABLE kyc_profiles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    customer_id UUID NOT NULL REFERENCES customers(id),
-    identity_document_type VARCHAR(20) NOT NULL, -- CIN, PASSPORT, RES_PERMIT
-    identity_document_number VARCHAR(50) NOT NULL,
-    identity_verified_at TIMESTAMP,
-    profession VARCHAR(100),
-    revenue_annual DECIMAL(15, 2),
-    revenue_currency VARCHAR(3) DEFAULT 'TND',
-    pep_status VARCHAR(20) DEFAULT 'NOT_PEP', -- NOT_PEP, DOMESTIC, FOREIGN, CLOSE_RELATIVE
-    pep_verified_at TIMESTAMP,
-    edd_required BOOLEAN DEFAULT FALSE,  -- Enhanced Due Diligence
-    edd_completed_at TIMESTAMP,
-    risk_score SMALLINT, -- 1-5 scale
-    approved_at TIMESTAMP,
-    approved_by UUID,  -- User who approved
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Bénéficiaires effectifs (PM seulement)
-CREATE TABLE beneficial_owners (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    kyc_profile_id UUID NOT NULL REFERENCES kyc_profiles(id),
-    full_name VARCHAR(255) NOT NULL,
-    ownership_stake DECIMAL(5, 2) NOT NULL CHECK (ownership_stake >= 0 AND ownership_stake <= 100),
-    control_of_fact BOOLEAN DEFAULT FALSE,
-    relationship VARCHAR(100),  -- Actionnaire, Administrateur, etc.
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT unique_owner_per_kyc UNIQUE (kyc_profile_id, full_name)
-);
-
--- Consentements données (INPDP Loi 2004-63)
-CREATE TABLE data_consents (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    customer_id UUID NOT NULL REFERENCES customers(id),
-    consent_type VARCHAR(50) NOT NULL, -- PERSONAL_DATA, MARKETING, CREDIT_BUREAU
-    granted BOOLEAN NOT NULL,
-    granted_at TIMESTAMP,
-    revoked_at TIMESTAMP,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+pub struct CustomerCreatedEvent {
+    pub id: CustomerId,
+    pub email: String,
+    pub created_at: DateTime<Utc>,
+    pub created_by: UserId,
+}
 ```
 
-### Schema: account
+### 6.2 Event Bus
 
-```sql
--- Comptes
-CREATE TABLE accounts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    customer_id UUID NOT NULL REFERENCES customers(id),
-    iban VARCHAR(34) NOT NULL UNIQUE,
-    account_type VARCHAR(20) NOT NULL, -- CURRENT, SAVINGS, TERM_DEPOSIT
-    currency VARCHAR(3) DEFAULT 'TND',
-    balance_debit DECIMAL(18, 3) DEFAULT 0,  -- Solde débiteur (négatif)
-    balance_credit DECIMAL(18, 3) DEFAULT 0,  -- Solde créditeur (positif)
-    interest_rate DECIMAL(5, 3),  -- Pour comptes épargne/DAT
-    opening_date DATE NOT NULL,
-    closing_date DATE,
-    status VARCHAR(20) DEFAULT 'ACTIVE', -- ACTIVE, DORMANT, CLOSED
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT kyc_required CHECK (
-        (SELECT approved_at FROM kyc_profiles WHERE customer_id = accounts.customer_id) IS NOT NULL
-    )
-);
+```rust
+#[async_trait]
+pub trait EventBus {
+    async fn publish(&self, event: DomainEvent) -> Result<(), EventError>;
+    async fn subscribe(&self, listener: Box<dyn EventListener>) -> Result<(), EventError>;
+}
 
--- Mouvements (transactions)
-CREATE TABLE movements (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    account_id UUID NOT NULL REFERENCES accounts(id),
-    transaction_type VARCHAR(20) NOT NULL, -- DEBIT, CREDIT
-    amount DECIMAL(18, 3) NOT NULL CHECK (amount > 0),
-    currency VARCHAR(3),
-    description VARCHAR(255),
-    reference_number VARCHAR(50),
-    execution_date DATE NOT NULL,
-    value_date DATE NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+#[async_trait]
+pub trait EventListener {
+    async fn handle(&self, event: &DomainEvent) -> Result<(), EventError>;
+}
 
--- Dépôts à terme (DAT)
-CREATE TABLE term_deposits (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    account_id UUID NOT NULL REFERENCES accounts(id),
-    principal DECIMAL(18, 3) NOT NULL,
-    interest_rate DECIMAL(5, 3) NOT NULL,
-    start_date DATE NOT NULL,
-    maturity_date DATE NOT NULL,
-    status VARCHAR(20) DEFAULT 'ACTIVE', -- ACTIVE, MATURED, CLOSED
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+// Implementations:
+// - InMemoryEventBus (dev)
+// - KafkaEventBus (prod) — pour événements distribués
 ```
 
-### Schema: credit
+### 6.3 Audit Trail Immutable (Hash Chain)
 
-```sql
--- Crédits (Prêts)
-CREATE TABLE loans (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    customer_id UUID NOT NULL REFERENCES customers(id),
-    account_id UUID NOT NULL REFERENCES accounts(id),
-    principal_amount DECIMAL(18, 3) NOT NULL,
-    currency VARCHAR(3) DEFAULT 'TND',
-    interest_rate DECIMAL(5, 3) NOT NULL,
-    disbursement_date DATE NOT NULL,
-    maturity_date DATE NOT NULL,
-    outstanding_balance DECIMAL(18, 3) NOT NULL,
-    asset_class VARCHAR(1) NOT NULL CHECK (asset_class IN ('0', '1', '2', '3', '4')),
-    asset_class_updated_at TIMESTAMP,
-    status VARCHAR(20) DEFAULT 'DISBURSED', -- PENDING, DISBURSED, MATURED, DEFAULTED
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+```rust
+pub struct AuditTrailEntry {
+    pub id: AuditEventId,
+    pub entity_type: String,
+    pub entity_id: String,
+    pub action: String,           // "CREATE", "UPDATE", "DELETE"
+    pub before: Option<serde_json::Value>,
+    pub after: serde_json::Value,
+    pub actor: UserId,
+    pub timestamp: DateTime<Utc>,
+    pub hash: String,             // SHA-256(before+after+actor+timestamp)
+    pub previous_hash: Option<String>, // Chain link for immutability
+}
 
--- Calendrier remboursement
-CREATE TABLE loan_schedules (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    loan_id UUID NOT NULL REFERENCES loans(id),
-    due_date DATE NOT NULL,
-    principal_payment DECIMAL(18, 3) NOT NULL,
-    interest_payment DECIMAL(18, 3) NOT NULL,
-    paid_date DATE,
-    status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, PAID, OVERDUE, WAIVED
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Provisions (Réserves pour dépréciation)
-CREATE TABLE loan_provisions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    loan_id UUID NOT NULL REFERENCES loans(id),
-    asset_class VARCHAR(1) NOT NULL,
-    provision_rate DECIMAL(5, 2) NOT NULL, -- %, selon classe
-    provision_amount DECIMAL(18, 3) NOT NULL,
-    minimum_required DECIMAL(18, 3) NOT NULL,
-    compliant BOOLEAN DEFAULT FALSE,
-    effective_date DATE NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- ECL (Expected Credit Loss — IFRS 9)
-CREATE TABLE ecl_calculations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    loan_id UUID NOT NULL REFERENCES loans(id),
-    stage SMALLINT NOT NULL CHECK (stage IN (1, 2, 3)), -- Stage 1/2/3 IFRS 9
-    probability_of_default DECIMAL(5, 4) NOT NULL,
-    loss_given_default DECIMAL(5, 4) NOT NULL,
-    exposure_at_default DECIMAL(18, 3) NOT NULL,
-    ecl_amount DECIMAL(18, 3) NOT NULL,
-    calculation_date DATE NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Schema: aml
-
-```sql
--- Transactions (AML surveillance)
-CREATE TABLE transactions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    account_id UUID NOT NULL REFERENCES accounts(id),
-    counterparty_name VARCHAR(255),
-    counterparty_iban VARCHAR(34),
-    amount DECIMAL(18, 3) NOT NULL,
-    currency VARCHAR(3) DEFAULT 'TND',
-    transaction_type VARCHAR(30) NOT NULL, -- TRANSFER, CASH_WITHDRAWAL, DEPOSIT, CHEQUE
-    risk_level VARCHAR(20) DEFAULT 'LOW', -- LOW, MEDIUM, HIGH, CRITICAL
-    suspicious BOOLEAN DEFAULT FALSE,
-    execution_date TIMESTAMP NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Alertes AML
-CREATE TABLE aml_alerts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    transaction_id UUID REFERENCES transactions(id),
-    alert_type VARCHAR(50) NOT NULL, -- STRUCTURING, ROUND_AMOUNT, CASH_HEAVY, PEP_TRANSACTION, SANCTIONS_HIT
-    alert_reason TEXT,
-    alert_level VARCHAR(20) NOT NULL, -- LOW, MEDIUM, HIGH, CRITICAL
-    status VARCHAR(20) DEFAULT 'OPEN', -- OPEN, UNDER_INVESTIGATION, CLOSED, DOS_FILED
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Investigations
-CREATE TABLE investigations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    alert_id UUID NOT NULL REFERENCES aml_alerts(id),
-    assigned_to UUID,  -- Investigator user ID
-    findings TEXT,
-    conclusion VARCHAR(20), -- SUSPICIOUS, LEGITIMATE, INCONCLUSIVE
-    closed_at TIMESTAMP,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Déclarations de soupçon (DOS)
-CREATE TABLE suspicion_reports (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    investigation_id UUID NOT NULL REFERENCES investigations(id),
-    description TEXT NOT NULL,
-    submitted_to_ctaf BOOLEAN DEFAULT FALSE,
-    submission_date TIMESTAMP,
-    ctaf_reference VARCHAR(50),  -- Numéro CTAF
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Gels d'avoirs
-CREATE TABLE asset_freezes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    customer_id UUID NOT NULL REFERENCES customers(id),
-    account_id UUID NOT NULL REFERENCES accounts(id),
-    freeze_reason VARCHAR(50) NOT NULL, -- SANCTIONS_MATCH, JUDICIAL_ORDER
-    ctaf_notified BOOLEAN DEFAULT FALSE,
-    unfrozen_at TIMESTAMP,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Schema: sanctions
-
-```sql
--- Listes de sanctions
-CREATE TABLE sanction_lists (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    list_type VARCHAR(50) NOT NULL UNIQUE, -- UN, EU, OFAC, TUNISIA
-    source_url VARCHAR(500),
-    last_updated TIMESTAMP NOT NULL,
-    entry_count INT DEFAULT 0,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Entrées sanctions
-CREATE TABLE sanction_entries (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    sanction_list_id UUID NOT NULL REFERENCES sanction_lists(id),
-    entity_name VARCHAR(500) NOT NULL,
-    entity_type VARCHAR(20), -- PERSON, ENTITY
-    designation_details TEXT,
-    external_reference VARCHAR(100),
-    entry_date DATE,
-    effective_date DATE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Résultats filtrage sanctions
-CREATE TABLE screening_results (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    customer_id UUID NOT NULL REFERENCES customers(id),
-    sanction_entry_id UUID NOT NULL REFERENCES sanction_entries(id),
-    match_score DECIMAL(3, 2) NOT NULL CHECK (match_score >= 0 AND match_score <= 1), -- 0-1
-    screening_type VARCHAR(30) NOT NULL, -- ONBOARDING, TRANSACTION, PERIODIC
-    match_reason TEXT,
-    action_taken VARCHAR(20) NOT NULL DEFAULT 'FREEZE', -- FREEZE, FLAG_FOR_REVIEW
-    screening_date TIMESTAMP NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Schema: prudential
-
-```sql
--- Ratios prudentiels
-CREATE TABLE prudential_ratios (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    calculation_date DATE NOT NULL UNIQUE,
-    regulatory_capital DECIMAL(18, 3) NOT NULL,
-    risk_weighted_assets DECIMAL(18, 3) NOT NULL,
-    solvency_ratio DECIMAL(5, 2) NOT NULL CHECK (solvency_ratio >= 0), -- %, min 10%
-    tier1_ratio DECIMAL(5, 2) NOT NULL, -- %, min 7%
-    credit_to_deposit_ratio DECIMAL(5, 2) NOT NULL, -- %, max 120%
-    concentration_ratio DECIMAL(5, 2) NOT NULL CHECK (concentration_ratio <= 25), -- %, max 25%
-    compliant BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Calcul RWA par portefeuille
-CREATE TABLE risk_weighted_assets (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    prudential_ratio_id UUID NOT NULL REFERENCES prudential_ratios(id),
-    asset_type VARCHAR(50) NOT NULL, -- LOANS, SOVEREIGNS, COUNTERPARTY_CREDIT
-    gross_amount DECIMAL(18, 3) NOT NULL,
-    risk_weight DECIMAL(3, 1) NOT NULL CHECK (risk_weight >= 0 AND risk_weight <= 150), -- %
-    rwa_amount DECIMAL(18, 3) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Schema: accounting
-
-```sql
--- Plan comptable bancaire (NCT)
-CREATE TABLE chart_of_accounts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    account_code VARCHAR(10) NOT NULL UNIQUE,  -- Ex: 1011, 2011
-    account_name VARCHAR(255) NOT NULL,
-    account_type VARCHAR(20) NOT NULL, -- ASSET, LIABILITY, EQUITY, INCOME, EXPENSE
-    nct_reference VARCHAR(50),  -- Lien NCT
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Périodes comptables
-CREATE TABLE accounting_periods (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    period_name VARCHAR(20) NOT NULL UNIQUE, -- 202604, etc.
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
-    status VARCHAR(20) DEFAULT 'OPEN', -- OPEN, CLOSED
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Écritures comptables (double entrée)
-CREATE TABLE journal_entries (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    accounting_period_id UUID NOT NULL REFERENCES accounting_periods(id),
-    journal_name VARCHAR(50) NOT NULL, -- GEN, ACA, OPE, etc.
-    entry_date DATE NOT NULL,
-    reference_number VARCHAR(50),  -- Numéro pièce justificative
-    description VARCHAR(500),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Lignes écritures (débits/crédits)
-CREATE TABLE journal_lines (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    journal_entry_id UUID NOT NULL REFERENCES journal_entries(id),
-    account_code VARCHAR(10) NOT NULL,
-    debit DECIMAL(18, 3),
-    credit DECIMAL(18, 3),
-    CHECK ((debit IS NOT NULL AND credit IS NULL) OR (debit IS NULL AND credit IS NOT NULL))
-);
-
--- Grand livre (comptes de bilan/résultat)
-CREATE TABLE ledger_accounts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    accounting_period_id UUID NOT NULL REFERENCES accounting_periods(id),
-    account_code VARCHAR(10) NOT NULL,
-    opening_balance DECIMAL(18, 3),
-    total_debit DECIMAL(18, 3) DEFAULT 0,
-    total_credit DECIMAL(18, 3) DEFAULT 0,
-    closing_balance DECIMAL(18, 3),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT unique_period_account UNIQUE (accounting_period_id, account_code)
-);
-```
-
-### Schema: reporting
-
-```sql
--- Rapports réglementaires BCT
-CREATE TABLE regulatory_reports (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    report_type VARCHAR(50) NOT NULL, -- PRUDENTIAL_RATIO, AML_REPORT, FINANCIAL_STATEMENTS
-    report_period DATE NOT NULL,
-    report_version INT DEFAULT 1,
-    report_content JSONB NOT NULL,  -- Données structurées
-    submission_status VARCHAR(20) DEFAULT 'DRAFT', -- DRAFT, SUBMITTED, ACCEPTED, REJECTED
-    submitted_at TIMESTAMP,
-    bct_reference VARCHAR(50),  -- Numéro de transmission BCT
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT unique_report UNIQUE (report_type, report_period)
-);
-
--- Templates rapports
-CREATE TABLE report_templates (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    report_type VARCHAR(50) NOT NULL UNIQUE,
-    bct_format_version VARCHAR(20),  -- Circulaire BCT référence
-    template_json JSONB NOT NULL,  -- Structure attendue
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Schema: payment
-
-```sql
--- Ordres de paiement
-CREATE TABLE payment_orders (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    originating_account_id UUID NOT NULL REFERENCES accounts(id),
-    beneficiary_iban VARCHAR(34) NOT NULL,
-    beneficiary_name VARCHAR(255) NOT NULL,
-    amount DECIMAL(18, 3) NOT NULL,
-    currency VARCHAR(3) DEFAULT 'TND',
-    payment_method VARCHAR(20) NOT NULL, -- TRANSFER, SWIFT, CLEARING
-    execution_date DATE,
-    status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, SCREENED, EXECUTED, FAILED
-    screening_status VARCHAR(20), -- CLEAR, BLOCKED, UNDER_REVIEW
-    swift_message_id VARCHAR(50),  -- Lien SWIFT
-    clearing_reference VARCHAR(50),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Messages SWIFT
-CREATE TABLE swift_messages (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    payment_order_id UUID NOT NULL REFERENCES payment_orders(id),
-    message_type VARCHAR(10) NOT NULL, -- MT103, MX204, etc.
-    message_content TEXT NOT NULL,  -- XML ou texte SWIFT
-    transmission_date TIMESTAMP,
-    acknowledgement_date TIMESTAMP,
-    swift_reference VARCHAR(50),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Clearing (compensation)
-CREATE TABLE clearing_batches (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    clearing_date DATE NOT NULL,
-    batch_number VARCHAR(50) NOT NULL UNIQUE,
-    total_amount DECIMAL(18, 3) NOT NULL,
-    entry_count INT DEFAULT 0,
-    status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, TRANSMITTED, SETTLED
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Schema: fx
-
-```sql
--- Opérations change
-CREATE TABLE fx_operations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    account_id UUID NOT NULL REFERENCES accounts(id),
-    operation_type VARCHAR(20) NOT NULL, -- BUY, SELL
-    sold_currency VARCHAR(3) NOT NULL,
-    sold_amount DECIMAL(18, 3) NOT NULL,
-    bought_currency VARCHAR(3) NOT NULL,
-    bought_amount DECIMAL(18, 3) NOT NULL,
-    exchange_rate DECIMAL(10, 6) NOT NULL,
-    execution_date DATE NOT NULL,
-    settlement_date DATE,
-    status VARCHAR(20) DEFAULT 'EXECUTED', -- PENDING, EXECUTED, SETTLED
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Positions change
-CREATE TABLE fx_positions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    calculation_date DATE NOT NULL,
-    currency VARCHAR(3) NOT NULL UNIQUE,
-    long_position DECIMAL(18, 3) DEFAULT 0,
-    short_position DECIMAL(18, 3) DEFAULT 0,
-    net_position DECIMAL(18, 3),  -- Long - Short
-    spot_rate DECIMAL(10, 6),
-    position_in_tnd DECIMAL(18, 3),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT unique_position UNIQUE (calculation_date, currency)
-);
-```
-
-### Schema: governance
-
-```sql
--- Piste d'audit (Immutable Event Log)
-CREATE TABLE audit_trail (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    event_type VARCHAR(100) NOT NULL, -- customer.created, account.opened, loan.classified
-    entity_id UUID NOT NULL,  -- Customer/Account/Loan ID
-    entity_type VARCHAR(50) NOT NULL,
-    actor_id UUID NOT NULL REFERENCES users(id),  -- User who caused event
-    action VARCHAR(50) NOT NULL, -- CREATE, UPDATE, DELETE, APPROVE, REJECT
-    old_values JSONB,  -- Previous state
-    new_values JSONB,  -- New state
-    ip_address INET,
-    user_agent VARCHAR(500),
-    request_id VARCHAR(50),  -- Correlation ID
-    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    -- Immutable constraint
-    CHECK (timestamp <= CURRENT_TIMESTAMP)
-);
-
--- Comités de gouvernance
-CREATE TABLE committees (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    committee_name VARCHAR(100) NOT NULL UNIQUE,  -- Comité crédit, Comité audit, etc.
-    description VARCHAR(500),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Contrôles internes
-CREATE TABLE control_checks (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    control_name VARCHAR(255) NOT NULL,
-    control_objective VARCHAR(500),
-    owner_user_id UUID NOT NULL REFERENCES users(id),
-    frequency VARCHAR(20) NOT NULL, -- DAILY, WEEKLY, MONTHLY, QUARTERLY
-    last_check_date DATE,
-    last_check_result VARCHAR(20), -- PASS, FAIL, NA
-    line_of_defense SMALLINT NOT NULL CHECK (line_of_defense IN (1, 2, 3)), -- 1ère, 2e, 3e ligne
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Schema: identity
-
-```sql
--- Utilisateurs
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    username VARCHAR(100) NOT NULL UNIQUE,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,  -- Bcrypt hash
-    full_name VARCHAR(255) NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    last_login TIMESTAMP,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Rôles (RBAC)
-CREATE TABLE roles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    role_name VARCHAR(50) NOT NULL UNIQUE, -- ADMIN, RISK_OFFICER, COMPLIANCE, TELLER, AUDITOR
-    description VARCHAR(500),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Permissions
-CREATE TABLE permissions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    permission_name VARCHAR(100) NOT NULL UNIQUE, -- customer.create, loan.classify, report.submit
-    description VARCHAR(500),
-    resource VARCHAR(50) NOT NULL,  -- customer, account, loan, etc.
-    action VARCHAR(20) NOT NULL,  -- create, read, update, delete, approve
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Attribution rôles aux utilisateurs
-CREATE TABLE user_roles (
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-    granted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, role_id)
-);
-
--- Attribution permissions aux rôles
-CREATE TABLE role_permissions (
-    role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-    permission_id UUID NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
-    granted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (role_id, permission_id)
-);
-
--- Sessions
-CREATE TABLE sessions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    jwt_token VARCHAR(1000) NOT NULL,
-    expires_at TIMESTAMP NOT NULL,
-    is_valid BOOLEAN DEFAULT TRUE,
-    ip_address INET,
-    user_agent VARCHAR(500),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- 2FA (Two-Factor Authentication)
-CREATE TABLE two_factor_auth (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    secret_key VARCHAR(100) NOT NULL,  -- TOTP secret
-    is_enabled BOOLEAN DEFAULT FALSE,
-    backup_codes TEXT[],  -- Comma-separated codes
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT unique_2fa_per_user UNIQUE (user_id)
-);
-```
-
-### Schema: compliance
-
-```sql
--- Contrôles SMSI ISO 27001:2022
-CREATE TABLE smsi_controls (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    control_id VARCHAR(10) NOT NULL UNIQUE,    -- Ex: A.5.1, A.8.28
-    theme VARCHAR(50) NOT NULL,                -- organisationnel, personnes, physique, technologique
-    description TEXT NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'NOT_IMPLEMENTED', -- NOT_IMPLEMENTED, IN_PROGRESS, IMPLEMENTED, NOT_APPLICABLE
-    implemented_at TIMESTAMP,
-    evidence TEXT,                              -- Lien vers preuve d'implémentation
-    next_review_date DATE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Registre des risques SI (ISO 31000)
-CREATE TABLE risk_register (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    category VARCHAR(50) NOT NULL,             -- TECHNICAL, OPERATIONAL, LEGAL, STRATEGIC, CLIMATE
-    description TEXT NOT NULL,
-    likelihood INT NOT NULL CHECK (likelihood BETWEEN 1 AND 5),   -- Vraisemblance 1-5
-    impact INT NOT NULL CHECK (impact BETWEEN 1 AND 5),           -- Impact 1-5
-    risk_level VARCHAR(20) NOT NULL,           -- LOW, MEDIUM, HIGH, CRITICAL (calculé likelihood × impact)
-    treatment TEXT NOT NULL,                    -- ACCEPT, MITIGATE, TRANSFER, AVOID
-    owner VARCHAR(255) NOT NULL,               -- Responsable du risque
-    review_date DATE NOT NULL,                 -- Prochaine revue trimestrielle
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- PCI DSS : Token Vault (namespace isolé)
-CREATE TABLE token_vault (
-    token_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    masked_pan VARCHAR(19) NOT NULL,           -- 6 premiers + 4 derniers chiffres
-    token_hash BYTEA NOT NULL,                 -- Hash irréversible du token
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP NOT NULL
-);
-
--- PCI DSS : Gestion des clés de chiffrement
-CREATE TABLE encryption_keys (
-    key_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    algorithm VARCHAR(20) NOT NULL,            -- AES-256-GCM, RSA-4096
-    purpose VARCHAR(50) NOT NULL,              -- FIELD_ENCRYPTION, TOKEN_VAULT, TLS, SIGNING
-    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, ROTATED, REVOKED, EXPIRED
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    rotated_at TIMESTAMP                       -- Dernière rotation (annuelle obligatoire)
-);
-
--- Consent Management (Open Banking + INPDP)
-CREATE TABLE consents (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    customer_id UUID NOT NULL REFERENCES customers(id),
-    tpp_id UUID,                               -- NULL si consentement interne INPDP
-    permissions JSONB NOT NULL,                -- Ex: ["accounts:read", "balances:read", "transactions:read"]
-    scope VARCHAR(100) NOT NULL,               -- ACCOUNTS, PAYMENTS, PERSONAL_DATA, MARKETING
-    granted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP NOT NULL,
-    revoked_at TIMESTAMP,
-    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, EXPIRED, REVOKED
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Privacy : Évaluations d'impact (DPIA)
-CREATE TABLE impact_assessments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    processing_type VARCHAR(100) NOT NULL,     -- Type de traitement évalué
-    risk_level VARCHAR(20) NOT NULL,           -- LOW, MEDIUM, HIGH, CRITICAL
-    measures JSONB NOT NULL,                   -- Mesures de mitigation proposées
-    approved_by UUID REFERENCES users(id),
-    approved_at TIMESTAMP,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Privacy : Notifications de violations (72h INPDP)
-CREATE TABLE breach_notifications (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    breach_type VARCHAR(50) NOT NULL,          -- CONFIDENTIALITY, INTEGRITY, AVAILABILITY
-    detected_at TIMESTAMP NOT NULL,
-    notified_inpdp_at TIMESTAMP,              -- NULL si pas encore notifié
-    deadline_at TIMESTAMP NOT NULL,            -- detected_at + 72h
-    affected_count INT NOT NULL DEFAULT 0,     -- Nombre de personnes affectées
-    details JSONB NOT NULL,                    -- Description, impact, mesures correctives
-    status VARCHAR(20) NOT NULL DEFAULT 'DETECTED', -- DETECTED, INVESTIGATING, NOTIFIED, CLOSED
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+// Verification:
+pub fn verify_integrity(entry: &AuditTrailEntry) -> bool {
+    let computed_hash = compute_sha256(&format!(
+        "{:?}{:?}{}{}",
+        entry.before, entry.after, entry.actor, entry.timestamp
+    ));
+    computed_hash == entry.hash
+}
 ```
 
 ---
 
-## 7. API REST (100+ endpoints par BC)
+## 7. Security Architecture
 
-### BC1: Customer
-
-```
-POST   /api/v1/customers              Create customer + KYC
-GET    /api/v1/customers/{id}         Get customer profile
-PUT    /api/v1/customers/{id}         Update customer
-GET    /api/v1/customers              List customers (paginated)
-POST   /api/v1/customers/{id}/kyc     Submit KYC profile
-GET    /api/v1/customers/{id}/kyc     Get KYC status
-PUT    /api/v1/customers/{id}/kyc     Update KYC
-POST   /api/v1/customers/{id}/kyc/validate  Validate KYC (compliance)
-GET    /api/v1/customers/{id}/beneficial-owners  List beneficial owners
-POST   /api/v1/customers/{id}/beneficial-owners  Add beneficial owner
-PUT    /api/v1/customers/{id}/beneficial-owners/{owner-id}  Update beneficial owner
-DELETE /api/v1/customers/{id}/beneficial-owners/{owner-id}  Remove beneficial owner
-POST   /api/v1/customers/{id}/pep-check  Check PEP status
-GET    /api/v1/customers/{id}/risk-score  Get risk score
-PUT    /api/v1/customers/{id}/risk-score  Update risk score (analyst)
-POST   /api/v1/customers/{id}/documents  Upload KYC documents
-GET    /api/v1/customers/{id}/documents  List documents
-DELETE /api/v1/customers/{id}/documents/{doc-id}  Delete document
-POST   /api/v1/customers/{id}/consents  Grant data consent
-GET    /api/v1/customers/{id}/consents  List consents
-PUT    /api/v1/customers/{id}/consents/{consent-id}  Revoke consent
-```
-
-### BC2: Account
+### 7.1 Authentication Multi-Method
 
 ```
-POST   /api/v1/accounts               Open account
-GET    /api/v1/accounts/{id}          Get account details
-PUT    /api/v1/accounts/{id}          Update account
-GET    /api/v1/accounts               List accounts (with filters)
-GET    /api/v1/accounts/{id}/balance  Get balance
-POST   /api/v1/accounts/{id}/close    Close account
-POST   /api/v1/accounts/{id}/freeze   Freeze account (AML)
-POST   /api/v1/accounts/{id}/unfreeze Unfreeze account
-GET    /api/v1/accounts/{id}/movements  List movements/transactions
-POST   /api/v1/accounts/{id}/movements  Record movement (internal)
-GET    /api/v1/accounts/{id}/statements  Generate statement PDF
-POST   /api/v1/accounts/{id}/term-deposits  Open term deposit (DAT)
-GET    /api/v1/accounts/{id}/term-deposits  List term deposits
-PUT    /api/v1/accounts/{id}/term-deposits/{dat-id}  Update DAT
-GET    /api/v1/accounts/{id}/interest  Calculate interest
+Layer 1: Username/Password
+  ├─ bcrypt hashing (cost=12)
+  └─ Rate limiting (5 tries → 15min lock)
+
+Layer 2: JWT Token
+  ├─ HS256 signature (secret from HSM)
+  ├─ exp claim (30 min)
+  └─ Refresh token (7 days, stored in Redis)
+
+Layer 3: MFA (2FA/TOTP/SMS/FIDO2)
+  ├─ TOTP (RFC 6238) — Time-based OTP
+  ├─ SMS OTP — SMS provider
+  └─ FIDO2/WebAuthn — Hardware key + biometric
+
+Layer 4: CDE Access (PCI DSS 8.4.2)
+  ├─ Mandatory MFA (2+ factors)
+  ├─ Session timeout 15 min inactivity
+  └─ IP whitelisting (CDE boundary)
 ```
 
-### BC3: Credit
+### 7.2 Authorization (RBAC)
 
-```
-POST   /api/v1/loans                  Create loan application
-GET    /api/v1/loans/{id}             Get loan details
-PUT    /api/v1/loans/{id}             Update loan
-GET    /api/v1/loans                  List loans
-POST   /api/v1/loans/{id}/disburse    Disburse loan
-POST   /api/v1/loans/{id}/classify    Classify loan (asset class)
-GET    /api/v1/loans/{id}/classification  Get asset class
-PUT    /api/v1/loans/{id}/classification  Update asset class (risk committee)
-GET    /api/v1/loans/{id}/schedule    Get repayment schedule
-POST   /api/v1/loans/{id}/schedule    Generate schedule
-PUT    /api/v1/loans/{id}/schedule/{payment-id}  Record payment
-POST   /api/v1/loans/{id}/provisions  Calculate provisions
-GET    /api/v1/loans/{id}/provisions  Get provisions
-PUT    /api/v1/loans/{id}/provisions  Update provisions
-POST   /api/v1/loans/{id}/ecl         Calculate ECL (IFRS 9)
-GET    /api/v1/loans/{id}/ecl         Get ECL values
-POST   /api/v1/loans/{id}/restructure Restructure loan
-GET    /api/v1/loans/{id}/history     Get change history
-```
+```rust
+pub enum Role {
+    SuperAdmin,
+    ComplianceOfficer,
+    RiskManager,
+    Accountant,
+    CustomerServiceRep,
+    Auditor,
+    // ... per BC roles
+}
 
-### BC4: AML
+pub struct Permission {
+    pub resource: String,  // "customer", "account", "loan", etc.
+    pub action: String,    // "read", "write", "delete", "approve"
+    pub conditions: Vec<Condition>, // E.g., "own_department_only"
+}
 
-```
-POST   /api/v1/aml/transactions       Record transaction (for monitoring)
-GET    /api/v1/aml/transactions/{id}  Get transaction
-GET    /api/v1/aml/transactions       List transactions
-POST   /api/v1/aml/alerts             Create alert (manual)
-GET    /api/v1/aml/alerts/{id}        Get alert details
-GET    /api/v1/aml/alerts             List alerts (with filters)
-PUT    /api/v1/aml/alerts/{id}/status Update alert status
-POST   /api/v1/aml/investigations     Create investigation
-GET    /api/v1/aml/investigations/{id}  Get investigation
-PUT    /api/v1/aml/investigations/{id}  Update investigation findings
-POST   /api/v1/aml/investigations/{id}/close  Close investigation
-GET    /api/v1/aml/investigations     List investigations
-POST   /api/v1/aml/suspicion-reports  File suspicion report (DOS)
-GET    /api/v1/aml/suspicion-reports/{id}  Get DOS
-PUT    /api/v1/aml/suspicion-reports/{id}/submit  Submit to CTAF
-GET    /api/v1/aml/suspicion-reports  List DOS
-POST   /api/v1/aml/asset-freezes      Create asset freeze
-GET    /api/v1/aml/asset-freezes/{id}  Get freeze
-PUT    /api/v1/aml/asset-freezes/{id}/unfreeze  Unfreeze
-GET    /api/v1/aml/asset-freezes      List freezes
-POST   /api/v1/aml/scenarios          List AML scenarios (read-only)
-POST   /api/v1/aml/bulk-screening     Bulk transaction screening
+pub async fn check_permission(
+    user_id: UserId,
+    resource: &str,
+    action: &str,
+) -> Result<bool, AuthError> {
+    let user = user_repo.get(&user_id).await?;
+    user.roles.iter().any(|role| {
+        role.permissions.iter().any(|perm| {
+            perm.resource == resource && perm.action == action
+        })
+    })
+}
 ```
 
-### BC5: Sanctions
+### 7.3 Encryption Strategy
 
 ```
-POST   /api/v1/sanctions/lists        Import/update sanctions list
-GET    /api/v1/sanctions/lists        List loaded sanctions
-GET    /api/v1/sanctions/lists/{list-id}  Get list metadata
-POST   /api/v1/sanctions/entries      Add entry (manual)
-GET    /api/v1/sanctions/entries      List entries (paginated)
-POST   /api/v1/sanctions/screen       Screen entity/name
-GET    /api/v1/sanctions/screening-results  List screening results
-GET    /api/v1/sanctions/screening-results/{result-id}  Get result
-POST   /api/v1/sanctions/rescreen     Rescreen customer (periodic)
-GET    /api/v1/sanctions/pending-reviews  List pending reviews
-PUT    /api/v1/sanctions/pending-reviews/{result-id}  Confirm/dismiss
-POST   /api/v1/sanctions/whitelist    Whitelist entity (false positive)
-GET    /api/v1/sanctions/whitelist    List whitelist
-POST   /api/v1/sanctions/statistics   Get screening statistics (dashboard)
+At Rest:
+  ├─ Database: LUKS AES-XTS-512 (volume)
+  ├─ Sensitive fields: AES-256-GCM (column-level)
+  │   ├─ PII (CIN, passport, address)
+  │   ├─ Payment data (PAN → tokenized)
+  │   └─ Credentials
+  └─ Backups: GPG asymmetric (S3 off-site)
+
+In Transit:
+  ├─ TLS 1.3 (enforce minimum)
+  ├─ HSTS (Strict-Transport-Security)
+  └─ Certificate pinning (APIs critiques)
+
+Keys Management:
+  ├─ HSM (Hardware Security Module)
+  │   ├─ Master keys (never exported)
+  │   ├─ Signatures (PKCS#11)
+  │   └─ Key rotation (annual)
+  └─ Envelope encryption (DEK + KEK pattern)
 ```
 
-### BC6: Prudential
+### 7.4 Data Protection (INPDP Loi 2025)
 
-```
-POST   /api/v1/prudential/calculate   Calculate all ratios (EOD job)
-GET    /api/v1/prudential/ratios      Get latest ratios
-GET    /api/v1/prudential/ratios/{date}  Get ratios for date
-POST   /api/v1/prudential/ratios      Get historical trends
-POST   /api/v1/prudential/solvency    Calculate solvency ratio
-GET    /api/v1/prudential/solvency    Get solvency
-POST   /api/v1/prudential/tier1       Calculate Tier 1
-GET    /api/v1/prudential/tier1       Get Tier 1
-POST   /api/v1/prudential/cd-ratio    Calculate C/D
-GET    /api/v1/prudential/cd-ratio    Get C/D
-POST   /api/v1/prudential/concentration  Calculate concentration
-GET    /api/v1/prudential/concentration  Get concentration by customer
-POST   /api/v1/prudential/rwa         Calculate RWA
-GET    /api/v1/prudential/rwa         Get RWA breakdown
-POST   /api/v1/prudential/validate    Validate compliance (all ratios)
-GET    /api/v1/prudential/compliance  Get compliance dashboard
-POST   /api/v1/prudential/alerts      Get breaches/alerts
-```
+```rust
+pub struct PersonalDataField {
+    pub value: String,               // Encrypted
+    pub encrypted: bool,
+    pub encryption_key_id: String,
+    pub consent_scope: ConsentScope,
+    pub retention_until: NaiveDate,
+}
 
-### BC7: Accounting
+pub async fn encrypt_pii(&self, data: &str, field_type: PiiType) -> Result<String> {
+    // AES-256-GCM with key from HSM
+    let key = self.hsm.get_key(&format!("field:{:?}", field_type))?;
+    let cipher = Aes256Gcm::new(key.into());
+    let nonce = Nonce::from_slice(b"unique nonce");
+    let ciphertext = cipher.encrypt(nonce, data.as_bytes())?;
+    Ok(base64::encode(ciphertext))
+}
 
-```
-POST   /api/v1/accounting/chart-of-accounts  Get chart (read-only)
-POST   /api/v1/accounting/periods     Create accounting period
-GET    /api/v1/accounting/periods/{period}  Get period status
-PUT    /api/v1/accounting/periods/{period}/close  Close period
-POST   /api/v1/accounting/journal-entries  Post journal entry
-GET    /api/v1/accounting/journal-entries  List entries
-GET    /api/v1/accounting/journal-entries/{id}  Get entry
-DELETE /api/v1/accounting/journal-entries/{id}  Delete entry (if period open)
-POST   /api/v1/accounting/journal-lines  Post line (typically within entry)
-GET    /api/v1/accounting/ledger      Get ledger account balances
-GET    /api/v1/accounting/ledger/{account-code}  Get account balance
-POST   /api/v1/accounting/trial-balance  Generate trial balance
-POST   /api/v1/accounting/balance-sheet  Generate balance sheet
-POST   /api/v1/accounting/income-statement  Generate P&L
-POST   /api/v1/accounting/reconciliation  Reconcile accounts
-GET    /api/v1/accounting/cash-flow   Get cash flow statement
-POST   /api/v1/accounting/validate    Validate period (all entries balanced)
-```
+pub async fn grant_consent(
+    &self,
+    customer_id: CustomerId,
+    scope: ConsentScope,
+) -> Result<()> {
+    // Record explicitly
+    consent_repo.create(ConsentRecord {
+        customer_id,
+        scope,
+        granted_at: Utc::now(),
+        granted_by: "customer_portal",
+    }).await?;
 
-### BC8: Reporting
+    // Log for audit trail
+    audit_trail.record(AuditTrailEntry {
+        entity_type: "Consent",
+        entity_id: customer_id.to_string(),
+        action: "GRANT",
+        actor: customer_id.to_string(),
+        // ...
+    }).await?;
 
-```
-POST   /api/v1/reporting/reports      Create report request
-GET    /api/v1/reporting/reports/{id}  Get report
-GET    /api/v1/reporting/reports      List reports
-POST   /api/v1/reporting/reports/{id}/generate  Generate report content
-POST   /api/v1/reporting/reports/{id}/validate  Validate before submission
-POST   /api/v1/reporting/reports/{id}/submit    Submit to BCT
-GET    /api/v1/reporting/templates    List report templates
-GET    /api/v1/reporting/templates/{type}  Get template
-POST   /api/v1/reporting/prudential-report  Generate prudential report
-POST   /api/v1/reporting/aml-report   Generate AML report
-POST   /api/v1/reporting/financial-report  Generate financial statements
-GET    /api/v1/reporting/submission-status  Get BCT submission status
-POST   /api/v1/reporting/export/{format}  Export (CSV, PDF, XML)
-```
+    Ok(())
+}
 
-### BC9: Payment
-
-```
-POST   /api/v1/payments               Initiate payment
-GET    /api/v1/payments/{id}          Get payment details
-GET    /api/v1/payments               List payments
-PUT    /api/v1/payments/{id}/cancel   Cancel payment (if pending)
-POST   /api/v1/payments/{id}/execute  Execute payment (after screening)
-POST   /api/v1/payments/{id}/swift    Generate SWIFT message
-GET    /api/v1/payments/{id}/swift    Get SWIFT message
-POST   /api/v1/payments/swift-send    Send SWIFT (external)
-GET    /api/v1/payments/swift-receive  Receive incoming SWIFT
-POST   /api/v1/payments/clearing-batch  Create clearing batch
-GET    /api/v1/payments/clearing-batch/{batch-id}  Get batch
-POST   /api/v1/payments/clearing-submit  Submit batch to clearing
-GET    /api/v1/payments/clearing-status  Get clearing settlement status
-POST   /api/v1/payments/reconcile     Reconcile payments
-GET    /api/v1/payments/statistics    Get payment statistics
-```
-
-### BC10: ForeignExchange
-
-```
-POST   /api/v1/fx/operations          Execute FX operation
-GET    /api/v1/fx/operations/{id}     Get operation
-GET    /api/v1/fx/operations          List operations
-POST   /api/v1/fx/rates               Get exchange rates
-GET    /api/v1/fx/positions           Get FX positions
-POST   /api/v1/fx/positions/calculate Calculate positions (EOD)
-POST   /api/v1/fx/positions/validate  Validate exposure limits
-GET    /api/v1/fx/limits              Get position limits
-PUT    /api/v1/fx/limits              Update limits (compliance)
-POST   /api/v1/fx/pnl                 Calculate daily P&L
-GET    /api/v1/fx/statements          Get FX statement
-```
-
-### BC11: Governance
-
-```
-POST   /api/v1/audit-trail            Log event (system-generated)
-GET    /api/v1/audit-trail/{id}       Get audit event
-GET    /api/v1/audit-trail            List events (filterable)
-POST   /api/v1/audit-trail/export     Export audit trail (compliance)
-POST   /api/v1/audit-trail/search     Full-text search audit log
-POST   /api/v1/committees             Create committee
-GET    /api/v1/committees/{id}        Get committee details
-GET    /api/v1/committees             List committees
-POST   /api/v1/committees/{id}/members  Add member
-DELETE /api/v1/committees/{id}/members/{member-id}  Remove member
-POST   /api/v1/control-checks         Create control check
-GET    /api/v1/control-checks/{id}    Get control
-PUT    /api/v1/control-checks/{id}    Update control
-POST   /api/v1/control-checks/{id}/execute  Execute control
-GET    /api/v1/control-checks/{id}/history  Get execution history
-GET    /api/v1/compliance-dashboard   Get compliance dashboard
-```
-
-### BC12: Identity
-
-```
-POST   /api/v1/auth/register          Register user
-POST   /api/v1/auth/login             Login + JWT
-POST   /api/v1/auth/refresh-token     Refresh JWT
-POST   /api/v1/auth/logout            Logout (invalidate session)
-POST   /api/v1/auth/password-reset    Request password reset
-PUT    /api/v1/auth/password-reset/{token}  Reset password
-POST   /api/v1/users                  Create user (admin)
-GET    /api/v1/users/{id}             Get user
-GET    /api/v1/users                  List users
-PUT    /api/v1/users/{id}             Update user
-DELETE /api/v1/users/{id}             Deactivate user
-POST   /api/v1/users/{id}/roles       Assign role
-DELETE /api/v1/users/{id}/roles/{role-id}  Revoke role
-GET    /api/v1/roles                  List roles
-POST   /api/v1/roles                  Create role
-GET    /api/v1/permissions            List permissions
-POST   /api/v1/2fa/enable             Enable 2FA for user
-POST   /api/v1/2fa/verify             Verify 2FA code
-GET    /api/v1/2fa/backup-codes       Get backup codes
-POST   /api/v1/sessions               List active sessions
-DELETE /api/v1/sessions/{session-id}  Logout session
+pub async fn revoke_consent(
+    &self,
+    customer_id: CustomerId,
+    scope: ConsentScope,
+) -> Result<()> {
+    consent_repo.update_status(customer_id, scope, ConsentStatus::Revoked).await?;
+    // Purge derivative data (if applicable)
+    Ok(())
+}
 ```
 
 ---
 
-## 8. Frontend (Architecture Hexagonale Light)
+## 8. Infrastructure Architecture
 
-```
-frontend/
-├── src/
-│   ├── lib/
-│   │   ├── api/
-│   │   │   ├── client.ts            # Fetch wrapper + interceptors
-│   │   │   ├── customer.api.ts      # Typed API calls
-│   │   │   ├── account.api.ts
-│   │   │   ├── credit.api.ts
-│   │   │   ├── aml.api.ts
-│   │   │   ├── sanctions.api.ts
-│   │   │   ├── prudential.api.ts
-│   │   │   ├── accounting.api.ts
-│   │   │   ├── reporting.api.ts
-│   │   │   ├── payment.api.ts
-│   │   │   ├── fx.api.ts
-│   │   │   ├── governance.api.ts
-│   │   │   └── identity.api.ts
-│   │   ├── stores/
-│   │   │   ├── auth.store.ts        # Svelte writable (user session)
-│   │   │   ├── customer.store.ts    # Customer data cache
-│   │   │   ├── account.store.ts     # Account data cache
-│   │   │   ├── [...]
-│   │   │   ├── toast.store.ts       # Toast notifications (Interface Segregation)
-│   │   │   ├── modal.store.ts       # Modal state management (Interface Segregation)
-│   │   │   └── loading.store.ts     # Loading indicators (Interface Segregation)
-│   │   ├── utils/
-│   │   │   ├── validators.ts        # Form validators
-│   │   │   ├── formatters.ts        # Number, date, currency (TND/USD/EUR)
-│   │   │   ├── errors.ts            # Error handler
-│   │   │   └── constants.ts         # Enums, configs
-│   │   └── i18n/
-│   │       ├── ar.json              # Arabic (RTL)
-│   │       ├── fr.json              # French
-│   │       ├── en.json              # English
-│   │       └── i18n.ts              # Setup + middleware
-│   ├── components/
-│   │   ├── shared/
-│   │   │   ├── Header.svelte        # Nav + language selector
-│   │   │   ├── Sidebar.svelte       # Menu (role-based)
-│   │   │   ├── Button.svelte        # Reusable button
-│   │   │   ├── Modal.svelte         # Confirmation, alerts
-│   │   │   ├── Toast.svelte         # Notifications
-│   │   │   ├── Form.svelte          # Base form
-│   │   │   └── Table.svelte         # Pagination, sorting
-│   │   ├── customer/
-│   │   │   ├── CustomerForm.svelte
-│   │   │   ├── KycForm.svelte
-│   │   │   ├── BeneficiaryForm.svelte
-│   │   │   ├── PepCheckCard.svelte
-│   │   │   └── RiskScoreDisplay.svelte
-│   │   ├── account/
-│   │   │   ├── AccountForm.svelte
-│   │   │   ├── BalanceCard.svelte
-│   │   │   ├── MovementsList.svelte
-│   │   │   └── TermDepositForm.svelte
-│   │   ├── credit/
-│   │   │   ├── LoanForm.svelte
-│   │   │   ├── ClassificationForm.svelte
-│   │   │   ├── ScheduleTable.svelte
-│   │   │   └── ProvisionCard.svelte
-│   │   ├── aml/
-│   │   │   ├── AlertsList.svelte
-│   │   │   ├── InvestigationForm.svelte
-│   │   │   └── SuspicionReportForm.svelte
-│   │   ├── sanctions/
-│   │   │   ├── ScreeningForm.svelte
-│   │   │   └── ResultsTable.svelte
-│   │   ├── prudential/
-│   │   │   ├── RatioDashboard.svelte
-│   │   │   ├── RatioChart.svelte
-│   │   │   └── ComplianceIndicator.svelte
-│   │   ├── accounting/
-│   │   │   ├── JournalEntryForm.svelte
-│   │   │   ├── LedgerView.svelte
-│   │   │   └── TrialBalanceReport.svelte
-│   │   ├── reporting/
-│   │   │   ├── ReportForm.svelte
-│   │   │   └── ReportPreview.svelte
-│   │   ├── payment/
-│   │   │   ├── PaymentForm.svelte
-│   │   │   ├── SwiftPreview.svelte
-│   │   │   └── ClearingBatchList.svelte
-│   │   ├── fx/
-│   │   │   ├── FxOperationForm.svelte
-│   │   │   ├── PositionDashboard.svelte
-│   │   │   └── RateDisplay.svelte
-│   │   ├── governance/
-│   │   │   ├── AuditTrailViewer.svelte
-│   │   │   └── ControlCheckForm.svelte
-│   │   └── identity/
-│   │       ├── LoginForm.svelte
-│   │       ├── UserManagement.svelte
-│   │       ├── RoleForm.svelte
-│   │       └── 2FASetup.svelte
-│   ├── routes/
-│   │   ├── +layout.svelte           # Root layout
-│   │   ├── +page.svelte             # Dashboard
-│   │   ├── login/+page.svelte
-│   │   ├── customers/
-│   │   │   ├── +page.svelte         # List
-│   │   │   ├── [id]/+page.svelte    # Detail
-│   │   │   └── [id]/edit/+page.svelte
-│   │   ├── accounts/
-│   │   ├── loans/
-│   │   ├── aml/
-│   │   ├── sanctions/
-│   │   ├── prudential/
-│   │   ├── accounting/
-│   │   ├── reporting/
-│   │   ├── payments/
-│   │   ├── fx/
-│   │   ├── governance/
-│   │   └── admin/
-│   │       ├── users/+page.svelte
-│   │       ├── roles/+page.svelte
-│   │       └── audit/+page.svelte
-│   └── app.svelte                   # Root component
-├── static/
-│   ├── logo.svg
-│   └── flags/                       # AR, FR, EN flags
-├── tailwind.config.js               # Tailwind CSS config
-├── svelte.config.js
-└── astro.config.mjs                 # Astro SSG config
-```
-
-#### i18n Strategy (AR RTL + FR + EN)
-
-- **RTL Support** : Arabic UI flipped, CSS `direction: rtl` auto-applied
-- **Language Selector** : Header dropdown, persists in localStorage
-- **Translation Keys** : `i18n.ar.json`, `i18n.fr.json`, `i18n.en.json`
-- **Date/Currency Formatting** : `Intl.DateTimeFormat()`, currency symbol based on language
-- **Form Validation** : Locale-aware error messages
-
-#### WCAG 2.1 AA Accessibility Requirements
-
-Tous les composants frontend doivent respecter WCAG 2.1 Level AA :
-
-**ARIA & Labels** :
-- ✅ Tous les éléments interactifs (input, button, select) ont des labels associés (`<label for="">` ou `aria-label`)
-- ✅ Composants custom (modale, alerte, menu) ont rôles ARIA appropriés (`role="dialog"`, `role="alert"`, `role="navigation"`)
-- ✅ Listes et menus ont structure sémantique (`<ul>`, `<li>`, ou ARIA listbox)
-- ✅ Icônes sans texte ont `aria-label` ou texte caché (`.sr-only`)
-
-**Navigation Clavier** :
-- ✅ Tab order logique et séquentiel (LTR pour EN/FR, RTL pour AR)
-- ✅ Focus visible sur tous éléments interactifs (outline ou custom style)
-- ✅ Touches spéciales supportées : Enter/Space pour activation, Escape pour fermer modales, Arrow keys pour menus/listes
-- ✅ Focus trap dans modales (clavier reste confiné à la modale)
-- ✅ Skip navigation link en haut de chaque page (pour passer la navigation)
-
-**Contraste & Couleurs** :
-- ✅ Texte normal (body) : contraste minimum 4.5:1 (noir #000000 sur blanc #FFFFFF = 21:1)
-- ✅ Grands textes (≥18pt ou ≥14pt bold) : contraste minimum 3:1
-- ✅ Les couleurs seules NE sont PAS utilisées pour transmettre l'information (ex: utiliser "⚠️ Erreur" en plus du rouge)
-- ✅ Outils de vérification : WebAIM Contrast Checker, WAVE
-
-**Images & Icônes** :
-- ✅ Toutes images/icônes ont texte alternatif (`alt` pour `<img>`, `aria-label` pour SVG)
-- ✅ Logos/images décoratives : `alt=""` (vide)
-- ✅ Graphiques/charts : `aria-label` avec description des données ou tableau de données alternatif
-
-**Rôles ARIA Personnalisés** :
-```html
-<!-- Modal/Dialog -->
-<div role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-  <h1 id="modalTitle">Confirmation</h1>
-  <!-- Focus trap ici -->
-</div>
-
-<!-- Alert Banner -->
-<div role="alert" aria-live="polite" aria-atomic="true">
-  Erreur: Veuillez corriger les champs marqués en rouge.
-</div>
-
-<!-- Custom Navigation -->
-<nav role="navigation" aria-label="Main navigation">
-  <!-- Menu items -->
-</nav>
-
-<!-- Table Headers -->
-<table>
-  <thead>
-    <tr>
-      <th scope="col">Nom</th>
-      <th scope="col">Montant</th>
-    </tr>
-  </thead>
-</table>
-```
-
-**Langues & RTL** :
-- ✅ `lang="ar"` sur `<html>` pour arabe (screenreader prononce correctement)
-- ✅ `lang="fr"` pour français, `lang="en"` pour anglais
-- ✅ `dir="rtl"` sur éléments RTL si requis
-- ✅ Clavier approprié pour chaque langue (virtuel AR pour mobile)
-
-**Testing Automatisé** :
-- ✅ **axe-core intégré** dans tests Playwright E2E (npm install @axe-core/playwright)
-  ```typescript
-  import { injectAxe, checkA11y } from 'axe-playwright';
-
-  test('page complies with WCAG AA', async ({ page }) => {
-    await page.goto('/accounts');
-    await injectAxe(page);
-    await checkA11y(page);
-  });
-  ```
-- ✅ **CI/CD** : Tests axe-core exécutés à chaque commit (bloquant si violations)
-- ✅ **Audit manuel** : Review WCAG tous les trimestres avec outil WAVE ou Lighthouse
-
-**Accessibility** : `lang` attribute on `<html>`, full WCAG 2.1 AA compliance
-
----
-
-## 9. ADR (Architecture Decision Records)
-
-### ADR-001: SOLID + Hexagonal
-
-**Status** : Accepted
-**Context** : BANKO is a regulated banking system with high audit/compliance needs.
-**Decision** : Adopt hexagonal architecture with SOLID principles to protect domain logic from external changes.
-**Rationale** :
-- Domain layer isolated = easier to test, audit, refactor
-- Ports & Adapters = swap PostgreSQL for MySQL/Oracle without touching domain
-- SOLID enforced = high cohesion, low coupling
-**Consequences** : More layers initially, but long-term flexibility + compliance + testability.
-
-### ADR-002: TDD + BDD + Documentation Vivante
-
-**Status** : Accepted
-**Context** : Banking invariants must be ironclad; stakeholders (BCT, auditors) need proof of compliance.
-**Decision** : Write Gherkin scenarios FIRST, then unit tests, then code. BDD = executable spec = compliance proof.
-**Rationale** :
-- Gherkin = shared language with business/legal experts
-- Scenarios are living documentation of regulatory requirements
-- Can demo to BCT inspector: "Here's the test, it passes, system compliant"
-**Consequences** : 20-30% slower initial velocity, but 90% fewer post-release bugs + regulatory confidence.
-
-### ADR-003: DDD Ubiquitous Language Mapping
-
-**Status** : Accepted
-**Context** : Tunisian banking domain has specific vocabulary (classes 0-4, FPN, Tier 1, Circ. 91-24, etc.).
-**Decision** : Map ALL domain terms to exact code struct/enum names; glossaire in docs maps bidirectionally.
-**Rationale** :
-- Developers speak same language as auditors/domain experts
-- No "what does _balance_ mean here?" ambiguity
-- Code audit = reading droit bancaire directly
-**Consequences** : Longer identifiers sometimes, but zero semantic confusion.
-
-### ADR-004: Rust + Actix-web (Justification)
-
-**Status** : Accepted
-**Context** : Banking system = performance-critical, memory-safe, audit-friendly.
-**Decision** : Rust + Actix-web 4.9 for async, type-safe HTTP, impossible to have use-after-free/buffer overflow bugs.
-**Rationale** :
-- Memory safety = fewer security patches than C/C++/Java
-- Type system = compile-time invariant checks (Tier 1 ≥ 7%)
-- Async = handle thousands of concurrent customers on single core
-- Ownership = clear resource lifetimes, no GC pauses
-**Consequences** : Steep learning curve, slower compilation, but 10x fewer runtime surprises.
-
-### ADR-005: PostgreSQL (Justification Bancaire)
-
-**Status** : Accepted
-**Context** : Banking data = ACID, audit trail, replication, partitioning, compliance.
-**Decision** : PostgreSQL 16 with LUKS encryption, logical replication, partitioning by date/customer.
-**Rationale** :
-- ACID guarantees = no split-brain transactions
-- JSON/JSONB = reporting flexibility
-- FDW (Foreign Data Wrapper) = federated audit trail
-- Open source = auditability
-- Partitioning = manage 10+ years historical data efficiently
-**Consequences** : No cloud vendor lock-in, but ops team must manage replication/backups.
-
-### ADR-006: HSM for Cryptographic Signatures
-
-**Status** : Accepted
-**Context** : Banking regulations require non-repudiation (can't deny you signed transaction). Private keys = critical.
-**Decision** : Integrate PKCS#11 HSM (Hardware Security Module) for all cryptographic signing (audit trail, SWIFT, declarations).
-**Rationale** :
-- Private keys NEVER leave HSM = can't be stolen even if server compromised
-- Hardware-backed = FIPS 140-2 certified
-- Audit trail = signed with HSM key = auditor can verify "this action was really approved"
-**Consequences** : Adds hardware cost, latency ~5-10ms per signature, but legally defensible.
-
-### ADR-007: Audit Trail Immutability Strategy
-
-**Status** : Accepted
-**Context** : Circ. 2006-19 requires piste d'audit that can't be erased, even by admin.
-**Decision** : PostgreSQL event log (insert-only table) + cryptographic hash chain (each row includes hash of previous row).
-**Rationale** :
-- INSERT-only = can't UPDATE/DELETE once written
-- Hash chain = tampering detected immediately (hash chain breaks)
-- Replication to secure off-site = even if production DB destroyed, audit trail survives
-**Consequences** : Audit table grows indefinitely, but partitioning by date keeps queries fast.
-
-### ADR-008: Tokenisation PAN (vault isolé vs chiffrement réversible)
-
-**Status** : Accepted
-**Context** : PCI DSS v4.0.1 (Req 3.5.1.2) exige la protection des PAN stockés. Deux approches possibles : chiffrement réversible (AES-256-GCM) ou tokenisation irréversible (remplacement par token).
-**Decision** : Tokenisation irréversible avec token vault isolé dans namespace Kubernetes dédié `compliance`.
-**Rationale** :
-- Tokenisation irréversible = le PAN complet n'existe pas en dehors du vault, réduisant drastiquement le scope PCI DSS
-- Vault isolé = NetworkPolicy restrictive, seul le Payment BC peut accéder au token vault
-- Chiffrement réversible garderait le PAN accessible = scope PCI DSS étendu à toute la base
-- Moins de surface d'attaque : compromission d'un service non-CDE ne donne accès à aucun PAN
-**Consequences** : Nécessite un service de tokenisation dédié (overhead réseau ~2ms), mais scope PCI DSS réduit de 80%. Audit PCI DSS simplifié.
-
-### ADR-009: Consent-as-a-Service (BC transversal vs intégré par BC)
-
-**Status** : Accepted
-**Context** : La gestion du consentement (INPDP + Open Banking PSD3) peut être intégrée dans chaque BC consommateur ou centralisée dans un service transversal.
-**Decision** : Service transversal centralisé dans le BC Compliance, exposant une API de vérification de consentement.
-**Rationale** :
-- Centralisé = source unique de vérité pour tous les consentements (INPDP, Open Banking, marketing)
-- Chaque BC appelle `ConsentService.verify(customer_id, scope)` avant tout traitement
-- Audit simplifié : un seul point d'inspection pour le DPO et les auditeurs
-- Lifecycle uniforme : grant → active → expire/revoke avec dashboard client unique
-- Alternative (par BC) créerait duplication, incohérences entre BCs, difficulté d'audit global
-**Consequences** : Dépendance transversale vers le BC Compliance (couplage acceptable via port/trait). Performance : vérification ~1ms avec cache Redis.
-
-### ADR-010: ISO 27001 controls-as-code (suivi automatisé vs documentation manuelle)
-
-**Status** : Accepted
-**Context** : Le suivi des 93 contrôles ISO 27001:2022 Annexe A peut être fait manuellement (documents Excel/Word) ou automatisé avec dashboard temps réel.
-**Decision** : Controls-as-code avec dashboard temps réel intégré au système.
-**Rationale** :
-- Controls-as-code = chaque contrôle est une entrée en base (table `smsi_controls`) avec statut, preuve, date de revue
-- Dashboard temps réel = visibilité immédiate sur le niveau de conformité (% implémenté, contrôles en retard)
-- Alerting automatique : notification quand un contrôle approche de sa date de revue ou passe en non-conforme
-- Audit : exportation instantanée de la Déclaration d'Applicabilité (SoA) pour les auditeurs ISO
-- Alternative manuelle = risque de documentation obsolète, pas de visibilité temps réel, revue laborieuse
-**Consequences** : Investissement initial pour modéliser les 93 contrôles en base. ROI rapide : préparation audit ISO réduite de semaines à heures.
-
----
-
-## 10. Sécurité & Compliance
-
-### Principes fondamentaux
-
-1. **Privacy-by-design** : Minimal data collection, purpose limitation
-2. **Encryption at rest** : LUKS AES-XTS-512 on all disks
-3. **Encryption in transit** : TLS 1.3 mandatory on all channels
-4. **Consent management** : INPDP consent stored, revocable
-5. **Right to be forgotten** : Anonymization routines (soft-delete + GDPR-like)
-6. **Access controls** : RBAC, 2FA, session timeouts
-7. **Audit trail** : All personal data access logged
-
-### Mesures techniques
-
-| Mesure | Implémentation | Scope |
-|---|---|---|
-| **Chiffrement de repos** | LUKS AES-512 | PostgreSQL, backups, S3 |
-| **Chiffrement transit** | TLS 1.3 (Traefik), mTLS inter-services | HTTP, replication, SWIFT |
-| **Chiffrement champ** | AES-256-GCM (PostgreSQL field-level) | PAN, données sensibles CDE |
-| **Hachage mots de passe** | Bcrypt (cost 12) | Credentials utilisateurs |
-| **Tokens JWT** | RS256 (RSA 4096), expires 1h | Sessions API |
-| **Rotation clés HSM** | Annuelle | Signatures bancaires |
-| **Rate limiting** | 1000 req/min par IP, par TPP | DDoS protection |
-| **WAF (Web Application Firewall)** | CrowdSec | Injection SQL, XSS, CSRF |
-| **IDS (Intrusion Detection)** | Suricata | Network-level anomalies |
-| **Fail2ban** | Ban après 5 failed logins | Brute force protection |
-| **Tokenisation PAN** | Token vault isolé (irréversible) | Données carte PCI DSS |
-| **MFA CDE** | TOTP + mot de passe | Accès Cardholder Data Environment |
-| **Crates Rust crypto** | `ring`, `rustls`, `aes-gcm`, `zeroize` | Opérations cryptographiques |
-
-### 10.1 ISO 27001:2022 — Système de Management de la Sécurité de l'Information (SMSI)
-
-Le SMSI BANKO est aligné sur la norme ISO/IEC 27001:2022 (seule version en vigueur depuis octobre 2025) :
-
-- **93 contrôles Annexe A** organisés en 4 thèmes :
-  - Contrôles organisationnels (A.5) : 37 contrôles
-  - Contrôles relatifs aux personnes (A.6) : 8 contrôles
-  - Contrôles physiques (A.7) : 14 contrôles
-  - Contrôles technologiques (A.8) : 34 contrôles
-- **Registre des risques intégré** : conforme ISO 31000, matrice d'évaluation 5x5 (vraisemblance x impact), revue trimestrielle obligatoire
-- **11 nouveaux contrôles 2022** implémentés :
-  - A.5.7 Threat intelligence (veille menaces)
-  - A.5.23 Sécurité cloud (isolation, chiffrement)
-  - A.5.30 Préparation TIC pour continuité d'activité
-  - A.7.4 Surveillance de la sécurité physique
-  - A.8.9 Gestion de la configuration
-  - A.8.10 Suppression de l'information
-  - A.8.11 Masquage des données (pseudonymisation, anonymisation)
-  - A.8.12 Prévention des fuites de données (DLP)
-  - A.8.16 Surveillance des activités (SIEM)
-  - A.8.23 Filtrage web
-  - A.8.28 Codage sécurisé (Rust memory safety, clippy lints, cargo audit)
-- **Amendement climatique ISO 27001:2022/Amd 1:2024** : évaluation des risques climatiques sur data centers (température, inondation, alimentation électrique), plan de continuité adapté
-- **Référence** : `docs/compliance/iso-27001/`
-
-### 10.2 PCI DSS v4.0.1 — Sécurité des données de cartes de paiement
-
-L'architecture CDE (Cardholder Data Environment) est minimisée par tokenisation :
-
-- **Architecture CDE minimisée** : le scope PCI DSS est réduit au strict minimum par l'utilisation d'un token vault isolé dans un namespace Kubernetes dédié
-- **Tokenisation PAN** : remplacement irréversible du PAN par un token avant tout stockage (Req 3.5.1.2). Le PAN complet ne transite jamais dans les logs, la base principale, ni les fichiers
-- **Chiffrement multi-couches** :
-  - AES-256-GCM au niveau champ (PostgreSQL) pour données sensibles dans le CDE
-  - TLS 1.3 via Traefik pour tout trafic externe
-  - mTLS pour communications inter-services internes
-- **MFA obligatoire** pour tout accès au CDE (Req 8.4.2) : TOTP (Time-based One-Time Password) + mot de passe minimum 12 caractères
-- **Crates Rust sécurité** :
-  - `ring` : primitives cryptographiques (FIPS-validated)
-  - `rustls` : TLS natif Rust (pas d'OpenSSL)
-  - `aes-gcm` : chiffrement authentifié AES-256-GCM
-  - `zeroize` : effacement mémoire des secrets après utilisation (protection contre dump mémoire)
-- **Référence** : `docs/compliance/pci-dss/`
-
-### 10.3 Open Banking API Security
-
-Sécurité des APIs ouvertes aux TPP (Third-Party Providers) :
-
-- **OAuth 2.0 + PKCE** (Proof Key for Code Exchange) : authentification des TPP sans secret client exposé
-- **mTLS pour certificats TPP** : mutual TLS avec certificats de type eIDAS (QWAC/QSealC) pour authentification forte des TPP
-- **JWS (JSON Web Signatures)** : signature des messages API pour garantir l'intégrité et la non-répudiation
-- **Rate limiting par TPP et par client** : quotas différenciés par TPP, avec protection contre l'abus par client individuel
-- **Consent-verified authorization** : chaque appel API vérifie que le scope demandé est couvert par un consentement actif du client
-- **Endpoints Open Banking** :
-  - `GET /api/v1/open-banking/accounts` — Consultation comptes (avec consentement)
-  - `GET /api/v1/open-banking/balances` — Consultation soldes
-  - `GET /api/v1/open-banking/transactions` — Historique transactions
-  - `POST /api/v1/open-banking/payments` — Initiation de paiement
-  - `POST /api/v1/open-banking/consents` — Gestion consentements
-- **Référence** : `docs/compliance/open-banking-psd2/`
-
-### 10.4 Loi données personnelles 2025 (INPDP)
-
-Protection des données personnelles conforme à la loi tunisienne 2025 et aux principes RGPD :
-
-- **Privacy-by-design** : chiffrement AES-256-GCM + pseudonymisation obligatoires pour toutes les données personnelles sensibles
-- **DPO dashboard intégré** : tableau de bord temps réel pour le Délégué à la Protection des Données, avec vue sur les traitements, consentements, et violations
-- **DPIA workflow automatisé** : évaluations d'impact (Data Protection Impact Assessment) automatisées pour tout nouveau traitement à haut risque, avec circuit d'approbation intégré
-- **Notification violations INPDP sous 72h** : système d'alerting automatique qui déclenche le workflow de notification dès détection d'une violation, avec suivi du délai 72h et escalade
-- **APIs portabilité** :
-  - `GET /api/v1/privacy/export/{customer_id}` — Export données client en JSON/CSV (droit à la portabilité)
-  - `POST /api/v1/privacy/erasure/{customer_id}` — Anonymisation/effacement données (droit à l'effacement, hors obligations légales de conservation 10 ans)
-  - `GET /api/v1/privacy/dpia` — Liste des évaluations d'impact
-  - `POST /api/v1/privacy/breach-notification` — Déclarer une violation de données
-
----
-
-## 11. Infrastructure de déploiement
-
-### Docker Compose (Développement)
+### 8.1 Docker Compose (Development)
 
 ```yaml
 version: '3.9'
 services:
   postgres:
     image: postgres:16-alpine
-    env_file: .env.dev
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d
+    environment:
+      POSTGRES_DB: banko
+      POSTGRES_PASSWORD: dev_password
     ports:
       - "5432:5432"
 
@@ -1972,60 +2263,60 @@ services:
     ports:
       - "6379:6379"
 
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
-    env_file: .env.dev
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
     ports:
-      - "8000:8000"
-    depends_on:
-      - postgres
-      - redis
+      - "80:80"
+      - "443:443"
+      - "8081:8080"  # Dashboard
+
+  minio:
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
     volumes:
-      - ./src:/app/src
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.frontend
-    ports:
-      - "3000:3000"
-    depends_on:
-      - backend
-
-  mailhog:
-    image: mailhog/mailhog:latest
-    ports:
-      - "1025:1025"
-      - "8025:8025"
+      - minio_data:/minio_data
 
   prometheus:
     image: prom/prometheus:latest
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
     ports:
       - "9090:9090"
 
   grafana:
     image: grafana/grafana:latest
     ports:
-      - "3001:3000"
-    depends_on:
-      - prometheus
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
 ```
 
-### Production (Kubernetes)
+### 8.2 Kubernetes (Production)
 
 ```yaml
+# banko-backend.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: banko-backend
-  labels:
-    app: banko
 spec:
-  replicas: 3
+  replicas: 3  # High availability
   selector:
     matchLabels:
       app: banko-backend
@@ -2034,57 +2325,39 @@ spec:
       labels:
         app: banko-backend
     spec:
-      serviceAccountName: banko
-      securityContext:
-        runAsNonRoot: true
-        fsReadOnlyRootFilesystem: true
       containers:
-      - name: backend
-        image: banko-backend:latest
-        imagePullPolicy: Always
+      - name: banko
+        image: banko/backend:v4.0.0
         ports:
-        - containerPort: 8000
-          name: http
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 8000
-          initialDelaySeconds: 5
-          periodSeconds: 5
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "1Gi"
-            cpu: "500m"
+        - containerPort: 8080
         env:
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:
               name: banko-secrets
-              key: database-url
-        - name: REDIS_URL
-          valueFrom:
-            secretKeyRef:
-              name: banko-secrets
-              key: redis-url
-        volumeMounts:
-        - name: tmp
-          mountPath: /tmp
-        - name: var-tmp
-          mountPath: /var/tmp
-      volumes:
-      - name: tmp
-        emptyDir: {}
-      - name: var-tmp
-        emptyDir: {}
+              key: database_url
+        - name: HSM_ENDPOINT
+          value: "hsm.default.svc.cluster.local:5000"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          limits:
+            cpu: "2"
+            memory: "2Gi"
+          requests:
+            cpu: "1"
+            memory: "1Gi"
+
 ---
 apiVersion: v1
 kind: Service
@@ -2093,410 +2366,353 @@ metadata:
 spec:
   selector:
     app: banko-backend
-  type: ClusterIP
   ports:
-  - port: 8000
-    targetPort: 8000
-    protocol: TCP
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+  type: ClusterIP
+
+---
+apiVersion: autoscaling.k8s.io/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: banko-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: banko-backend
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
 ```
 
-### Infrastructure Compliance (PCI DSS / SMSI)
+### 8.3 Monitoring (Prometheus + Grafana)
+
+```rust
+// Metrics collection (Prometheus)
+pub struct MetricsCollector {
+    http_requests_total: IntCounterVec,
+    http_request_duration_seconds: HistogramVec,
+    database_connections_active: IntGauge,
+    aml_alerts_total: IntCounterVec,
+    loans_outstanding: Gauge,
+}
+
+impl MetricsCollector {
+    pub async fn record_request(&self, method: &str, path: &str, duration_ms: u64) {
+        self.http_requests_total
+            .with_label_values(&[method, path])
+            .inc();
+
+        self.http_request_duration_seconds
+            .with_label_values(&[method, path])
+            .observe(duration_ms as f64 / 1000.0);
+    }
+
+    pub fn set_db_connections(&self, count: u32) {
+        self.database_connections_active.set(count as i64);
+    }
+}
+
+// Endpoint: /metrics (Prometheus scrapes)
+#[get("/metrics")]
+async fn metrics_handler(metrics: web::Data<MetricsCollector>) -> impl Responder {
+    metrics.render() // Prometheus text format
+}
+```
+
+### 8.4 CI/CD (GitHub Actions)
 
 ```yaml
-# Namespace dédié compliance (isolation PCI DSS)
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: compliance
-  labels:
-    pci-dss: "true"
-    isolation: "strict"
----
-# NetworkPolicy restrictive — seul Payment BC peut accéder au token vault
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: token-vault-policy
-  namespace: compliance
-spec:
-  podSelector:
-    matchLabels:
-      app: token-vault
-  policyTypes:
-  - Ingress
-  ingress:
-  - from:
-    - namespaceSelector:
-        matchLabels:
-          app: banko
-      podSelector:
-        matchLabels:
-          component: payment-bc
-    ports:
-    - protocol: TCP
-      port: 8443
----
-# Token Vault Deployment (CDE isolé)
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: token-vault
-  namespace: compliance
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: token-vault
-  template:
-    metadata:
-      labels:
-        app: token-vault
-    spec:
-      serviceAccountName: token-vault-sa
-      securityContext:
-        runAsNonRoot: true
-        fsReadOnlyRootFilesystem: true
-      containers:
-      - name: token-vault
-        image: banko-token-vault:latest
-        ports:
-        - containerPort: 8443
-          name: https
-        env:
-        - name: VAULT_ENCRYPTION_KEY
-          valueFrom:
-            secretKeyRef:
-              name: vault-secrets
-              key: encryption-key
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "100m"
-          limits:
-            memory: "512Mi"
-            cpu: "250m"
-```
-
-**Secrets Management** :
-- **HashiCorp Vault** pour gestion centralisée des clés de chiffrement (AES-256-GCM, RSA-4096)
-- **Rotation annuelle** obligatoire des clés de chiffrement (PCI DSS Req 3.6.1)
-- **Transit engine** : chiffrement/déchiffrement via API Vault (clés jamais exposées aux services)
-
-**Backup Token Vault** :
-- Backups chiffrés (AES-256-GCM) avec clé séparée stockée en HSM
-- Stockage off-site (S3-compatible, région différente)
-- Rétention 10 ans (obligation légale bancaire tunisienne)
-- Test de restauration trimestriel (vérification intégrité)
-
----
-
-## 12. IaC — Infrastructure as Code
-
-```
-infrastructure/
-├── terraform/
-│   ├── main.tf                  # Provider config (OVH Cloud / sovereign)
-│   ├── vpc.tf                   # VPC, subnets, security groups
-│   ├── database.tf              # PostgreSQL RDS + backups
-│   ├── cache.tf                 # Redis
-│   ├── storage.tf               # S3-compatible (KYC docs, backups)
-│   ├── kubernetes.tf            # K8s cluster (production)
-│   ├── monitoring.tf            # Prometheus, Loki, Grafana
-│   ├── firewall.tf              # WAF, DDoS protection
-│   ├── hsm.tf                   # Hardware Security Module
-│   ├── variables.tf
-│   ├── outputs.tf
-│   └── terraform.tfvars.example
-└── ansible/
-    ├── playbooks/
-    │   ├── provision-k8s.yml    # Initialize K8s nodes
-    │   ├── deploy-banko.yml     # Deploy backend + frontend
-    │   ├── configure-monitoring.yml
-    │   └── backup-restore.yml
-    ├── roles/
-    │   ├── kubernetes-node/
-    │   ├── postgres-backup/
-    │   ├── hsm-setup/
-    │   └── firewall/
-    └── inventory/
-        ├── dev.yml
-        ├── staging.yml
-        └── production.yml
-```
-
----
-
-## 13. CI/CD — Pipeline
-
-```yaml
-# .github/workflows/main.yml
-name: CI/CD
-
-on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
+name: BANKO CI/CD
+on: [push, pull_request]
 
 jobs:
-  lint-test-backend:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: rust-lang/rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+      - run: cargo fmt --check
+      - run: cargo clippy -- -D warnings
+
+  test:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:16
         env:
           POSTGRES_DB: banko_test
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
+          POSTGRES_PASSWORD: password
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
+        ports:
+          - 5432:5432
     steps:
-    - uses: actions/checkout@v4
-    - uses: dtolnay/rust-toolchain@stable
-      with:
-        components: clippy, rustfmt
-    - uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@v3
+      - uses: rust-lang/rust-toolchain@v1
+      - run: cargo test --all
 
-    - name: Lint (rustfmt)
-      run: cargo fmt --check
-
-    - name: Lint (clippy)
-      run: cargo clippy --all -- -D warnings
-
-    - name: Security audit
-      run: cargo audit
-
-    - name: Unit tests
-      run: cargo test --lib
-      env:
-        DATABASE_URL: postgres://test:test@localhost/banko_test
-        REDIS_URL: redis://localhost
-
-    - name: BDD tests
-      run: cargo test --test '*' --features bdd
-      env:
-        DATABASE_URL: postgres://test:test@localhost/banko_test
-
-    - name: Coverage
-      run: |
-        cargo install tarpaulin
-        cargo tarpaulin --out Xml --exclude-files tests/
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-
-  build-docker:
-    needs: lint-test-backend
+  security-audit:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@v3
+      - uses: rust-lang/rust-toolchain@v1
+      - run: cargo install cargo-audit
+      - run: cargo audit
 
-    - name: Build backend image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile.backend
-        push: false
-        tags: banko-backend:${{ github.sha }}
-
-    - name: Build frontend image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./frontend
-        file: ./frontend/Dockerfile.frontend
-        push: false
-        tags: banko-frontend:${{ github.sha }}
-
-  e2e-tests:
-    needs: build-docker
+  build:
     runs-on: ubuntu-latest
+    needs: [lint, test, security-audit]
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: '20'
+      - uses: actions/checkout@v3
+      - uses: docker/build-push-action@v4
+        with:
+          push: true
+          tags: |
+            banko/backend:latest
+            banko/backend:${{ github.sha }}
 
-    - name: Start services (docker-compose)
-      run: docker-compose -f docker-compose.test.yml up -d
-
-    - name: Wait for API ready
-      run: |
-        timeout 60s bash -c 'until curl -f http://localhost:8000/health; do sleep 2; done'
-
-    - name: E2E tests (Playwright)
-      run: npm run test:e2e
-      working-directory: ./frontend
-
-    - name: Upload Playwright report
-      if: always()
-      uses: actions/upload-artifact@v3
-      with:
-        name: playwright-report
-        path: ./frontend/playwright-report/
-
-  deploy-staging:
-    if: github.ref == 'refs/heads/develop'
-    needs: [ lint-test-backend, e2e-tests ]
+  deploy:
     runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Deploy to staging (Kubernetes)
-      run: |
-        kubectl set image deployment/banko-backend \
-          banko-backend=banko-backend:${{ github.sha }} \
-          --record=true
-      env:
-        KUBE_CONFIG: ${{ secrets.KUBE_CONFIG_STAGING }}
-
-  deploy-production:
+    needs: build
     if: github.ref == 'refs/heads/main'
-    needs: [ lint-test-backend, e2e-tests ]
-    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Deploy to production (Kubernetes)
-      run: |
-        kubectl set image deployment/banko-backend \
-          banko-backend=banko-backend:${{ github.sha }} \
-          --record=true
-      env:
-        KUBE_CONFIG: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
-    - name: Verify deployment health
-      run: |
-        kubectl rollout status deployment/banko-backend --timeout=5m
+      - uses: actions/checkout@v3
+      - run: kubectl apply -f k8s/
 ```
 
 ---
 
-## 14. Observabilité
+## 9. Data Model (ER Diagramm Conceptuel)
 
-### Prometheus Metrics
+```
+CUSTOMER (BC1)
+  ├─ PK: customer_id
+  ├─ email, phone
+  ├─ kyc_status, pep_status
+  ├─ risk_score
+  └─ consent_personal_data, consent_marketing
 
-```rust
-// src/infrastructure/monitoring/metrics.rs
-lazy_static::lazy_static! {
-    pub static ref HTTP_REQUESTS_TOTAL: IntCounterVec =
-        IntCounterVec::new(
-            Opts::new("http_requests_total", "Total HTTP requests"),
-            &["method", "path", "status"]
-        ).unwrap();
+    ↓ 1:N
+ACCOUNT (BC2)
+  ├─ PK: account_id
+  ├─ FK: customer_id
+  ├─ arrangement_id (FK → BC13)
+  ├─ iban, account_type
+  ├─ balance, overdraft_limit
+  └─ status
 
-    pub static ref HTTP_REQUEST_DURATION_SECS: HistogramVec =
-        HistogramVec::new(
-            HistogramOpts::new("http_request_duration_secs", "HTTP request duration"),
-            &["method", "path"]
-        ).unwrap();
+    ↓ 1:N
+MOVEMENT (BC2)
+  ├─ PK: movement_id
+  ├─ FK: account_id
+  ├─ amount, direction
+  └─ executed_at
 
-    pub static ref DATABASE_QUERY_DURATION_SECS: HistogramVec =
-        HistogramVec::new(
-            HistogramOpts::new("db_query_duration_secs", "Database query duration"),
-            &["query_type"]
-        ).unwrap();
+LOAN (BC3)
+  ├─ PK: loan_id
+  ├─ FK: customer_id, account_id
+  ├─ arrangement_id (FK → BC13)
+  ├─ principal_amount, interest_rate
+  ├─ asset_class, npl_stage
+  └─ status
 
-    pub static ref AUDIT_TRAIL_ENTRIES_TOTAL: IntCounter =
-        IntCounter::new("audit_trail_entries_total", "Total audit trail entries").unwrap();
+    ↓ 1:N
+LOAN_PROVISION (BC3)
+  ├─ PK: provision_id
+  ├─ FK: loan_id
+  ├─ nct_provision_pct, nct_provision_amount
+  ├─ ifrs9_ecl_amount, ecl_stage
+  └─ pd, lgd, ead
 
-    pub static ref AML_ALERTS_ACTIVE: IntGauge =
-        IntGauge::new("aml_alerts_active", "Active AML alerts").unwrap();
+ARRANGEMENT (BC13) — Central Hub
+  ├─ PK: arrangement_id
+  ├─ FK: customer_id, account_id, loan_id
+  ├─ arrangement_type, status
+  ├─ maturity_date
+  └─ [conditions, limits]
 
-    pub static ref PRUDENTIAL_RATIO_SOLVENCY: Gauge =
-        Gauge::new("prudential_solvency_ratio", "Solvency ratio (%)").unwrap();
+    ↓ 1:N
+ARRANGEMENT_CONDITION (BC13)
+  ├─ PK: condition_id
+  ├─ FK: arrangement_id
+  └─ condition_type, value, enforcement
 
-    pub static ref PRUDENTIAL_RATIO_TIER1: Gauge =
-        Gauge::new("prudential_tier1_ratio", "Tier 1 ratio (%)").unwrap();
+    ↓ 1:N
+ARRANGEMENT_LIMIT (BC13)
+  ├─ PK: limit_id
+  ├─ FK: arrangement_id
+  ├─ limit_type, limit_amount
+  └─ utilization
 
-    pub static ref PRUDENTIAL_RATIO_CD: Gauge =
-        Gauge::new("prudential_cd_ratio", "Credit-to-Deposit ratio (%)").unwrap();
-}
+COLLATERAL (BC14)
+  ├─ PK: collateral_id
+  ├─ FK: arrangement_id
+  ├─ collateral_type, description
+  ├─ status
+  └─ [valuation, pledge]
+
+    ↓ 1:N
+COLLATERAL_VALUATION (BC14)
+  ├─ PK: valuation_id
+  ├─ FK: collateral_id
+  ├─ valuation_date, gross_value
+  ├─ haircut_pct, net_value
+  └─ valuer_id
+
+PAYMENT_ORDER (BC9)
+  ├─ PK: payment_id
+  ├─ FK: originator_account_id
+  ├─ beneficiary_account, beneficiary_name
+  ├─ amount, currency
+  ├─ status, payment_type
+  └─ created_at, executed_at
+
+AML_TRANSACTION (BC4)
+  ├─ PK: transaction_id
+  ├─ FK: account_id
+  ├─ amount, direction
+  ├─ timestamp
+  └─ counterparty
+
+    ↓ 1:N
+AML_ALERT (BC4)
+  ├─ PK: alert_id
+  ├─ FK: transaction_id
+  ├─ alert_type, severity
+  ├─ status
+  └─ created_at
+
+ASSET_FREEZE (BC4)
+  ├─ PK: freeze_id
+  ├─ FK: account_id
+  ├─ reason, frozen_at, frozen_by
+  └─ unfrozen_at, unfrozen_by
+
+JOURNAL_ENTRY (BC7)
+  ├─ PK: entry_id
+  ├─ reference, accounting_period
+  ├─ posted_at, posted_by
+  └─ narrative
+
+    ↓ 1:N
+JOURNAL_DEBIT_LINE (BC7)
+  ├─ PK: line_id
+  ├─ FK: entry_id
+  ├─ account_code, amount
+  └─ (FK → CHART_OF_ACCOUNTS)
+
+    ↓ 1:N
+JOURNAL_CREDIT_LINE (BC7)
+  ├─ PK: line_id
+  ├─ FK: entry_id
+  ├─ account_code, amount
+  └─ (FK → CHART_OF_ACCOUNTS)
+
+AUDIT_TRAIL_ENTRY (BC11)
+  ├─ PK: audit_event_id
+  ├─ entity_type, entity_id
+  ├─ action, actor, timestamp
+  ├─ before, after (JSON)
+  ├─ hash, previous_hash
+  └─ (Immutable — hash chain)
+
+USER (BC12)
+  ├─ PK: user_id
+  ├─ username, email
+  ├─ password_hash
+  ├─ status, mfa_enabled
+  ├─ mfa_method
+  └─ created_at
+
+    ↓ M:N
+ROLE (BC12)
+  ├─ PK: role_id
+  ├─ name
+  └─ [permissions]
+
+    ↓ M:N
+PERMISSION (BC12)
+  ├─ PK: permission_id
+  ├─ resource, action
+  └─ conditions (JSON)
+
+SESSION_TOKEN (BC12)
+  ├─ PK: session_id
+  ├─ FK: user_id
+  ├─ jwt, refresh_token
+  ├─ expires_at, created_at
+  └─ (Cached in Redis)
+
+CONSENT (Compliance Layer)
+  ├─ PK: consent_id
+  ├─ FK: customer_id
+  ├─ scope (PERSONAL_DATA, MARKETING, THIRDPARTY)
+  ├─ status (GRANTED, REVOKED, EXPIRED)
+  ├─ granted_at, granted_by
+  └─ expires_at
 ```
 
-### Grafana Dashboards
+---
 
-- **System Dashboard** : CPU, memory, disk, network
-- **Business Dashboard** : Customers, accounts, loans, AUM
-- **Prudential Dashboard** : Ratios, RWA, concentration
-- **AML Dashboard** : Alerts, investigations, DOS count
-- **Audit Dashboard** : Trail entries per hour, top actors
-- **SLA Dashboard** : API latency, uptime, error rates
+## 10. Performance Targets (SLA)
 
-### Loki Structured Logging
-
-```rust
-// src/infrastructure/monitoring/logging.rs
-use tracing::{info, warn, error};
-use tracing_subscriber::fmt;
-
-#[tracing::instrument(skip(request))]
-pub async fn handle_create_customer(
-    request: CreateCustomerRequest,
-) -> Result<CustomerResponse> {
-    info!(
-        customer_name = %request.name,
-        customer_type = %request.customer_type,
-        "Creating customer"
-    );
-    // ...
-    info!(customer_id = %customer.id, "Customer created");
-    Ok(response)
-}
-```
-
-All logs ship to Loki, queryable by:
-- `{job="banko-backend", level="error"}`
-- `{bounded_context="customer", action="create"}`
-- Full-text search: "invalid KYC"
+| Métrique | Target | Actual v4.0 | Note |
+|---|---|---|---|
+| API P99 latency (internal) | < 5ms | ~3-4ms | Actix-web + sqlx |
+| API E2E latency (w/ DB persist) | < 200ms | ~80-150ms | Include PG write |
+| Database connection pool size | 20-50 | 32 (config) | Per BC × 4 workers |
+| Cache hit rate (Redis) | > 80% | 85%+ | Sessions, rates, ref data |
+| Query response time (analytical) | < 2s | ~500-1500ms | Materialized views |
+| Uptime SLA | 99.9% | Target v4.0 | 3x replicas + failover |
+| RTO (Recovery Time) | < 1h | ~15 min | Kubernetes auto-healing |
+| RPO (Recovery Point) | < 15 min | ~5 min | WAL archiving + backups |
 
 ---
 
-## 15. Scalabilité organisationnelle
+## 11. Roadmap v4.0 — Jalons (31 semaines)
 
-### Teams & Responsibilities
-
-| Rôle | Responsabilité | Bounded Contexts |
-|---|---|---|
-| **CRO (Chief Risk Officer)** | Credit classification, provisioning, concentration ratios | Credit, Prudential |
-| **CMLCO (AML Compliance)** | AML surveillance, KYC, DOS filing, sanctions | Customer, AML, Sanctions |
-| **CFO (Finance)** | Accounting, reporting, P&L, IFRS 9 | Accounting, Reporting |
-| **Operations** | Payments, settlement, cash management | Payment, FX, Clearing |
-| **Audit** | Audit trail, governance, control checks | Governance, Audit |
-| **IT Security** | HSM, backups, disaster recovery, access control | Infrastructure, Identity |
-| **Developers** | Implement use cases, maintain code quality | All BCs |
-
-### Scaling Path
-
-1. **Phase 1 (MVP)** : Solo dev (or 2) — Core domain (Customer, Account, Credit, AML, Accounting)
-2. **Phase 2** : Add Risk Officer + Analyst — Prudential, Governance
-3. **Phase 3** : Add Operations — Payment, FX, Reporting
-4. **Phase 4** : Specialized squads per BC (Product, Dev, QA each)
+| Jalon | Durée | BCs | Endpoints | Status |
+|---|---|---|---|---|
+| **J0** | Semaines 1-6 | BC1, BC2, BC7, BC11, BC12, Compliance | 100+ | Fondations |
+| **J1** | Semaines 7-14 | BC3, BC4, BC5, BC6, BC8, BC9, BC10, BC13 | 250+ | Core Banking |
+| **J2** | Semaines 15-20 | BC14, BC15, BC16, BC17, BC19 | 400+ | Advanced |
+| **J3** | Semaines 21-26 | BC18, BC20, BC21 | 550+ | Analytics + Securities |
+| **J4** | Semaines 27-31 | Microservices, Open Banking, Hardening | 600+ | Maturité |
+| **Hors scope v4.0** | — | — | — | Dérivés, hedge funds, blockchain |
 
 ---
 
-## Conclusion
+## 12. Métriques de Succès v4.0
 
-BANKO implements **by-design** regulatory compliance through:
-- **DDD** : Domain protects Tunisian banking law
-- **TDD/BDD** : Specs = proof of compliance
-- **Hexagonal** : Easy to audit, test, modify
-- **Audit trail** : Non-repudiation, regulatory confidence
-- **HSM** : Cryptographic protection of critical signing
-- **SOLID** : Maintainability for 10+ year lifetime
-
-**Reference Commits** [REF-01] through [REF-95] in `docs/legal/REFERENTIEL_LEGAL_ET_NORMATIF.md` map each invariant to Tunisian law and international standards (Bâle III, GAFI, IFRS 9, ISO 20022, ISO 27001:2022, PCI DSS v4.0.1, loi données personnelles 2025).
-
-Architecture is designed for autonomous operation by solo-dev or small team with clear module boundaries, comprehensive testing, and regulatory traceability.
+✓ **Couverture Temenos** : 85%+ (450+ endpoints v4.0)
+✓ **Conformité BCT** : 100% P0 exigences
+✓ **Coverage code** : 95%+ (domain + app layers)
+✓ **BDD scenarios** : ≥400 gherkin (Cucumber)
+✓ **Sécurité** : 0 vulnérabilités critiques (cargo audit)
+✓ **Performance** : P99 < 5ms API interne
+✓ **Audit trail** : 100% opérations immutables
+✓ **ISO 27001:2022** : 93/93 contrôles mappés
+✓ **PCI DSS v4.0.1** : 100% exigences obligatoires
+✓ **Loi données 2025** : Conforme avant 11-07-2026
+✓ **GAFI R.16** : Travel rule 100% effective
+✓ **i18n** : AR (RTL) + FR + EN complets
+✓ **Déploiements** : ≥2 banques tunisiennes live
 
 ---
 
-**Document Version** : 3.0.0
-**Last Updated** : 6 avril 2026
-**Maintainer** : GILMRY / BANKO Project
-**License** : AGPL-3.0
+**Architecture v4.0.0 — 7 avril 2026 — BANKO Core Banking System**

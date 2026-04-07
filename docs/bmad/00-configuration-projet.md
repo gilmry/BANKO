@@ -1,6 +1,6 @@
 # Configuration Projet — BANKO
 
-> **Version** : 3.0.0 — 6 avril 2026
+> **Version** : 4.0.0 — 7 avril 2026
 
 ## Méthode Maury — Étape 0 (Pré-requis)
 
@@ -33,8 +33,8 @@ SÉCURITÉ          : LUKS AES-XTS-512, HSM (Hardware Security Module),
 LICENCE           : AGPL-3.0 (copyleft fort — modifications doivent rester
                     open source même en déploiement SaaS)
 LANGUES (i18n)    : AR (arabe tunisien — RTL), FR (français), EN (anglais)
-DOMAINE LÉGAL     : Droit bancaire tunisien (Loi 2016-48, Circulaires BCT,
-                    Loi LBC/FT 2015-26/2019-9, Loi données personnelles 2025)
+DOMAINE LÉGAL     : Droit bancaire tunisien (Loi 2016-48, Loi 2016-33 banques islamiques,
+                    Circulaires BCT, Loi LBC/FT 2015-26/2019-9, Loi données personnelles 2025)
                     + 17 circulaires BCT 2025 + 4 circulaires BCT 2026
                     + Évaluation GAFI 5ème cycle (plénière 1er novembre 2026)
                     + Normes internationales (Bâle III, GAFI/FATF 40 Recommandations,
@@ -44,6 +44,7 @@ DOMAINE LÉGAL     : Droit bancaire tunisien (Loi 2016-48, Circulaires BCT,
                     + FIDA (Open Finance, adoption prévue H1 2026)
 RÉFÉRENTIEL LÉGAL : docs/legal/REFERENTIEL_LEGAL_ET_NORMATIF.md (95 références)
 RÉFÉRENCE         : https://github.com/gilmry/koprogo (même recette technique)
+BENCHMARK TEMENOS : https://developer.temenos.com (550-700+ endpoints, 17 catégories)
 
 PROFIL DÉVELOPPEUR :
 - [x] Solo-dev side-project (6-15h/sem, emploi salarié / étudiante)
@@ -88,6 +89,7 @@ Le pipeline BMAD doit couvrir TOUTES ces couches :
 
 SPÉCIFICITÉS BANKO (vs KoproGo) :
 - Domaine = secteur bancaire réglementé (pas copropriété)
+- Parité fonctionnelle Temenos Transact out-of-the-box ciblée (550-700+ endpoints)
 - Auditabilité BCT : chaque opération horodatée, signée, immutable
 - Piste d'audit intégrale (audit trail) — obligation légale Circ. 2006-19
 - Double moteur comptable : NCT actuel + pré-IFRS 9
@@ -97,8 +99,9 @@ SPÉCIFICITÉS BANKO (vs KoproGo) :
 - Support RTL (arabe) natif dans le frontend
 - HSM obligatoire pour signatures cryptographiques bancaires
 - Conformité INPDP (Loi données personnelles 2025, remplace 2004-63) — privacy-by-design
+- Support banques islamiques (Loi 2016-33) : produits sharia, waqf, murabaha
 - Interopérabilité : ISO 20022 (SWIFT), ISO 8583 (monétique)
-- Conformité ISO 27001:2022 : 93 contrôles Annexe A mappés aux 12 bounded contexts
+- Conformité ISO 27001:2022 : 93 contrôles Annexe A mappés aux 22 bounded contexts
 - PCI DSS v4.0.1 : tokenisation PAN, chiffrement AES-256-GCM niveau champ, MFA pour accès CDE
 - Préparation Open Banking : APIs PSD3-ready, consent management, SCA, portail développeur
 - Nouvelle loi données personnelles 2025 : DPO obligatoire, DPIA, notification 72h, portabilité, effacement
@@ -107,10 +110,50 @@ SPÉCIFICITÉS BANKO (vs KoproGo) :
 - TuniCheque : API vérification chèques temps réel (Circ. 2025-03)
 - e-KYC biométrique : enrôlement électronique Circ. 2025-06, FIDO2/WebAuthn, tests ANCS
 - Réforme prudentielle Circ. 2025-08 : nouvelles normes capital (2026), risques (2027), IFRS 9 ECL
+
+OBJECTIF STRATÉGIQUE v4.0 — PARITÉ TEMENOS :
+BANKO v4.0 cible la **parité fonctionnelle avec Temenos Transact** (550-700+ endpoints
+dans 17 catégories). Horizon : 12-16 mois (avril 2026 → août 2027 cible).
+Temenos propose : Party, Holdings, Order, Product, Credit, Collateral, FX, Risk, AML,
+Enterprise, Accounting, Analytics, Islamic Banking, Cash Management, Securities,
+Microservices, System. BANKO en intègre 22 bounded contexts (13 v3.0 + 9 nouveaux v4.0).
+Alignement de référence : developer.temenos.com. Priorité : contextes critiques avant
+optionnels (Account → Arrangement → Credit → Payment → Accounting obligatoires).
 ══════════════════════════════════════════════════════════════
 ```
 
 > **Note** : Les invariants de qualité (SOLID, DDD, BDD, TDD, Hexagonale, YAGNI, DRY) ne sont PAS des paramètres — ils sont **non négociables** quel que soit le projet.
+
+---
+
+## 22 Bounded Contexts (v3.0 → v4.0)
+
+### Contextes existants (13 v3.0)
+
+1. **Customer** : Gestion des clients (onboarding, KYC, profil)
+2. **Account** : Gestion des comptes (ouverture, solde, type de compte)
+3. **Credit** : Octroi de crédit et gestion des prêts
+4. **AML** : Anti-blanchiment d'argent (alertes, seuils)
+5. **Sanctions** : Contrôle des sanctions internationales
+6. **Prudential** : Exigences prudentielles et capital réglementaire
+7. **Accounting** : Comptabilité générale (journaux, écritures)
+8. **Reporting** : Rapports réglementaires et statistiques
+9. **Payment** : Virements et paiements (SEPA, SWIFT)
+10. **ForeignExchange** : Changes et taux de change
+11. **Governance** : Gouvernance (rôles, permissions, audit)
+12. **Identity** : Gestion des identités (authentification, biométrie)
+
+### Contextes nouveaux (9 v4.0 → parité Temenos)
+
+13. **Arrangement** : Contrats, accords, limites, produits associés (central !)
+14. **Collateral** : Garanties, nantissements, évaluations collatérales
+15. **TradeFinance** : Lettres de crédit, garanties bancaires, documentaire
+16. **CashManagement** : Trésorerie, liquidity management, sweep accounts
+17. **IslamicBanking** : Produits sharia, murabaha, ijara, waqf (Loi 2016-33)
+18. **DataHub** : Data lake, data warehouse, MDM (Master Data Management)
+19. **ReferenceData** : Données de référence centralisées (codes, taux, tables)
+20. **Securities** : Valeurs mobilières, portefeuille titres, dépositaire
+21. **Insurance** : Assurances liées (crédit, décès, risque), courtage intégré
 
 ---
 
