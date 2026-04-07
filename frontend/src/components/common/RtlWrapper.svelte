@@ -1,19 +1,14 @@
 <script lang="ts">
   import { currentLocale, locales } from '$lib/i18n/i18n';
 
-  export let class: string = '';
+  let { class: className = '' }: { class?: string } = $props();
 
-  // Determine direction based on current locale
-  $: direction = locales[$currentLocale].dir;
-
-  // Determine font-family based on current locale
-  $: fontFamily = $currentLocale === 'ar' ? "'Noto Sans Arabic', sans-serif" : "sans-serif";
-
-  // Merge custom styles with RTL-specific styles
-  $: computedStyle = `direction: ${direction}; font-family: ${fontFamily};`;
+  const direction = $derived(locales[$currentLocale].dir);
+  const fontFamily = $derived($currentLocale === 'ar' ? "'Noto Sans Arabic', sans-serif" : "sans-serif");
+  const computedStyle = $derived(`direction: ${direction}; font-family: ${fontFamily};`);
 </script>
 
-<div {class} style={computedStyle} dir={direction}>
+<div class={className} style={computedStyle} dir={direction}>
   <slot />
 </div>
 
