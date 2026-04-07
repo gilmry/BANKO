@@ -281,12 +281,12 @@ Utilisez cette checklist pour les features sensibles :
 
 ## Contacts de Sécurité
 
-- **Email de Sécurité**: security@banko.tn
-- **Mainteneur du Projet**: [À définir]
+- **Email de Sécurité**: abuse@koprogo.com
+- **Mainteneur du Projet**: gilles maury
 - **Temps de Réponse**: Dans les 48 heures
 
 ---
 
 **Dernière mise à jour**: 2026-04-04
 
-Pour questions sur cette politique, contactez security@banko.tn.
+Pour questions sur cette politique, contactez abuse@koprogo.com .
