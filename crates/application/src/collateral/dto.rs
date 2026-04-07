@@ -1,4 +1,4 @@
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 // --- Request DTOs ---
@@ -246,4 +246,13 @@ mod tests {
             collateral_ids: vec!["coll-123".to_string()],
             total_loan_amount: 70000.0,
             total_collateral_value: 100000.0,
-           
+            ltv_ratio: 0.70,
+            max_ltv_threshold: 0.70,
+            is_compliant: true,
+        };
+
+        let json = serde_json::to_string(&response).unwrap();
+        assert!(json.contains("0.7"));
+        assert!(json.contains("true"));
+    }
+}

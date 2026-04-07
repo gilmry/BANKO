@@ -1,8 +1,7 @@
 use chrono::NaiveDate;
 use std::sync::Arc;
-use uuid::Uuid;
 
-use banko_domain::accounting::{ClosingStatus, PeriodClosing, PeriodType};
+use banko_domain::accounting::{PeriodClosing, PeriodType};
 
 use super::errors::AccountingServiceError;
 use super::ports::IJournalRepository;

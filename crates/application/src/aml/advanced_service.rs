@@ -3,7 +3,6 @@ use chrono::Utc;
 use uuid::Uuid;
 
 use banko_domain::aml::*;
-use banko_domain::shared::errors::DomainError;
 
 use super::errors::AmlServiceError;
 use super::ports::*;
@@ -454,12 +453,10 @@ mod tests {
 
         async fn find_by_id(&self, _id: Uuid) -> Result<Option<Investigation>, String> {
             // Return a mock investigation
-            let inv = Investigation::new(
+            let inv = Some(Investigation::new(
                 Uuid::new_v4(),
-                "Test".to_string(),
-                Uuid::new_v4(),
-            )
-            .ok();
+                Some("Test".to_string()),
+            ));
             Ok(inv)
         }
 

@@ -145,8 +145,15 @@ impl CustomerService {
             None => vec![],
         };
 
+        // Parse segment (FR-006)
+        let segment = match req.segment.as_deref() {
+            Some(s) => banko_domain::customer::CustomerSegment::from_str_segment(s)
+                .map_err(|e| CustomerServiceError::Validation(e.to_string()))?,
+            None => banko_domain::customer::CustomerSegment::Retail,
+        };
+
         // Create customer aggregate
-        let mut customer = Customer::new(customer_type, kyc_profile, beneficiaries, consent)
+        let mut customer = Customer::new(customer_type, kyc_profile, beneficiaries, consent, segment)
             .map_err(|e| CustomerServiceError::Domain(e.to_string()))?;
 
         // STORY-C08: Auto-calculate risk score
@@ -424,6 +431,21 @@ mod tests {
                 .cloned()
                 .collect())
         }
+        async fn search(
+            &self,
+            _full_name: Option<&str>,
+            _email: Option<&str>,
+            _cin_or_rcs: Option<&str>,
+            _customer_type: Option<&str>,
+            _status: Option<&str>,
+            _segment: Option<&str>,
+            _risk_score_min: Option<u8>,
+            _risk_score_max: Option<u8>,
+            _limit: i64,
+            _offset: i64,
+        ) -> Result<(i64, Vec<Customer>), String> {
+            Ok((0, vec![]))
+        }
     }
 
     // --- Mock PEP Checker ---
@@ -489,6 +511,7 @@ mod tests {
             registration_number: None,
             sector: None,
             beneficiaries: None,
+            segment: None,
         }
     }
 

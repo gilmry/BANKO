@@ -81,6 +81,21 @@ mod e2e_account_opening {
         ) -> Result<Vec<Customer>, String> {
             Ok(vec![])
         }
+        async fn search(
+            &self,
+            _full_name: Option<&str>,
+            _email: Option<&str>,
+            _cin_or_rcs: Option<&str>,
+            _customer_type: Option<&str>,
+            _status: Option<&str>,
+            _segment: Option<&str>,
+            _risk_score_min: Option<u8>,
+            _risk_score_max: Option<u8>,
+            _limit: i64,
+            _offset: i64,
+        ) -> Result<(i64, Vec<Customer>), String> {
+            Ok((0, vec![]))
+        }
     }
 
     struct MockPepChecker;
@@ -214,6 +229,7 @@ mod e2e_account_opening {
             registration_number: None,
             sector: None,
             beneficiaries: None,
+            segment: None,
         }
     }
 
@@ -2041,6 +2057,7 @@ mod test_invariants {
             kyc,
             vec![],
             ConsentStatus::NotGiven,
+            CustomerSegment::Retail,
         );
         assert!(result.is_err());
     }

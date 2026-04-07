@@ -4,7 +4,7 @@ use rust_decimal::Decimal;
 use uuid::Uuid;
 
 use banko_domain::accounting::{
-    FeeCategory, FeeCharge, FeeCondition, FeeDefinition, FeeGrid, FeeStatus,
+    FeeCharge, FeeDefinition, FeeGrid,
 };
 
 use super::errors::AccountingServiceError;
@@ -125,7 +125,7 @@ impl FeeService {
     /// Charge fees to an account
     pub async fn charge_fees(
         &self,
-        account_id: Uuid,
+        _account_id: Uuid,
         fees: Vec<FeeCharge>,
     ) -> Result<ChargeResult, AccountingServiceError> {
         let mut result = ChargeResult {
@@ -152,7 +152,7 @@ impl FeeService {
     }
 
     /// Waive a fee charge
-    pub async fn waive_fee(&self, fee_charge_id: Uuid) -> Result<(), AccountingServiceError> {
+    pub async fn waive_fee(&self, _fee_charge_id: Uuid) -> Result<(), AccountingServiceError> {
         // In a real implementation, fetch the charge, update it, and save
         Ok(())
     }

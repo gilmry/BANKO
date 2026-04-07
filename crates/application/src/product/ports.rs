@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use rust_decimal::Decimal;
 use uuid::Uuid;
 
 use banko_domain::product::{Product, ProductType, PricingGrid};

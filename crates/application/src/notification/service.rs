@@ -1,15 +1,13 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
 
 use banko_domain::notification::{
-    Channel, Notification, NotificationId, NotificationPreference, NotificationStatus,
+    Channel, Notification, NotificationPreference, NotificationStatus,
     NotificationType,
 };
 
 use super::dto::{
-    NotificationDto, NotificationPreferenceRequest, NotificationPreferenceResponse,
-    PreferenceItem, ProcessingError, ProcessingResult, SendNotificationRequest,
+    NotificationDto, NotificationPreferenceRequest, ProcessingError, ProcessingResult, SendNotificationRequest,
     SendNotificationResponse,
 };
 use super::errors::NotificationError;
@@ -63,7 +61,7 @@ impl NotificationService {
                 .preference_repo
                 .find_by_customer_and_channel_type(req.customer_id, channel, notification_type)
                 .await
-                .map_err(|e| NotificationError::RepositoryError(e))?;
+                .map_err(NotificationError::RepositoryError)?;
 
             match pref {
                 Some(p) => {
@@ -88,7 +86,7 @@ impl NotificationService {
             .template_repo
             .find_by_event_and_locale(&req.template_id, &locale)
             .await
-            .map_err(|e| NotificationError::RepositoryError(e))?
+            .map_err(NotificationError::RepositoryError)?
             .ok_or_else(|| NotificationError::TemplateNotFound(req.template_id.clone()))?;
 
         // Step 3: Render template
@@ -113,7 +111,7 @@ impl NotificationService {
         self.notification_repo
             .save(&notification)
             .await
-            .map_err(|e| NotificationError::RepositoryError(e))?;
+            .map_err(NotificationError::RepositoryError)?;
 
         // Step 6: Return response
         Ok(SendNotificationResponse {
@@ -131,7 +129,7 @@ impl NotificationService {
             .notification_repo
             .find_pending(batch_size)
             .await
-            .map_err(|e| NotificationError::RepositoryError(e))?;
+            .map_err(NotificationError::RepositoryError)?;
 
         let mut result = ProcessingResult {
             total_processed: pending.len(),
@@ -152,7 +150,7 @@ impl NotificationService {
                     5, // 5 minute dedup window
                 )
                 .await
-                .map_err(|e| NotificationError::RepositoryError(e))?;
+                .map_err(NotificationError::RepositoryError)?;
 
             // Skip if already sent in dedup window
             if recent
@@ -215,7 +213,7 @@ impl NotificationService {
             self.notification_repo
                 .save(&notification)
                 .await
-                .map_err(|e| NotificationError::RepositoryError(e))?;
+                .map_err(NotificationError::RepositoryError)?;
         }
 
         Ok(result)
@@ -229,7 +227,7 @@ impl NotificationService {
         self.preference_repo
             .find_by_customer(customer_id)
             .await
-            .map_err(|e| NotificationError::RepositoryError(e))
+            .map_err(NotificationError::RepositoryError)
     }
 
     /// Update a customer preference
@@ -249,7 +247,7 @@ impl NotificationService {
         self.preference_repo
             .save(&preference)
             .await
-            .map_err(|e| NotificationError::RepositoryError(e))
+            .map_err(NotificationError::RepositoryError)
     }
 
     /// Get a specific notification
@@ -257,12 +255,12 @@ impl NotificationService {
         self.notification_repo
             .find_by_id(id)
             .await
-            .map_err(|e| NotificationError::RepositoryError(e))?
+            .map_err(NotificationError::RepositoryError)?
             .ok_or(NotificationError::NotFound)
     }
 
     /// Convert notification to DTO
-    fn notification_to_dto(&self, notif: &Notification) -> NotificationDto {
+    fn _notification_to_dto(&self, notif: &Notification) -> NotificationDto {
         NotificationDto {
             id: notif.id().as_uuid().to_string(),
             customer_id: notif.customer_id().to_string(),
@@ -318,7 +316,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_send_transactional_notification() {
-        let (service, template_repo, _, _, sender) = setup_service().await;
+        let (service, _, template_repo, _, sender) = setup_service().await;
 
         template_repo.add_template(TemplateInfo {
             id: "order_confirmation".to_string(),
@@ -353,7 +351,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_send_marketing_notification_with_opt_in() {
-        let (service, template_repo, pref_repo, _, _) = setup_service().await;
+        let (service, _, template_repo, pref_repo, _) = setup_service().await;
 
         let customer_id = Uuid::new_v4();
 
@@ -393,7 +391,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_reject_marketing_without_opt_in() {
-        let (service, template_repo, _, _, _) = setup_service().await;
+        let (service, _, template_repo, _, _) = setup_service().await;
 
         let customer_id = Uuid::new_v4();
 
@@ -428,7 +426,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_template_fallback_to_default_locale() {
-        let (service, template_repo, _, _, _) = setup_service().await;
+        let (service, _, template_repo, _, _) = setup_service().await;
 
         // Add template only for default locale (fr)
         template_repo.add_template(TemplateInfo {
@@ -481,7 +479,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_regulatory_notification_always_sent() {
-        let (service, template_repo, pref_repo, _, _) = setup_service().await;
+        let (service, _, template_repo, pref_repo, _) = setup_service().await;
 
         let customer_id = Uuid::new_v4();
 
@@ -522,7 +520,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_customer_preferences() {
-        let (service, _, pref_repo, _, _) = setup_service().await;
+        let (service, _, _, pref_repo, _) = setup_service().await;
 
         let customer_id = Uuid::new_v4();
 
@@ -722,9 +720,12 @@ mod tests {
         notif.increment_retry();
         assert_eq!(notif.retry_count(), 1);
 
-        // Exhaust retries
+        // Exhaust retries (max_retries = 3, currently at 1)
         notif.mark_failed("Still failing".to_string());
-        notif.retry_count = 3;
-        assert!(!notif.should_retry());
+        notif.increment_retry(); // retry_count = 2
+        notif.mark_failed("Still failing".to_string());
+        notif.increment_retry(); // retry_count = 3
+        notif.mark_failed("Final failure".to_string());
+        assert!(!notif.should_retry()); // retry_count == max_retries
     }
 }

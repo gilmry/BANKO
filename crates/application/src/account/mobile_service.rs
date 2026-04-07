@@ -4,7 +4,6 @@ use rust_decimal::Decimal;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use banko_domain::shared::CustomerId;
 
 /// Mobile-friendly account summary
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -157,19 +156,19 @@ impl MobileAccountService {
             .dashboard_provider
             .get_customer_name(&customer_id)
             .await
-            .map_err(|e| MobileAccountError::Internal(e))?;
+            .map_err(MobileAccountError::Internal)?;
 
         let total_balance: Decimal = self
             .dashboard_provider
             .get_total_balance(&customer_id)
             .await
-            .map_err(|e| MobileAccountError::Internal(e))?;
+            .map_err(MobileAccountError::Internal)?;
 
         let accounts = self
             .dashboard_provider
             .get_account_summaries(&customer_id)
             .await
-            .map_err(|e| MobileAccountError::Internal(e))?;
+            .map_err(MobileAccountError::Internal)?;
 
         if accounts.is_empty() {
             return Err(MobileAccountError::NoAccountsFound);
@@ -179,19 +178,19 @@ impl MobileAccountService {
             .dashboard_provider
             .get_card_summaries(&customer_id)
             .await
-            .map_err(|e| MobileAccountError::Internal(e))?;
+            .map_err(MobileAccountError::Internal)?;
 
         let pending_actions = self
             .dashboard_provider
             .get_pending_actions(&customer_id)
             .await
-            .map_err(|e| MobileAccountError::Internal(e))?;
+            .map_err(MobileAccountError::Internal)?;
 
         let unread_notifications = self
             .dashboard_provider
             .get_unread_notification_count(&customer_id)
             .await
-            .map_err(|e| MobileAccountError::Internal(e))?;
+            .map_err(MobileAccountError::Internal)?;
 
         let greeting = match locale {
             "en" => self.get_greeting_en(&customer_name),
@@ -219,7 +218,7 @@ impl MobileAccountService {
         self.dashboard_provider
             .get_offline_cache_data(&customer_id)
             .await
-            .map_err(|e| MobileAccountError::Internal(e))
+            .map_err(MobileAccountError::Internal)
     }
 
     /// Sync changes since last sync
@@ -231,7 +230,7 @@ impl MobileAccountService {
         self.dashboard_provider
             .get_sync_changes(&customer_id, last_sync)
             .await
-            .map_err(|e| MobileAccountError::Internal(e))
+            .map_err(MobileAccountError::Internal)
     }
 
     fn get_greeting_en(&self, name: &str) -> String {

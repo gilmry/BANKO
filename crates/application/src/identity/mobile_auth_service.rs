@@ -149,7 +149,7 @@ impl MobileAuthService {
             .device_repo
             .count_active_by_customer(&customer_id)
             .await
-            .map_err(|e| MobileAuthError::Internal(e))?;
+            .map_err(MobileAuthError::Internal)?;
 
         if active_count >= 5 {
             return Err(MobileAuthError::DeviceLimitExceeded);
@@ -173,7 +173,7 @@ impl MobileAuthService {
         self.device_repo
             .save(&device)
             .await
-            .map_err(|e| MobileAuthError::Internal(e))?;
+            .map_err(MobileAuthError::Internal)?;
 
         Ok(device)
     }
@@ -189,7 +189,7 @@ impl MobileAuthService {
             .device_repo
             .find_by_device_id(device_id)
             .await
-            .map_err(|e| MobileAuthError::Internal(e))?
+            .map_err(MobileAuthError::Internal)?
             .ok_or(MobileAuthError::DeviceNotFound)?;
 
         if !device.is_active {
@@ -214,7 +214,7 @@ impl MobileAuthService {
                 .hasher
                 .verify(pin_or_biometric, pin_hash)
                 .await
-                .map_err(|e| MobileAuthError::Internal(e))?;
+                .map_err(MobileAuthError::Internal)?;
 
             if !valid {
                 return Err(MobileAuthError::InvalidPin);
@@ -226,7 +226,7 @@ impl MobileAuthService {
         self.device_repo
             .update(&device)
             .await
-            .map_err(|e| MobileAuthError::Internal(e))?;
+            .map_err(MobileAuthError::Internal)?;
 
         // Create session (30 min TTL)
         let session = MobileSession {
@@ -242,7 +242,7 @@ impl MobileAuthService {
         self.session_repo
             .save(&session)
             .await
-            .map_err(|e| MobileAuthError::Internal(e))?;
+            .map_err(MobileAuthError::Internal)?;
 
         Ok(session)
     }
@@ -254,7 +254,7 @@ impl MobileAuthService {
             .session_repo
             .find_by_refresh_token_hash(refresh_token)
             .await
-            .map_err(|e| MobileAuthError::Internal(e))?
+            .map_err(MobileAuthError::Internal)?
             .ok_or(MobileAuthError::InvalidRefreshToken)?;
 
         if old_session.expires_at < Utc::now() {
@@ -266,7 +266,7 @@ impl MobileAuthService {
             .device_repo
             .find_by_device_id(&old_session.device_id)
             .await
-            .map_err(|e| MobileAuthError::Internal(e))?
+            .map_err(MobileAuthError::Internal)?
             .ok_or(MobileAuthError::DeviceNotFound)?;
 
         if !device.is_active {
@@ -287,7 +287,7 @@ impl MobileAuthService {
         self.session_repo
             .save(&new_session)
             .await
-            .map_err(|e| MobileAuthError::Internal(e))?;
+            .map_err(MobileAuthError::Internal)?;
 
         Ok(new_session)
     }
@@ -302,7 +302,7 @@ impl MobileAuthService {
             .device_repo
             .find_by_device_id(device_id)
             .await
-            .map_err(|e| MobileAuthError::Internal(e))?
+            .map_err(MobileAuthError::Internal)?
             .ok_or(MobileAuthError::DeviceNotFound)?;
 
         device.biometric_enabled = true;
@@ -312,7 +312,7 @@ impl MobileAuthService {
         self.device_repo
             .update(&device)
             .await
-            .map_err(|e| MobileAuthError::Internal(e))?;
+            .map_err(MobileAuthError::Internal)?;
 
         Ok(())
     }
@@ -328,7 +328,7 @@ impl MobileAuthService {
             .device_repo
             .find_by_device_id(device_id)
             .await
-            .map_err(|e| MobileAuthError::Internal(e))?
+            .map_err(MobileAuthError::Internal)?
             .ok_or(MobileAuthError::DeviceNotFound)?;
 
         // Hash PIN using bcrypt
@@ -336,14 +336,14 @@ impl MobileAuthService {
             .hasher
             .hash(pin)
             .await
-            .map_err(|e| MobileAuthError::Internal(e))?;
+            .map_err(MobileAuthError::Internal)?;
 
         device.pin_hash = Some(pin_hash);
 
         self.device_repo
             .update(&device)
             .await
-            .map_err(|e| MobileAuthError::Internal(e))?;
+            .map_err(MobileAuthError::Internal)?;
 
         Ok(())
     }
@@ -354,13 +354,13 @@ impl MobileAuthService {
             .device_repo
             .find_by_device_id(device_id)
             .await
-            .map_err(|e| MobileAuthError::Internal(e))?
+            .map_err(MobileAuthError::Internal)?
             .ok_or(MobileAuthError::DeviceNotFound)?;
 
         self.device_repo
             .deactivate(&device.id)
             .await
-            .map_err(|e| MobileAuthError::Internal(e))?;
+            .map_err(MobileAuthError::Internal)?;
 
         Ok(())
     }
@@ -373,7 +373,7 @@ impl MobileAuthService {
         self.device_repo
             .find_by_customer(&customer_id)
             .await
-            .map_err(|e| MobileAuthError::Internal(e))
+            .map_err(MobileAuthError::Internal)
     }
 
     /// Update push token for device
@@ -386,7 +386,7 @@ impl MobileAuthService {
             .device_repo
             .find_by_device_id(device_id)
             .await
-            .map_err(|e| MobileAuthError::Internal(e))?
+            .map_err(MobileAuthError::Internal)?
             .ok_or(MobileAuthError::DeviceNotFound)?;
 
         device.push_token = Some(push_token.to_string());
@@ -394,7 +394,7 @@ impl MobileAuthService {
         self.device_repo
             .update(&device)
             .await
-            .map_err(|e| MobileAuthError::Internal(e))?;
+            .map_err(MobileAuthError::Internal)?;
 
         Ok(())
     }

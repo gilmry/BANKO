@@ -1,10 +1,9 @@
-use chrono::{Duration, NaiveDate, Utc};
+use chrono::{NaiveDate, Utc};
 
 use banko_domain::collateral::{
     Collateral, CollateralAllocation, CollateralId, CollateralStatus, CollateralType,
     CollateralValuation, LtvCalculation, ValuationMethod,
 };
-use banko_domain::shared::errors::DomainError;
 use banko_domain::shared::value_objects::{Currency, CustomerId, Money};
 
 use super::errors::CollateralApplicationError;
@@ -19,7 +18,7 @@ pub struct CollateralService {
     collateral_repo: std::sync::Arc<dyn ICollateralRepository>,
     valuation_repo: std::sync::Arc<dyn ICollateralValuationRepository>,
     allocation_repo: std::sync::Arc<dyn ICollateralAllocationRepository>,
-    ltv_calculator: std::sync::Arc<dyn ILtvCalculationPort>,
+    _ltv_calculator: std::sync::Arc<dyn ILtvCalculationPort>,
 }
 
 impl CollateralService {
@@ -33,7 +32,7 @@ impl CollateralService {
             collateral_repo,
             valuation_repo,
             allocation_repo,
-            ltv_calculator,
+            _ltv_calculator: ltv_calculator,
         }
     }
 
@@ -76,7 +75,7 @@ impl CollateralService {
         self.collateral_repo
             .save(&collateral)
             .await
-            .map_err(|e| CollateralApplicationError::RepositoryError(e))?;
+            .map_err(CollateralApplicationError::RepositoryError)?;
 
         Ok(self.collateral_to_response(&collateral))
     }
@@ -93,7 +92,7 @@ impl CollateralService {
             .collateral_repo
             .find_by_id(&id)
             .await
-            .map_err(|e| CollateralApplicationError::RepositoryError(e))?
+            .map_err(CollateralApplicationError::RepositoryError)?
             .ok_or(CollateralApplicationError::CollateralNotFound)?;
 
         let allocations = self
@@ -127,13 +126,13 @@ impl CollateralService {
         let customer_id = query
             .customer_id
             .as_ref()
-            .map(|id| {
-                CustomerId::from_uuid(
+            .map(|id| -> Result<CustomerId, CollateralApplicationError> {
+                Ok(CustomerId::from_uuid(
                     uuid::Uuid::parse_str(id)
                         .map_err(|_| CollateralApplicationError::ValidationError(
                             "Invalid customer ID".to_string(),
                         ))?,
-                )
+                ))
             })
             .transpose()?;
 
@@ -157,13 +156,13 @@ impl CollateralService {
             .collateral_repo
             .find_all(customer_id.as_ref(), status, collateral_type, limit, offset)
             .await
-            .map_err(|e| CollateralApplicationError::RepositoryError(e))?;
+            .map_err(CollateralApplicationError::RepositoryError)?;
 
         let total = self
             .collateral_repo
             .count_all(customer_id.as_ref(), status, collateral_type)
             .await
-            .map_err(|e| CollateralApplicationError::RepositoryError(e))?;
+            .map_err(CollateralApplicationError::RepositoryError)?;
 
         Ok(PaginatedCollateralsResponse {
             data: collaterals.iter().map(|c| self.collateral_to_response(c)).collect(),
@@ -185,7 +184,7 @@ impl CollateralService {
             .collateral_repo
             .find_by_id(&id)
             .await
-            .map_err(|e| CollateralApplicationError::RepositoryError(e))?
+            .map_err(CollateralApplicationError::RepositoryError)?
             .ok_or(CollateralApplicationError::CollateralNotFound)?;
 
         let new_market_value = Money::new(request.new_market_value, Currency::TND)
@@ -223,13 +222,13 @@ impl CollateralService {
         self.valuation_repo
             .save(&valuation)
             .await
-            .map_err(|e| CollateralApplicationError::RepositoryError(e))?;
+            .map_err(CollateralApplicationError::RepositoryError)?;
 
         // Save updated collateral
         self.collateral_repo
             .save(&collateral)
             .await
-            .map_err(|e| CollateralApplicationError::RepositoryError(e))?;
+            .map_err(CollateralApplicationError::RepositoryError)?;
 
         Ok(self.collateral_to_response(&collateral))
     }
@@ -246,7 +245,7 @@ impl CollateralService {
             .collateral_repo
             .find_by_id(&id)
             .await
-            .map_err(|e| CollateralApplicationError::RepositoryError(e))?
+            .map_err(CollateralApplicationError::RepositoryError)?
             .ok_or(CollateralApplicationError::CollateralNotFound)?;
 
         collateral
@@ -256,7 +255,7 @@ impl CollateralService {
         self.collateral_repo
             .save(&collateral)
             .await
-            .map_err(|e| CollateralApplicationError::RepositoryError(e))?;
+            .map_err(CollateralApplicationError::RepositoryError)?;
 
         Ok(self.collateral_to_response(&collateral))
     }
@@ -273,7 +272,7 @@ impl CollateralService {
             .collateral_repo
             .find_by_id(&id)
             .await
-            .map_err(|e| CollateralApplicationError::RepositoryError(e))?
+            .map_err(CollateralApplicationError::RepositoryError)?
             .ok_or(CollateralApplicationError::CollateralNotFound)?;
 
         collateral
@@ -283,7 +282,7 @@ impl CollateralService {
         self.collateral_repo
             .save(&collateral)
             .await
-            .map_err(|e| CollateralApplicationError::RepositoryError(e))?;
+            .map_err(CollateralApplicationError::RepositoryError)?;
 
         Ok(self.collateral_to_response(&collateral))
     }
@@ -301,7 +300,7 @@ impl CollateralService {
             .collateral_repo
             .find_by_id(&collateral_id)
             .await
-            .map_err(|e| CollateralApplicationError::RepositoryError(e))?
+            .map_err(CollateralApplicationError::RepositoryError)?
             .ok_or(CollateralApplicationError::CollateralNotFound)?;
 
         if collateral.status() != CollateralStatus::Active {
@@ -325,7 +324,7 @@ impl CollateralService {
         self.allocation_repo
             .save(&allocation)
             .await
-            .map_err(|e| CollateralApplicationError::RepositoryError(e))?;
+            .map_err(CollateralApplicationError::RepositoryError)?;
 
         Ok(self.allocation_to_response(&allocation))
     }
@@ -367,7 +366,7 @@ impl CollateralService {
                 .collateral_repo
                 .find_by_id(id)
                 .await
-                .map_err(|e| CollateralApplicationError::RepositoryError(e))?
+                .map_err(CollateralApplicationError::RepositoryError)?
                 .ok_or(CollateralApplicationError::CollateralNotFound)?;
 
             total_collateral_value += collateral.net_value().amount_cents();
@@ -378,6 +377,9 @@ impl CollateralService {
 
         let total_collateral_value =
             Money::from_cents(total_collateral_value, Currency::TND);
+
+        let loan_amount_f64 = total_loan_amount.amount();
+        let collateral_value_f64 = total_collateral_value.amount();
 
         let ltv = LtvCalculation::calculate(
             request.loan_id,
@@ -403,8 +405,8 @@ impl CollateralService {
                 .iter()
                 .map(|id| id.to_string())
                 .collect(),
-            total_loan_amount: total_loan_amount.amount(),
-            total_collateral_value: total_collateral_value.amount(),
+            total_loan_amount: loan_amount_f64,
+            total_collateral_value: collateral_value_f64,
             ltv_ratio: ltv.ltv_ratio(),
             max_ltv_threshold: ltv.max_ltv_threshold(),
             is_compliant: ltv.is_compliant(),
@@ -419,7 +421,7 @@ impl CollateralService {
             .collateral_repo
             .find_revaluation_due()
             .await
-            .map_err(|e| CollateralApplicationError::RepositoryError(e))?;
+            .map_err(CollateralApplicationError::RepositoryError)?;
 
         Ok(collaterals.iter().map(|c| self.collateral_to_response(c)).collect())
     }
@@ -427,7 +429,7 @@ impl CollateralService {
     // --- Helper methods ---
 
     fn collateral_to_response(&self, collateral: &Collateral) -> CollateralResponse {
-        let today = NaiveDate::from(Utc::now().naive_utc().date());
+        let today = Utc::now().naive_utc().date();
         CollateralResponse {
             id: collateral.id().to_string(),
             collateral_type: collateral.collateral_type().to_string(),
@@ -447,7 +449,7 @@ impl CollateralService {
     }
 
     fn valuation_to_response(&self, valuation: &CollateralValuation) -> CollateralValuationResponse {
-        let today = NaiveDate::from(Utc::now().naive_utc().date());
+        let today = Utc::now().naive_utc().date();
         CollateralValuationResponse {
             valuation_id: valuation.valuation_id().to_string(),
             collateral_id: valuation.collateral_id().to_string(),
@@ -564,4 +566,22 @@ mod tests {
             Ok(true)
         }
 
-        async fn is_compliant(&self, _calculation: &LtvCalcula
+        async fn is_compliant(&self, _calculation: &LtvCalculation) -> Result<bool, String> {
+            Ok(true)
+        }
+    }
+
+    #[tokio::test]
+    async fn test_service_creation() {
+        let service = CollateralService::new(
+            std::sync::Arc::new(MockCollateralRepository),
+            std::sync::Arc::new(MockValuationRepository),
+            std::sync::Arc::new(MockAllocationRepository),
+            std::sync::Arc::new(MockLtvCalculator),
+        );
+
+        // Verify service is created (minimal test)
+        let result = service.find_revaluation_due().await;
+        assert!(result.is_ok());
+    }
+}

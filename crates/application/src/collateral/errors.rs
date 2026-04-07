@@ -73,4 +73,7 @@ impl From<DomainError> for CollateralApplicationError {
 }
 
 impl From<String> for CollateralApplicationError {
-    fn from(err: String) 
+    fn from(err: String) -> Self {
+        CollateralApplicationError::RepositoryError(err)
+    }
+}

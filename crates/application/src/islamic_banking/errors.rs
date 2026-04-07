@@ -58,4 +58,7 @@ mod tests {
 
     #[test]
     fn test_haram_product_error() {
-        let err = IslamicBankingServiceError::HaramProduct;
+        let err = IslamicBankingServiceError::HaramProduct;
+        assert!(err.to_string().contains("haram"));
+    }
+}

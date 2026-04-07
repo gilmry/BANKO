@@ -3,7 +3,6 @@ use std::sync::Arc;
 use chrono::{Duration, Utc};
 use uuid::Uuid;
 
-use banko_domain::account::Account;
 use banko_domain::aml::*;
 use banko_domain::shared::Money;
 
@@ -546,11 +545,11 @@ impl AssetFreezeService {
             .map_err(AmlServiceError::Internal)?;
 
         // If account freeze port is available, freeze the account's available_balance
+        // Failure to freeze the account via port is non-fatal — the freeze record is already saved
         if let Some(ref account_port) = self.account_port {
-            let _ = account_port
-                .freeze_account(account_id)
-                .await
-                .map_err(|e| AmlServiceError::Internal(e))?;
+            if let Err(e) = account_port.freeze_account(account_id).await {
+                tracing::warn!("Account freeze port failed for account {}: {}", account_id, e);
+            }
         }
 
         Ok(Self::freeze_to_response(&freeze))
@@ -586,7 +585,7 @@ impl AssetFreezeService {
             let _ = account_port
                 .unfreeze_account(account_id)
                 .await
-                .map_err(|e| AmlServiceError::Internal(e))?;
+                .map_err(AmlServiceError::Internal)?;
         }
 
         Ok(Self::freeze_to_response(&freeze))

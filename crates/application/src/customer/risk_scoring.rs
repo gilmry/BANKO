@@ -4,18 +4,15 @@ use banko_domain::customer::{
 
 /// Risk scoring algorithm version.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Default)]
 pub enum RiskScoringVersion {
     /// Original algorithm (V1).
+    #[default]
     V1,
     /// Enhanced algorithm with additional risk factors (V2).
     V2,
 }
 
-impl Default for RiskScoringVersion {
-    fn default() -> Self {
-        RiskScoringVersion::V1
-    }
-}
 
 impl std::fmt::Display for RiskScoringVersion {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -207,8 +204,8 @@ mod tests {
     use chrono::NaiveDate;
 
     use banko_domain::customer::{
-        Address, Beneficiary, Cin, ConsentStatus, CustomerType, KycProfile, PepStatus,
-        SourceOfFunds,
+        Address, Beneficiary, Cin, ConsentStatus, CustomerSegment, CustomerType, KycProfile,
+        PepStatus, SourceOfFunds,
     };
     use banko_domain::shared::value_objects::{EmailAddress, PhoneNumber};
 
@@ -266,7 +263,7 @@ mod tests {
             vec![]
         };
 
-        Customer::new(customer_type, kyc, beneficiaries, ConsentStatus::Given).unwrap()
+        Customer::new(customer_type, kyc, beneficiaries, ConsentStatus::Given, CustomerSegment::Retail).unwrap()
     }
 
     // V1 Tests (backward compatibility)
@@ -393,7 +390,8 @@ mod tests {
         );
         let result =
             RiskScoringService::calculate_risk_score_with_version(&customer, RiskScoringVersion::V2);
-        assert_eq!(result.score.value(), 10); // base only
+        // base 10 + recently_created 5 = 15
+        assert_eq!(result.score.value(), 15);
         assert_eq!(result.version, RiskScoringVersion::V2);
     }
 
@@ -407,7 +405,8 @@ mod tests {
         );
         let result =
             RiskScoringService::calculate_risk_score_with_version(&customer, RiskScoringVersion::V2);
-        assert_eq!(result.score.value(), 25); // base 10 + legal 15 (increased from 10)
+        // base 10 + legal 15 + recently_created 5 = 30
+        assert_eq!(result.score.value(), 30);
     }
 
     #[test]
@@ -422,8 +421,8 @@ mod tests {
         );
         let result =
             RiskScoringService::calculate_risk_score_with_version(&customer, RiskScoringVersion::V2);
-        // Base 10, no high-risk country penalty (Tunisia is not in the list)
-        assert_eq!(result.score.value(), 10);
+        // Base 10 + recently_created 5 = 15, no high-risk country penalty (Tunisia is not in the list)
+        assert_eq!(result.score.value(), 15);
     }
 
     #[test]
@@ -436,8 +435,8 @@ mod tests {
         );
         let result =
             RiskScoringService::calculate_risk_score_with_version(&customer, RiskScoringVersion::V2);
-        // base 10 + PEP 30 + legal 15 = 55
-        assert_eq!(result.score.value(), 55);
+        // base 10 + PEP 30 + legal 15 + recently_created 5 = 60
+        assert_eq!(result.score.value(), 60);
     }
 
     #[test]
@@ -450,8 +449,8 @@ mod tests {
         );
         let result =
             RiskScoringService::calculate_risk_score_with_version(&customer, RiskScoringVersion::V2);
-        // base 10 + PEP 30 + business 15 + legal 15 = 70
-        assert_eq!(result.score.value(), 70);
+        // base 10 + PEP 30 + business 15 + legal 15 + recently_created 5 = 75
+        assert_eq!(result.score.value(), 75);
     }
 
     #[test]
@@ -470,8 +469,8 @@ mod tests {
 
         // V1: base 10 + legal 10 = 20
         assert_eq!(v1_result.score.value(), 20);
-        // V2: base 10 + legal 15 = 25
-        assert_eq!(v2_result.score.value(), 25);
+        // V2: base 10 + legal 15 + recently_created 5 = 30
+        assert_eq!(v2_result.score.value(), 30);
 
         // V2 should be strictly higher for legal entities
         assert!(v2_result.score.value() > v1_result.score.value());

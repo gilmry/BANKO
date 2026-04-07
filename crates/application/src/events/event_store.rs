@@ -1,11 +1,10 @@
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use uuid::Uuid;
 
 use banko_domain::events::{EventBus, StoredEvent};
 
-use super::ports::{AggregateSnapshot, IEventStoreRepository, ISnapshotRepository};
+use super::ports::{IEventStoreRepository, ISnapshotRepository};
 
 // ============================================================
 // Replay Result
@@ -161,7 +160,7 @@ impl EventStoreService {
     async fn check_and_create_snapshot(&self, event: &StoredEvent) -> Result<(), String> {
         // Check if we should create a snapshot
         // For simplicity, we check every snapshot_threshold sequence number
-        if event.sequence_number > 0 && (event.sequence_number as usize) % self.snapshot_threshold == 0 {
+        if event.sequence_number > 0 && (event.sequence_number as usize).is_multiple_of(self.snapshot_threshold) {
             // Create a snapshot - in this simple implementation, just store the event state
             self.snapshot_repo
                 .save_snapshot(

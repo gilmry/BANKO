@@ -463,6 +463,21 @@ mod tests {
         ) -> Result<Vec<banko_domain::customer::Customer>, String> {
             Ok(Vec::new())
         }
+        async fn search(
+            &self,
+            _full_name: Option<&str>,
+            _email: Option<&str>,
+            _cin_or_rcs: Option<&str>,
+            _customer_type: Option<&str>,
+            _status: Option<&str>,
+            _segment: Option<&str>,
+            _risk_score_min: Option<u8>,
+            _risk_score_max: Option<u8>,
+            _limit: i64,
+            _offset: i64,
+        ) -> Result<(i64, Vec<banko_domain::customer::Customer>), String> {
+            Ok((0, vec![]))
+        }
     }
 
     // --- Mock Account Data Provider ---

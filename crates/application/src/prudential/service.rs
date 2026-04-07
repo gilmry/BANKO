@@ -337,8 +337,8 @@ impl RatioCalculationService {
     /// Create regulatory alert when concentration ratio exceeds threshold (PRU-08)
     pub async fn alert_concentration_breach(
         &self,
-        institution_id: Uuid,
-        beneficiary_id: Uuid,
+        _institution_id: Uuid,
+        _beneficiary_id: Uuid,
         ratio: f64,
     ) -> Result<(), PrudentialServiceError> {
         let alert = BreachAlert::new(

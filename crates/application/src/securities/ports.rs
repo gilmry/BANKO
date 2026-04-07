@@ -3,7 +3,7 @@ use chrono::NaiveDate;
 
 use banko_domain::securities::{
     CorporateAction, IsinCode, SecuritiesAccount, SecuritiesAccountId, Settlement, SettlementId,
-    TradeOrder, TradeOrderId, CorporateActionId, SecurityHolding,
+    TradeOrder, TradeOrderId, CorporateActionId,
 };
 use banko_domain::shared::CustomerId;
 

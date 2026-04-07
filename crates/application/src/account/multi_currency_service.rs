@@ -1,11 +1,9 @@
 use std::sync::Arc;
-use chrono::Utc;
 use rust_decimal::Decimal;
 use uuid::Uuid;
 
 use banko_domain::account::{Currency, CurrencyConverter, ConversionResult, AccountId};
-use banko_domain::shared::errors::DomainError;
-use banko_domain::shared::value_objects::{self, CustomerId, Rib};
+use banko_domain::shared::value_objects::{self, CustomerId};
 
 use super::errors::AccountServiceError;
 use super::ports::IAccountRepository;
@@ -67,11 +65,12 @@ impl MultiCurrencyService {
 
         // In a real system, we'd fetch current exchange rates
         // For now, use simplified rates
-        let mut rates = Vec::new();
-        rates.push((Currency::TND, Decimal::from(1)));
-        rates.push((Currency::EUR, Decimal::from(3)));
-        rates.push((Currency::USD, Decimal::from_str_exact("3.1").unwrap_or(Decimal::ZERO)));
-        rates.push((Currency::GBP, Decimal::from_str_exact("3.9").unwrap_or(Decimal::ZERO)));
+        let rates = vec![
+            (Currency::TND, Decimal::from(1)),
+            (Currency::EUR, Decimal::from(3)),
+            (Currency::USD, Decimal::from_str_exact("3.1").unwrap_or(Decimal::ZERO)),
+            (Currency::GBP, Decimal::from_str_exact("3.9").unwrap_or(Decimal::ZERO)),
+        ];
 
         let mut balances = Vec::new();
         let mut total_tnd = Decimal::ZERO;
@@ -270,8 +269,8 @@ mod tests {
         async fn find_movements_by_account_and_period(
             &self,
             _account_id: &AccountId,
-            _from: Option<std::chrono::DateTime<Utc>>,
-            _to: Option<std::chrono::DateTime<Utc>>,
+            _from: Option<chrono::DateTime<Utc>>,
+            _to: Option<chrono::DateTime<Utc>>,
         ) -> Result<Vec<banko_domain::account::Movement>, String> {
             Ok(Vec::new())
         }
@@ -287,14 +286,14 @@ mod tests {
     fn test_multi_currency_service_new() {
         let repo = Arc::new(MockAccountRepo::new());
         let service = MultiCurrencyService::new(repo);
-        assert_eq!(service.converter.bank_margin_percent, Decimal::from(2));
+        assert_eq!(service.converter.bank_margin_percent(), Decimal::from(2));
     }
 
     #[test]
     fn test_multi_currency_service_with_margin() {
         let repo = Arc::new(MockAccountRepo::new());
         let service = MultiCurrencyService::with_margin(repo, Decimal::from(3));
-        assert_eq!(service.converter.bank_margin_percent, Decimal::from(3));
+        assert_eq!(service.converter.bank_margin_percent(), Decimal::from(3));
     }
 
     #[tokio::test]

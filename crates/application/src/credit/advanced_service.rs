@@ -4,8 +4,8 @@ use chrono::NaiveDate;
 
 use banko_domain::credit::advanced::{
     EarlyRepaymentPenalty, LoanRestructuring, LoanSyndicationParticipant, MoratorYInterest,
-    PenaltyType, RevolvingCreditLine, RevolvingCreditLineId, RevolvingCreditStatus,
-    SubLimitType, SyndicatedLoan, SyndicatedLoanId,
+    PenaltyType, RevolvingCreditLine,
+    SubLimitType, SyndicatedLoan,
 };
 use banko_domain::credit::{Loan, LoanId, PaymentFrequency};
 use banko_domain::shared::Money;
@@ -86,7 +86,7 @@ impl AdvancedCreditService {
             .map(|i| i.total_amount().amount_cents())
             .sum();
 
-        let remaining_money = Money::from_cents(remaining_balance, loan.amount().currency());
+        let _remaining_money = Money::from_cents(remaining_balance, loan.amount().currency());
 
         let penalty = self.calculate_early_repayment(loan_id, penalty_type).await?;
 
@@ -304,19 +304,19 @@ impl AdvancedCreditService {
     }
 
     /// Get participant details in syndication.
-    pub fn get_syndication_participant(
+    pub fn get_syndication_participant<'a>(
         &self,
-        syndicated_loan: &SyndicatedLoan,
+        syndicated_loan: &'a SyndicatedLoan,
         bank_id: &str,
-    ) -> Option<&LoanSyndicationParticipant> {
+    ) -> Option<&'a LoanSyndicationParticipant> {
         syndicated_loan.get_participant(bank_id)
     }
 
     /// Get all participants in syndication.
-    pub fn get_syndication_participants(
+    pub fn get_syndication_participants<'a>(
         &self,
-        syndicated_loan: &SyndicatedLoan,
-    ) -> &[LoanSyndicationParticipant] {
+        syndicated_loan: &'a SyndicatedLoan,
+    ) -> &'a [LoanSyndicationParticipant] {
         syndicated_loan.participant_shares()
     }
 
@@ -338,7 +338,7 @@ mod tests {
     use async_trait::async_trait;
     use chrono::NaiveDate;
 
-    use banko_application::credit::ILoanRepository;
+    use crate::credit::ILoanRepository;
     use banko_domain::account::AccountId;
     use banko_domain::credit::*;
     use banko_domain::shared::{Currency, CustomerId, Money};
@@ -631,8 +631,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_restructure_loan() {
-        let service = make_service();
+        let repo = Arc::new(MockLoanRepository::new());
         let loan = Loan::new(CustomerId::new(), AccountId::new(), tnd(100000.0), 8.0, 12).unwrap();
+        repo.save(&loan).await.unwrap();
+        let service = AdvancedCreditService::new(repo);
 
         let restructuring = service
             .restructure_loan(
@@ -652,8 +654,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_restructure_with_principal_reduction() {
-        let service = make_service();
+        let repo = Arc::new(MockLoanRepository::new());
         let loan = Loan::new(CustomerId::new(), AccountId::new(), tnd(100000.0), 8.0, 12).unwrap();
+        repo.save(&loan).await.unwrap();
+        let service = AdvancedCreditService::new(repo);
 
         let mut restructuring = service
             .restructure_loan(

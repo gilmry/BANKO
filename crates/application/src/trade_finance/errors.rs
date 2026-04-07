@@ -44,4 +44,6 @@ pub enum TradeFinanceError {
     #[error("Domain error: {0}")]
     DomainError(String),
 
-    #[error("I
+    #[error("Internal error: {0}")]
+    Internal(String),
+}

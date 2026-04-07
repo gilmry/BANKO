@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use chrono::Utc;
-use rust_decimal::Decimal;
 use uuid::Uuid;
 
 use banko_domain::payment::*;

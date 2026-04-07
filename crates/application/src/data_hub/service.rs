@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use chrono::Utc;
 
 use banko_domain::data_hub::{
     DataEntity, DataEntityId, DataEntityType, DataGovernancePolicy, DataLineage,
@@ -27,7 +26,7 @@ pub struct DataHubService {
     reconciliation_repo: Arc<dyn IDataReconciliationRepository>,
     master_data_repo: Arc<dyn IMasterDataRepository>,
     policy_repo: Arc<dyn IGovernancePolicyRepository>,
-    quality_validator: Arc<dyn IDataQualityValidator>,
+    _quality_validator: Arc<dyn IDataQualityValidator>,
     reconciliation_engine: Arc<dyn IReconciliationEngine>,
 }
 
@@ -49,7 +48,7 @@ impl DataHubService {
             reconciliation_repo,
             master_data_repo,
             policy_repo,
-            quality_validator,
+            _quality_validator: quality_validator,
             reconciliation_engine,
         }
     }

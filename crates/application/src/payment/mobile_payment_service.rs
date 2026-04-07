@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -126,8 +125,8 @@ impl MobilePaymentService {
         if phone.len() < 8 || phone.len() > 17 {
             return false;
         }
-        if phone.starts_with('+') {
-            phone[1..].chars().all(|c| c.is_ascii_digit())
+        if let Some(stripped) = phone.strip_prefix('+') {
+            stripped.chars().all(|c| c.is_ascii_digit())
         } else {
             phone.chars().all(|c| c.is_ascii_digit())
         }
@@ -149,7 +148,7 @@ impl MobilePaymentService {
             .payment_provider
             .get_account_balance(&req.from_account_id)
             .await
-            .map_err(|e| MobilePaymentError::Internal(e))?;
+            .map_err(MobilePaymentError::Internal)?;
 
         if balance < req.amount {
             return Err(MobilePaymentError::InsufficientBalance);
@@ -181,7 +180,7 @@ impl MobilePaymentService {
                 &req.note.unwrap_or_default(),
             )
             .await
-            .map_err(|e| MobilePaymentError::TransferFailed(e))?;
+            .map_err(MobilePaymentError::TransferFailed)?;
 
         // Record beneficiary for quick access
         self.payment_provider
@@ -207,7 +206,7 @@ impl MobilePaymentService {
         self.payment_provider
             .get_frequent_beneficiaries(&customer_id, 5)
             .await
-            .map_err(|e| MobilePaymentError::Internal(e))
+            .map_err(MobilePaymentError::Internal)
     }
 
     /// Scan and parse QR code for payment

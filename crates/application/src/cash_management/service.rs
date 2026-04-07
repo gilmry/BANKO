@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
-use chrono::Utc;
 
 use banko_domain::cash_management::{
-    CashForecast, CashForecastId, CashPool, CashPoolId, ConfidenceLevel, FundingStrategy,
+    CashForecast, CashPool, CashPoolId, ConfidenceLevel, FundingStrategy,
     FundingStrategyId, InstrumentType, LiquidityPosition, PoolType, SweepAccount,
     SweepAccountId, SweepFrequency, SweepType,
 };
@@ -291,16 +290,16 @@ impl CashManagementService {
         let currency = Currency::try_from(&request.currency[..])
             .map_err(|e| CashManagementError::DomainError(e.to_string()))?;
 
-        let total_assets = Money::from_f64(request.total_assets, currency.clone())
+        let total_assets = Money::from_f64(request.total_assets, currency)
             .map_err(|e| CashManagementError::DomainError(e.to_string()))?;
 
-        let total_liabilities = Money::from_f64(request.total_liabilities, currency.clone())
+        let total_liabilities = Money::from_f64(request.total_liabilities, currency)
             .map_err(|e| CashManagementError::DomainError(e.to_string()))?;
 
-        let lcr_assets = Money::from_f64(request.lcr_eligible_assets, currency.clone())
+        let lcr_assets = Money::from_f64(request.lcr_eligible_assets, currency)
             .map_err(|e| CashManagementError::DomainError(e.to_string()))?;
 
-        let nsfr_funding = Money::from_f64(request.nsfr_stable_funding, currency.clone())
+        let nsfr_funding = Money::from_f64(request.nsfr_stable_funding, currency)
             .map_err(|e| CashManagementError::DomainError(e.to_string()))?;
 
         let position = LiquidityPosition::new(
@@ -318,7 +317,7 @@ impl CashManagementService {
             .await
             .map_err(CashManagementError::Internal)?;
 
-        Ok(self.liquidity_to_response(&position)?)
+        self.liquidity_to_response(&position)
     }
 
     pub async fn get_current_liquidity_position(
@@ -631,4 +630,26 @@ mod tests {
         async fn find_by_id(&self, _id: &FundingStrategyId) -> Result<Option<FundingStrategy>, String> {
             Ok(None)
         }
-        async fn fin
+        async fn find_all_active(&self) -> Result<Vec<FundingStrategy>, String> {
+            Ok(vec![])
+        }
+        async fn delete(&self, _id: &FundingStrategyId) -> Result<(), String> {
+            Ok(())
+        }
+    }
+
+    fn create_service() -> CashManagementService {
+        CashManagementService::new(
+            Arc::new(MockSweepRepository),
+            Arc::new(MockPoolRepository),
+            Arc::new(MockForecastRepository),
+            Arc::new(MockLiquidityRepository),
+            Arc::new(MockStrategyRepository),
+        )
+    }
+
+    #[test]
+    fn test_service_creation() {
+        let _service = create_service();
+    }
+}

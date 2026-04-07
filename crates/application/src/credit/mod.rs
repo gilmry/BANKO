@@ -1,6 +1,6 @@
 mod dto;
 mod errors;
-mod ports;
+pub mod ports;
 mod service;
 mod advanced_service;
 

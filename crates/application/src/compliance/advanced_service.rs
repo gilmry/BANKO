@@ -3,8 +3,8 @@ use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 use banko_domain::compliance::{
-    AssessmentStatus, AuditStatus, ChangeImpactLevel, ComplianceIncident, ComplianceIncidentId,
-    ComplianceRisk, ComplianceRiskId, ComplianceTraining, ComplianceTrainingId, GafiRecommendation,
+    AuditStatus, ChangeImpactLevel, ComplianceIncident, ComplianceIncidentId,
+    ComplianceRisk, ComplianceTraining, ComplianceTrainingId, GafiRecommendation,
     GafiRecommendationId, GafiStatus, IncidentSeverity, InternalAudit, InternalAuditId,
     RegulatoryChange, RegulatoryChangeId, RiskImpact, RiskMatrixLevel, RiskProbability,
     RiskRating, ThirdPartyAssessment, ThirdPartyAssessmentId, TrainingStatus, WhistleblowerReport,
@@ -51,7 +51,7 @@ impl GafiRecommendationService {
         self.gafi_repo
             .save_recommendation(&recommendation)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(recommendation)
     }
@@ -65,7 +65,7 @@ impl GafiRecommendationService {
             .gafi_repo
             .find_by_id(id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::InvalidInput(
                 "GAFI recommendation not found".to_string(),
             ))?;
@@ -77,7 +77,7 @@ impl GafiRecommendationService {
         self.gafi_repo
             .save_recommendation(&recommendation)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(recommendation)
     }
@@ -86,7 +86,7 @@ impl GafiRecommendationService {
         self.gafi_repo
             .list_all()
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))
+            .map_err(ComplianceError::RepositoryError)
     }
 
     pub async fn get_compliance_status(&self) -> Result<(i64, i64, i64, f64), ComplianceError> {
@@ -147,7 +147,7 @@ impl InternalAuditService {
         self.audit_repo
             .save_audit(&audit)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(audit)
     }
@@ -157,7 +157,7 @@ impl InternalAuditService {
             .audit_repo
             .find_by_id(id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::InvalidInput("Audit not found".to_string()))?;
 
         audit
@@ -167,7 +167,7 @@ impl InternalAuditService {
         self.audit_repo
             .save_audit(&audit)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(audit)
     }
@@ -182,7 +182,7 @@ impl InternalAuditService {
             .audit_repo
             .find_by_id(id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::InvalidInput("Audit not found".to_string()))?;
 
         audit
@@ -192,7 +192,7 @@ impl InternalAuditService {
         self.audit_repo
             .save_audit(&audit)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(audit)
     }
@@ -201,14 +201,14 @@ impl InternalAuditService {
         self.audit_repo
             .find_by_status(AuditStatus::Planned)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))
+            .map_err(ComplianceError::RepositoryError)
     }
 
     pub async fn get_audit_calendar(&self) -> Result<Vec<InternalAudit>, ComplianceError> {
         self.audit_repo
             .list_all()
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))
+            .map_err(ComplianceError::RepositoryError)
     }
 }
 
@@ -243,7 +243,7 @@ impl ComplianceRiskService {
         self.risk_repo
             .save_risk(&risk)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(risk)
     }
@@ -252,7 +252,7 @@ impl ComplianceRiskService {
         self.risk_repo
             .list_all()
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))
+            .map_err(ComplianceError::RepositoryError)
     }
 
     pub async fn get_critical_risks(&self) -> Result<Vec<ComplianceRisk>, ComplianceError> {
@@ -341,7 +341,7 @@ impl ComplianceTrainingService {
         self.training_repo
             .save_training(&training)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(training)
     }
@@ -356,7 +356,7 @@ impl ComplianceTrainingService {
             .training_repo
             .find_by_id(id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::InvalidInput("Training not found".to_string()))?;
 
         training
@@ -366,7 +366,7 @@ impl ComplianceTrainingService {
         self.training_repo
             .save_training(&training)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(training)
     }
@@ -378,7 +378,7 @@ impl ComplianceTrainingService {
         self.training_repo
             .find_by_employee(employee_id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))
+            .map_err(ComplianceError::RepositoryError)
     }
 
     pub async fn get_overdue_trainings(&self) -> Result<Vec<ComplianceTraining>, ComplianceError> {
@@ -386,7 +386,7 @@ impl ComplianceTrainingService {
             .training_repo
             .list_all()
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         let overdue: Vec<_> = all
             .into_iter()
@@ -403,7 +403,7 @@ impl ComplianceTrainingService {
             .training_repo
             .list_all()
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         let expiring: Vec<_> = all
             .into_iter()
@@ -420,7 +420,7 @@ impl ComplianceTrainingService {
             .training_repo
             .list_all()
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         if all.is_empty() {
             return Ok(0.0);
@@ -476,7 +476,7 @@ impl RegulatoryChangeService {
         self.change_repo
             .save_change(&change)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(change)
     }
@@ -490,7 +490,7 @@ impl RegulatoryChangeService {
             .change_repo
             .find_by_id(id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::InvalidInput("Change not found".to_string()))?;
 
         change
@@ -500,7 +500,7 @@ impl RegulatoryChangeService {
         self.change_repo
             .save_change(&change)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(change)
     }
@@ -510,7 +510,7 @@ impl RegulatoryChangeService {
             .change_repo
             .list_all()
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         let pending: Vec<_> = all
             .into_iter()
@@ -528,7 +528,7 @@ impl RegulatoryChangeService {
             .change_repo
             .list_all()
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         let filtered: Vec<_> = all
             .into_iter()
@@ -572,7 +572,7 @@ impl ComplianceIncidentService {
         self.incident_repo
             .save_incident(&incident)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(incident)
     }
@@ -585,7 +585,7 @@ impl ComplianceIncidentService {
             .incident_repo
             .find_by_id(id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::InvalidInput("Incident not found".to_string()))?;
 
         incident
@@ -595,7 +595,7 @@ impl ComplianceIncidentService {
         self.incident_repo
             .save_incident(&incident)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(incident)
     }
@@ -610,7 +610,7 @@ impl ComplianceIncidentService {
             .incident_repo
             .find_by_id(id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::InvalidInput("Incident not found".to_string()))?;
 
         incident
@@ -620,7 +620,7 @@ impl ComplianceIncidentService {
         self.incident_repo
             .save_incident(&incident)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(incident)
     }
@@ -630,7 +630,7 @@ impl ComplianceIncidentService {
             .incident_repo
             .list_all()
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         let critical: Vec<_> = all
             .into_iter()
@@ -645,7 +645,7 @@ impl ComplianceIncidentService {
             .incident_repo
             .list_all()
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         let open: Vec<_> = all
             .into_iter()
@@ -691,7 +691,7 @@ impl WhistleblowerService {
         self.whistleblower_repo
             .save_report(&report)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(report)
     }
@@ -717,7 +717,7 @@ impl WhistleblowerService {
         self.whistleblower_repo
             .save_report(&report)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(report)
     }
@@ -730,7 +730,7 @@ impl WhistleblowerService {
             .whistleblower_repo
             .find_by_id(id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::InvalidInput("Report not found".to_string()))?;
 
         report
@@ -740,7 +740,7 @@ impl WhistleblowerService {
         self.whistleblower_repo
             .save_report(&report)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(report)
     }
@@ -750,7 +750,7 @@ impl WhistleblowerService {
             .whistleblower_repo
             .list_all()
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         let pending: Vec<_> = all
             .into_iter()
@@ -767,7 +767,7 @@ impl WhistleblowerService {
             .whistleblower_repo
             .list_all()
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         let investigating: Vec<_> = all
             .into_iter()
@@ -805,7 +805,7 @@ impl ThirdPartyService {
         self.third_party_repo
             .save_assessment(&assessment)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(assessment)
     }
@@ -818,7 +818,7 @@ impl ThirdPartyService {
             .third_party_repo
             .find_by_id(id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::InvalidInput("Assessment not found".to_string()))?;
 
         assessment
@@ -828,7 +828,7 @@ impl ThirdPartyService {
         self.third_party_repo
             .save_assessment(&assessment)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(assessment)
     }
@@ -841,7 +841,7 @@ impl ThirdPartyService {
             .third_party_repo
             .find_by_id(id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::InvalidInput("Assessment not found".to_string()))?;
 
         assessment
@@ -851,7 +851,7 @@ impl ThirdPartyService {
         self.third_party_repo
             .save_assessment(&assessment)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(assessment)
     }
@@ -863,7 +863,7 @@ impl ThirdPartyService {
             .third_party_repo
             .list_all()
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         let high_risk: Vec<_> = all
             .into_iter()
@@ -880,7 +880,7 @@ impl ThirdPartyService {
             .third_party_repo
             .list_all()
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         let now = Utc::now();
         let due: Vec<_> = all

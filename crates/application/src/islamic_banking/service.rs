@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use banko_domain::islamic_banking::*;
-use banko_domain::shared::{Currency, CustomerId, Money};
+use banko_domain::shared::{CustomerId, Money};
 
 use super::errors::IslamicBankingServiceError;
 use super::ports::*;
@@ -13,7 +13,7 @@ pub struct IslamicBankingService {
     sharia_verifier: Arc<dyn IShariaApprovalVerifier>,
     validator: Arc<dyn IIslamicProductValidator>,
     asset_verifier: Arc<dyn IAssetVerifier>,
-    profit_calculator: Arc<dyn IProfitCalculator>,
+    _profit_calculator: Arc<dyn IProfitCalculator>,
 }
 
 impl IslamicBankingService {
@@ -29,7 +29,7 @@ impl IslamicBankingService {
             sharia_verifier,
             validator,
             asset_verifier,
-            profit_calculator,
+            _profit_calculator: profit_calculator,
         }
     }
 
@@ -50,7 +50,7 @@ impl IslamicBankingService {
             .sharia_verifier
             .is_product_approved("Murabaha")
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         if !approved {
             return Err(IslamicBankingServiceError::ShariaApprovalRequired);
@@ -71,13 +71,13 @@ impl IslamicBankingService {
         self.validator
             .validate_murabaha(&contract)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         // Persist
         self.repository
             .save_murabaha(&contract)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         Ok(contract)
     }
@@ -90,7 +90,7 @@ impl IslamicBankingService {
         self.repository
             .find_murabaha(id)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?
+            .map_err(IslamicBankingServiceError::RepositoryError)?
             .ok_or_else(|| IslamicBankingServiceError::ContractNotFound(id.to_string()))
     }
 
@@ -102,7 +102,7 @@ impl IslamicBankingService {
         self.repository
             .find_murabaha_by_customer(customer_id)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))
+            .map_err(IslamicBankingServiceError::RepositoryError)
     }
 
     /// Approve a Murabaha contract
@@ -117,7 +117,7 @@ impl IslamicBankingService {
         self.repository
             .save_murabaha(&contract)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
         Ok(contract)
     }
 
@@ -133,7 +133,7 @@ impl IslamicBankingService {
         self.repository
             .save_murabaha(&contract)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
         Ok(contract)
     }
 
@@ -155,7 +155,7 @@ impl IslamicBankingService {
             .sharia_verifier
             .is_product_approved("Ijara")
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         if !approved {
             return Err(IslamicBankingServiceError::ShariaApprovalRequired);
@@ -166,7 +166,7 @@ impl IslamicBankingService {
             .asset_verifier
             .asset_exists(&asset_id)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         if !exists {
             return Err(IslamicBankingServiceError::AssetNotFound(asset_id));
@@ -176,7 +176,7 @@ impl IslamicBankingService {
             .asset_verifier
             .asset_is_tangible(&asset_id)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         if !is_tangible {
             return Err(IslamicBankingServiceError::Internal(
@@ -200,13 +200,13 @@ impl IslamicBankingService {
         self.validator
             .validate_ijara(&contract)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         // Persist
         self.repository
             .save_ijara(&contract)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         Ok(contract)
     }
@@ -219,7 +219,7 @@ impl IslamicBankingService {
         self.repository
             .find_ijara(id)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?
+            .map_err(IslamicBankingServiceError::RepositoryError)?
             .ok_or_else(|| IslamicBankingServiceError::ContractNotFound(id.to_string()))
     }
 
@@ -240,7 +240,7 @@ impl IslamicBankingService {
             .sharia_verifier
             .is_product_approved("Musharaka")
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         if !approved {
             return Err(IslamicBankingServiceError::ShariaApprovalRequired);
@@ -259,12 +259,12 @@ impl IslamicBankingService {
         self.validator
             .validate_musharaka(&contract)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         self.repository
             .save_musharaka(&contract)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         Ok(contract)
     }
@@ -284,7 +284,7 @@ impl IslamicBankingService {
             .sharia_verifier
             .is_product_approved("Mudaraba")
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         if !approved {
             return Err(IslamicBankingServiceError::ShariaApprovalRequired);
@@ -302,12 +302,12 @@ impl IslamicBankingService {
         self.validator
             .validate_mudaraba(&contract)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         self.repository
             .save_mudaraba(&contract)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         Ok(contract)
     }
@@ -329,7 +329,7 @@ impl IslamicBankingService {
             .sharia_verifier
             .is_product_approved("Sukuk")
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         if !approved {
             return Err(IslamicBankingServiceError::ShariaApprovalRequired);
@@ -340,7 +340,7 @@ impl IslamicBankingService {
             .asset_verifier
             .asset_exists(&underlying_asset)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         if !exists {
             return Err(IslamicBankingServiceError::AssetNotFound(underlying_asset));
@@ -359,12 +359,12 @@ impl IslamicBankingService {
         self.validator
             .validate_sukuk(&sukuk)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         self.repository
             .save_sukuk(&sukuk)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         Ok(sukuk)
     }
@@ -385,7 +385,7 @@ impl IslamicBankingService {
         self.repository
             .save_zakat(&zakat)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         Ok(zakat)
     }
@@ -398,7 +398,7 @@ impl IslamicBankingService {
         self.repository
             .find_zakat(id)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?
+            .map_err(IslamicBankingServiceError::RepositoryError)?
             .ok_or_else(|| IslamicBankingServiceError::ContractNotFound(id.to_string()))
     }
 
@@ -411,7 +411,7 @@ impl IslamicBankingService {
         self.repository
             .find_zakat_by_year(customer_id, year)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))
+            .map_err(IslamicBankingServiceError::RepositoryError)
     }
 
     // --- Sharia Board Operations ---
@@ -430,7 +430,7 @@ impl IslamicBankingService {
         self.repository
             .save_sharia_decision(&decision)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         Ok(decision)
     }
@@ -443,7 +443,7 @@ impl IslamicBankingService {
         self.sharia_verifier
             .get_latest_ruling(product_type)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))
+            .map_err(IslamicBankingServiceError::RepositoryError)
     }
 
     // --- Profit Distribution Operations ---
@@ -469,7 +469,7 @@ impl IslamicBankingService {
         self.repository
             .save_profit_distribution(&distribution)
             .await
-            .map_err(|e| IslamicBankingServiceError::RepositoryError(e))?;
+            .map_err(IslamicBankingServiceError::RepositoryError)?;
 
         Ok(distribution)
     }
@@ -478,4 +478,21 @@ impl IslamicBankingService {
     pub async fn get_distributions_for_period(
         &self,
         period: u32,
-    ) -> Result<Ve
+    ) -> Result<Vec<ProfitDistribution>, IslamicBankingServiceError> {
+        self.repository
+            .find_profit_distributions_by_period(period)
+            .await
+            .map_err(IslamicBankingServiceError::RepositoryError)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_service_creation() {
+        // Tests would require mock implementations of ports
+        // This is a compile-time verification that the service is properly structured
+    }
+}

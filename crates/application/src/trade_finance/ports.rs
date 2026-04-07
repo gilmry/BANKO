@@ -57,4 +57,5 @@ pub trait ITradeFinanceLimitRepository: Send + Sync {
         &self,
         customer_id: &CustomerId,
     ) -> Result<Vec<TradeFinanceLimit>, String>;
-    async fn delete
+    async fn delete(&self, id: &TradeFinanceLimitId) -> Result<(), String>;
+}

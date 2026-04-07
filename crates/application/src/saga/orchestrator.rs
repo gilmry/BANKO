@@ -220,7 +220,7 @@ impl SagaOrchestrator {
                     // Step failed, trigger compensation
                     self.status = SagaStatus::Compensating;
                     self.compensate(context).await?;
-                    self.status = SagaStatus::Failed(e.to_string());
+                    // Status is now Compensated (set by compensate method)
                     return Err(e);
                 }
             }

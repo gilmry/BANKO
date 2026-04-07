@@ -6,15 +6,12 @@ use rust_decimal::Decimal;
 use uuid::Uuid;
 
 use banko_domain::product::{
-    CalcMethod, CustomerSegment, EligibilityRule, Fee, FeeType, InterestRate, Product,
-    ProductStatus, ProductType, PricingBand, PricingGrid,
+    CalcMethod, CustomerSegment, EligibilityRule, Fee, FeeType, InterestRate, Product, ProductType,
 };
 
 use super::dto::{
-    AccrualResult, CreateEligibilityDto, CreateFeeDto, CreateInterestRateDto,
-    CreatePricingBandDto, CreatePricingGridRequest, CreateProductRequest, EligibilityCheckRequest,
-    EligibilityCheckResponse, InterestRateResponse, MaturityResult, PriceQuote,
-    PricingBandResponse, PricingGridResponse, ProductResponse, UpdateProductRequest, FeeResponse,
+    AccrualResult, CreateEligibilityDto, CreateProductRequest, EligibilityCheckRequest,
+    EligibilityCheckResponse, InterestRateResponse, MaturityResult, PriceQuote, ProductResponse, FeeResponse,
     EligibilityResponse,
 };
 use super::errors::ProductServiceError;
@@ -47,15 +44,15 @@ impl ProductService {
     ) -> Result<ProductResponse, ProductServiceError> {
         // Parse product type
         let product_type = ProductType::from_str(&req.product_type)
-            .map_err(|e| ProductServiceError::InvalidInput(e))?;
+            .map_err(ProductServiceError::InvalidInput)?;
 
         // Parse interest rate if provided
         let interest_rate = if let Some(ir_dto) = req.interest_rate {
             let calc_method = CalcMethod::from_str(&ir_dto.calc_method)
-                .map_err(|e| ProductServiceError::InvalidInput(e))?;
+                .map_err(ProductServiceError::InvalidInput)?;
             Some(
                 InterestRate::new(ir_dto.annual_rate, calc_method, ir_dto.floor_rate, ir_dto.ceiling_rate)
-                    .map_err(|e| ProductServiceError::DomainError(e))?,
+                    .map_err(ProductServiceError::DomainError)?,
             )
         } else {
             None
@@ -65,7 +62,7 @@ impl ProductService {
         let mut fees = Vec::new();
         for fee_dto in req.fees {
             let fee_type = FeeType::from_str(&fee_dto.fee_type)
-                .map_err(|e| ProductServiceError::InvalidInput(e))?;
+                .map_err(ProductServiceError::InvalidInput)?;
             let fee = Fee::new(
                 fee_type,
                 fee_dto.fixed_amount,
@@ -74,7 +71,7 @@ impl ProductService {
                 fee_dto.max_amount,
                 fee_dto.charged_on,
             )
-            .map_err(|e| ProductServiceError::DomainError(e))?;
+            .map_err(ProductServiceError::DomainError)?;
             fees.push(fee);
         }
 
@@ -102,13 +99,13 @@ impl ProductService {
             req.min_balance,
             req.currency,
         )
-        .map_err(|e| ProductServiceError::DomainError(e))?;
+        .map_err(ProductServiceError::DomainError)?;
 
         // Save product
         self.product_repo
             .save(&product)
             .await
-            .map_err(|e| ProductServiceError::RepositoryError(e))?;
+            .map_err(ProductServiceError::RepositoryError)?;
 
         Ok(self.product_to_response(&product))
     }
@@ -119,7 +116,7 @@ impl ProductService {
             .product_repo
             .find_by_id(id)
             .await
-            .map_err(|e| ProductServiceError::RepositoryError(e))?
+            .map_err(ProductServiceError::RepositoryError)?
             .ok_or(ProductServiceError::ProductNotFound)?;
 
         Ok(self.product_to_response(&product))
@@ -131,7 +128,7 @@ impl ProductService {
             .product_repo
             .list_all()
             .await
-            .map_err(|e| ProductServiceError::RepositoryError(e))?;
+            .map_err(ProductServiceError::RepositoryError)?;
 
         Ok(products.iter().map(|p| self.product_to_response(p)).collect())
     }
@@ -142,17 +139,17 @@ impl ProductService {
             .product_repo
             .find_by_id(id)
             .await
-            .map_err(|e| ProductServiceError::RepositoryError(e))?
+            .map_err(ProductServiceError::RepositoryError)?
             .ok_or(ProductServiceError::ProductNotFound)?;
 
         product
             .activate()
-            .map_err(|e| ProductServiceError::DomainError(e))?;
+            .map_err(ProductServiceError::DomainError)?;
 
         self.product_repo
             .update(&product)
             .await
-            .map_err(|e| ProductServiceError::RepositoryError(e))?;
+            .map_err(ProductServiceError::RepositoryError)?;
 
         Ok(self.product_to_response(&product))
     }
@@ -163,17 +160,17 @@ impl ProductService {
             .product_repo
             .find_by_id(id)
             .await
-            .map_err(|e| ProductServiceError::RepositoryError(e))?
+            .map_err(ProductServiceError::RepositoryError)?
             .ok_or(ProductServiceError::ProductNotFound)?;
 
         product
             .suspend()
-            .map_err(|e| ProductServiceError::DomainError(e))?;
+            .map_err(ProductServiceError::DomainError)?;
 
         self.product_repo
             .update(&product)
             .await
-            .map_err(|e| ProductServiceError::RepositoryError(e))?;
+            .map_err(ProductServiceError::RepositoryError)?;
 
         Ok(self.product_to_response(&product))
     }
@@ -190,12 +187,12 @@ impl ProductService {
             .product_repo
             .find_by_id(product_id)
             .await
-            .map_err(|e| ProductServiceError::RepositoryError(e))?
+            .map_err(ProductServiceError::RepositoryError)?
             .ok_or(ProductServiceError::ProductNotFound)?;
 
         // Parse segment
         let segment = CustomerSegment::from_str(customer_segment)
-            .map_err(|e| ProductServiceError::InvalidInput(e))?;
+            .map_err(ProductServiceError::InvalidInput)?;
 
         // Get rate: first try pricing grid, then segment override, then default
         let rate: Decimal = self
@@ -233,11 +230,11 @@ impl ProductService {
                 .product_repo
                 .find_by_id(product_id)
                 .await
-                .map_err(|e| ProductServiceError::RepositoryError(e))?
+                .map_err(ProductServiceError::RepositoryError)?
                 .ok_or(ProductServiceError::ProductNotFound)?;
 
             let segment = CustomerSegment::from_str(&req.segment)
-                .map_err(|e| ProductServiceError::InvalidInput(e))?;
+                .map_err(ProductServiceError::InvalidInput)?;
 
             match product.evaluate_eligibility(req.age, req.income, &segment, req.credit_score) {
                 Ok(()) => Ok(EligibilityCheckResponse {
@@ -257,10 +254,10 @@ impl ProductService {
                 .product_repo
                 .list_all()
                 .await
-                .map_err(|e| ProductServiceError::RepositoryError(e))?;
+                .map_err(ProductServiceError::RepositoryError)?;
 
             let segment = CustomerSegment::from_str(&req.segment)
-                .map_err(|e| ProductServiceError::InvalidInput(e))?;
+                .map_err(ProductServiceError::InvalidInput)?;
 
             // Find first eligible product
             for product in products {
@@ -290,10 +287,10 @@ impl ProductService {
             .product_repo
             .list_all()
             .await
-            .map_err(|e| ProductServiceError::RepositoryError(e))?;
+            .map_err(ProductServiceError::RepositoryError)?;
 
         let segment = CustomerSegment::from_str(&req.segment)
-            .map_err(|e| ProductServiceError::InvalidInput(e))?;
+            .map_err(ProductServiceError::InvalidInput)?;
 
         let mut eligible = Vec::new();
         for product in products {
@@ -334,7 +331,7 @@ impl ProductService {
         let required_segment = if let Some(segment_str) = &req.required_segment {
             Some(
                 CustomerSegment::from_str(segment_str)
-                    .map_err(|e| ProductServiceError::InvalidInput(e))?,
+                    .map_err(ProductServiceError::InvalidInput)?,
             )
         } else {
             None
@@ -421,7 +418,7 @@ impl InterestCalculationService {
     ) -> Result<Decimal, String> {
         let method = CalcMethod::from_str(calc_method)?;
         let interest_rate =
-            InterestRate::new(annual_rate, method, None, None).map_err(|e| e)?;
+            InterestRate::new(annual_rate, method, None, None)?;
         Ok(interest_rate.calculate_daily_interest(account_balance))
     }
 
@@ -449,7 +446,7 @@ impl InterestCalculationService {
         accounts: Vec<(Decimal, Decimal)>, // (balance, rate) pairs
     ) -> AccrualResult {
         let mut processed = 0;
-        let mut total_interest = Decimal::ZERO;
+        let total_interest = Decimal::ZERO;
 
         for (_balance, _rate) in accounts {
             // In real implementation, this would persist to database

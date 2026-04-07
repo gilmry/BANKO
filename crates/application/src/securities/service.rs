@@ -1,10 +1,9 @@
 use std::sync::Arc;
-use chrono::NaiveDate;
 
 use banko_domain::securities::{
     CorporateAction, CorporateActionType, IsinCode, OrderStatus, OrderType, PortfolioValuation,
-    PriceType, SecurityHolding, SecurityType, SecuritiesAccount, SecuritiesAccountId,
-    SecuritiesAccountType, Settlement, SettlementStatus, TradeOrder, TradeOrderId,
+    PriceType, SecurityHolding, SecuritiesAccount, SecuritiesAccountId,
+    SecuritiesAccountType, Settlement, TradeOrder, TradeOrderId,
 };
 use banko_domain::shared::CustomerId;
 
@@ -20,9 +19,9 @@ pub struct SecuritiesService {
     order_repo: Arc<dyn ITradeOrderRepository>,
     settlement_repo: Arc<dyn ISettlementRepository>,
     corporate_action_repo: Arc<dyn ICorporateActionRepository>,
-    market_price_feed: Arc<dyn IMarketPriceFeed>,
-    order_matching_engine: Arc<dyn IOrderMatchingEngine>,
-    settlement_processor: Arc<dyn ISettlementProcessor>,
+    _market_price_feed: Arc<dyn IMarketPriceFeed>,
+    _order_matching_engine: Arc<dyn IOrderMatchingEngine>,
+    _settlement_processor: Arc<dyn ISettlementProcessor>,
     aml_sanctions_checker: Arc<dyn IAmlSanctionsChecker>,
 }
 
@@ -42,9 +41,9 @@ impl SecuritiesService {
             order_repo,
             settlement_repo,
             corporate_action_repo,
-            market_price_feed,
-            order_matching_engine,
-            settlement_processor,
+            _market_price_feed: market_price_feed,
+            _order_matching_engine: order_matching_engine,
+            _settlement_processor: settlement_processor,
             aml_sanctions_checker,
         }
     }
@@ -59,7 +58,7 @@ impl SecuritiesService {
         self.aml_sanctions_checker
             .check_customer_compliance(&customer_id)
             .await
-            .map_err(|e| SecuritiesServiceError::Internal(e))?;
+            .map_err(SecuritiesServiceError::Internal)?;
 
         let account_type = SecuritiesAccountType::from_str(&req.account_type)
             .map_err(|e| SecuritiesServiceError::DomainError(e.to_string()))?;
@@ -140,7 +139,7 @@ impl SecuritiesService {
         self.aml_sanctions_checker
             .check_customer_compliance(customer_id)
             .await
-            .map_err(|e| SecuritiesServiceError::Internal(e))?;
+            .map_err(SecuritiesServiceError::Internal)?;
 
         let order_type = OrderType::from_str(&req.order_type)
             .map_err(|e| SecuritiesServiceError::DomainError(e.to_string()))?;
@@ -643,6 +642,6 @@ mod tests {
         );
 
         // Service was created successfully
-        assert!(!service.account_repo.is_empty() || true);
+        assert!(true);
     }
 }

@@ -1,13 +1,12 @@
 use std::sync::Arc;
 
-use chrono::Utc;
 use rust_decimal::Decimal;
 
 use banko_domain::account::{
-    Account, AccountId, AccountLimit, BalanceNotification, InternalAccount, InternalAccountType,
+    AccountId, AccountLimit, BalanceNotification, InternalAccount, InternalAccountType,
     InterestCapitalization, NotificationType,
 };
-use banko_domain::shared::{CustomerId, Money};
+use banko_domain::shared::Money;
 
 use super::errors::AccountServiceError;
 use super::ports::IAccountRepository;
@@ -185,20 +184,62 @@ mod tests {
         }
     }
 
+    #[async_trait::async_trait]
+    impl IAccountRepository for MockAccountRepository {
+        async fn save(&self, _account: &Account) -> Result<(), String> {
+            Ok(())
+        }
+
+        async fn find_by_id(&self, _id: &AccountId) -> Result<Option<Account>, String> {
+            Ok(None)
+        }
+
+        async fn find_by_customer_id(&self, _customer_id: &CustomerId) -> Result<Vec<Account>, String> {
+            Ok(vec![])
+        }
+
+        async fn find_by_rib(&self, _rib: &banko_domain::shared::Rib) -> Result<Option<Account>, String> {
+            Ok(None)
+        }
+
+        async fn save_movement(&self, _movement: &banko_domain::account::Movement) -> Result<(), String> {
+            Ok(())
+        }
+
+        async fn find_movements_by_account(
+            &self,
+            _account_id: &AccountId,
+            _limit: i64,
+        ) -> Result<Vec<banko_domain::account::Movement>, String> {
+            Ok(vec![])
+        }
+
+        async fn find_movements_by_account_and_period(
+            &self,
+            _account_id: &AccountId,
+            _from: Option<chrono::DateTime<chrono::Utc>>,
+            _to: Option<chrono::DateTime<chrono::Utc>>,
+        ) -> Result<Vec<banko_domain::account::Movement>, String> {
+            Ok(vec![])
+        }
+
+        async fn delete(&self, _id: &AccountId) -> Result<(), String> {
+            Ok(())
+        }
+    }
+
     fn tnd(amount: f64) -> Money {
         Money::new(amount, Currency::TND).unwrap()
     }
 
     fn make_service() -> AdvancedAccountService {
-        // For testing, we would need a proper mock implementation
-        // This is a placeholder
         AdvancedAccountService::new(Arc::new(MockAccountRepository::new()))
     }
 
     // --- Account Limits Tests ---
 
-    #[test]
-    fn test_create_account_limits() {
+    #[tokio::test]
+    async fn test_create_account_limits() {
         let service = make_service();
         let limit = service
             .create_account_limits(
@@ -208,12 +249,13 @@ mod tests {
                 20,
                 Some(Decimal::from(5)),
             )
+            .await
             .unwrap();
         assert_eq!(limit.transaction_count_max(), 20);
     }
 
-    #[test]
-    fn test_validate_transaction_within_limits() {
+    #[tokio::test]
+    async fn test_validate_transaction_within_limits() {
         let service = make_service();
         let limit = service
             .create_account_limits(
@@ -223,12 +265,13 @@ mod tests {
                 20,
                 None,
             )
+            .await
             .unwrap();
         assert!(service.validate_transaction_against_limits(&limit, &tnd(5000.0)).is_ok());
     }
 
-    #[test]
-    fn test_validate_transaction_exceeds_limits() {
+    #[tokio::test]
+    async fn test_validate_transaction_exceeds_limits() {
         let service = make_service();
         let limit = service
             .create_account_limits(
@@ -238,14 +281,15 @@ mod tests {
                 20,
                 None,
             )
+            .await
             .unwrap();
         assert!(service
             .validate_transaction_against_limits(&limit, &tnd(15000.0))
             .is_err());
     }
 
-    #[test]
-    fn test_create_interest_capitalization() {
+    #[tokio::test]
+    async fn test_create_interest_capitalization() {
         let service = make_service();
         let ic = service
             .create_interest_capitalization(
@@ -253,12 +297,13 @@ mod tests {
                 Decimal::from(5),
                 tnd(10000.0),
             )
+            .await
             .unwrap();
         assert_eq!(ic.annual_rate(), Decimal::from(5));
     }
 
-    #[test]
-    fn test_create_balance_notification_low_balance() {
+    #[tokio::test]
+    async fn test_create_balance_notification_low_balance() {
         let service = make_service();
         let notif = service
             .create_balance_notification(
@@ -266,12 +311,13 @@ mod tests {
                 NotificationType::LowBalance,
                 Some(tnd(1000.0)),
             )
+            .await
             .unwrap();
         assert!(notif.is_active());
     }
 
-    #[test]
-    fn test_should_trigger_notification() {
+    #[tokio::test]
+    async fn test_should_trigger_notification() {
         let service = make_service();
         let notif = service
             .create_balance_notification(
@@ -279,13 +325,14 @@ mod tests {
                 NotificationType::LowBalance,
                 Some(tnd(1000.0)),
             )
+            .await
             .unwrap();
         assert!(service.should_trigger_notification(&notif, &tnd(500.0)));
         assert!(!service.should_trigger_notification(&notif, &tnd(1500.0)));
     }
 
-    #[test]
-    fn test_update_notification_status() {
+    #[tokio::test]
+    async fn test_update_notification_status() {
         let service = make_service();
         let mut notif = service
             .create_balance_notification(
@@ -293,23 +340,25 @@ mod tests {
                 NotificationType::CreditTransaction,
                 None,
             )
+            .await
             .unwrap();
         assert!(notif.is_active());
         service.update_notification_status(&mut notif, false);
         assert!(!notif.is_active());
     }
 
-    #[test]
-    fn test_create_internal_account_suspense() {
+    #[tokio::test]
+    async fn test_create_internal_account_suspense() {
         let service = make_service();
         let internal_acct = service
             .create_internal_account(InternalAccountType::Suspense, Currency::TND, None)
+            .await
             .unwrap();
         assert_eq!(internal_acct.internal_type(), InternalAccountType::Suspense);
     }
 
-    #[test]
-    fn test_create_internal_account_nostro() {
+    #[tokio::test]
+    async fn test_create_internal_account_nostro() {
         let service = make_service();
         let internal_acct = service
             .create_internal_account(
@@ -317,53 +366,8 @@ mod tests {
                 Currency::EUR,
                 Some("BNP Paribas".to_string()),
             )
+            .await
             .unwrap();
         assert_eq!(internal_acct.internal_type(), InternalAccountType::Nostro);
-    }
-}
-
-// Placeholder for MockAccountRepository AsyncTrait implementation
-// Would require proper mock framework (like mockito or similar)
-#[async_trait::async_trait]
-impl super::ports::IAccountRepository for MockAccountRepository {
-    async fn save(&self, _account: &Account) -> Result<(), String> {
-        Ok(())
-    }
-
-    async fn find_by_id(&self, _id: &AccountId) -> Result<Option<Account>, String> {
-        Ok(None)
-    }
-
-    async fn find_by_customer_id(&self, _customer_id: &CustomerId) -> Result<Vec<Account>, String> {
-        Ok(vec![])
-    }
-
-    async fn find_by_rib(&self, _rib: &banko_domain::shared::Rib) -> Result<Option<Account>, String> {
-        Ok(None)
-    }
-
-    async fn save_movement(&self, _movement: &banko_domain::account::Movement) -> Result<(), String> {
-        Ok(())
-    }
-
-    async fn find_movements_by_account(
-        &self,
-        _account_id: &AccountId,
-        _limit: i64,
-    ) -> Result<Vec<banko_domain::account::Movement>, String> {
-        Ok(vec![])
-    }
-
-    async fn find_movements_by_account_and_period(
-        &self,
-        _account_id: &AccountId,
-        _from: Option<chrono::DateTime<chrono::Utc>>,
-        _to: Option<chrono::DateTime<chrono::Utc>>,
-    ) -> Result<Vec<banko_domain::account::Movement>, String> {
-        Ok(vec![])
-    }
-
-    async fn delete(&self, _id: &AccountId) -> Result<(), String> {
-        Ok(())
     }
 }

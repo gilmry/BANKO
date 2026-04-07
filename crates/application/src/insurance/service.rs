@@ -1,11 +1,10 @@
 use std::sync::Arc;
 
-use chrono::Utc;
 
 use banko_domain::insurance::{
-    BancassuranceProduct, BancassuranceProductId, ClaimStatus, CommissionStatus, InsuranceClaim,
+    BancassuranceProduct, BancassuranceProductId, InsuranceClaim,
     InsuranceClaimId, InsuranceCommission, InsuranceCommissionId, InsurancePolicy,
-    InsurancePolicyId, LinkedProductType, PolicyStatus, PolicyType, PremiumFrequency,
+    InsurancePolicyId, LinkedProductType, PolicyType, PremiumFrequency,
 };
 use banko_domain::shared::{Currency, CustomerId, Money};
 
@@ -53,7 +52,7 @@ impl InsuranceService {
         let premium_frequency = PremiumFrequency::from_str(&request.premium_frequency)
             .map_err(|e| InsuranceError::InvalidPolicyConfiguration(e.to_string()))?;
 
-        let premium = Money::from_f64(request.premium_amount, currency.clone())
+        let premium = Money::from_f64(request.premium_amount, currency)
             .map_err(|e| InsuranceError::DomainError(e.to_string()))?;
 
         let coverage = Money::from_f64(request.coverage_amount, currency)
@@ -594,4 +593,26 @@ mod tests {
         }
         async fn find_by_policy(
             &self,
-            _policy_id: &
+            _policy_id: &InsurancePolicyId,
+        ) -> Result<Vec<InsuranceCommission>, String> {
+            Ok(vec![])
+        }
+        async fn delete(&self, _id: &InsuranceCommissionId) -> Result<(), String> {
+            Ok(())
+        }
+    }
+
+    fn create_service() -> InsuranceService {
+        InsuranceService::new(
+            Arc::new(MockPolicyRepository),
+            Arc::new(MockClaimRepository),
+            Arc::new(MockProductRepository),
+            Arc::new(MockCommissionRepository),
+        )
+    }
+
+    #[test]
+    fn test_service_creation() {
+        let _service = create_service();
+    }
+}

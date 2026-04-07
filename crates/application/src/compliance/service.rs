@@ -5,7 +5,7 @@ use chrono::{DateTime, Duration, Utc};
 use uuid::Uuid;
 
 use banko_domain::compliance::{
-    BreachNotification, BreachNotificationId, BiometricVerification, BiometricVerificationId,
+    BreachNotification, BreachNotificationId, BiometricVerification,
     BiometricType, ConsentPurpose, Dpia, DpiaId, InpdpConsent, InpdpConsentId, LegalBasis,
 };
 
@@ -50,7 +50,7 @@ impl InpdpConsentService {
         self.consent_repo
             .save_consent(&consent)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(consent)
     }
@@ -64,7 +64,7 @@ impl InpdpConsentService {
             .consent_repo
             .find_consent_by_id(consent_id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::InvalidInput(
                 "Consent not found".to_string(),
             ))?;
@@ -76,7 +76,7 @@ impl InpdpConsentService {
         self.consent_repo
             .save_consent(&consent)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(consent)
     }
@@ -90,7 +90,7 @@ impl InpdpConsentService {
             .consent_repo
             .find_consents_by_customer(customer_id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         let active = all_consents.iter().filter(|c| c.is_valid()).count() as i64;
         let revoked = all_consents.iter().filter(|c| !c.is_valid()).count() as i64;
@@ -113,7 +113,7 @@ impl InpdpConsentService {
         self.consent_repo
             .find_consents_by_customer(customer_id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))
+            .map_err(ComplianceError::RepositoryError)
     }
 }
 
@@ -144,7 +144,7 @@ impl DpiaService {
         self.dpia_repo
             .save_dpia(&dpia)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(dpia)
     }
@@ -155,7 +155,7 @@ impl DpiaService {
             .dpia_repo
             .find_dpia_by_id(dpia_id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::ControlNotFound)?;
 
         dpia
@@ -165,7 +165,7 @@ impl DpiaService {
         self.dpia_repo
             .save_dpia(&dpia)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(dpia)
     }
@@ -180,7 +180,7 @@ impl DpiaService {
             .dpia_repo
             .find_dpia_by_id(dpia_id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::ControlNotFound)?;
 
         dpia
@@ -190,7 +190,7 @@ impl DpiaService {
         self.dpia_repo
             .save_dpia(&dpia)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(dpia)
     }
@@ -201,7 +201,7 @@ impl DpiaService {
             .dpia_repo
             .find_dpia_by_id(dpia_id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::ControlNotFound)?;
 
         dpia
@@ -211,7 +211,7 @@ impl DpiaService {
         self.dpia_repo
             .save_dpia(&dpia)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(dpia)
     }
@@ -221,7 +221,7 @@ impl DpiaService {
         self.dpia_repo
             .find_dpia_by_id(dpia_id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::ControlNotFound)
     }
 
@@ -230,7 +230,7 @@ impl DpiaService {
         self.dpia_repo
             .list_all_dpias()
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))
+            .map_err(ComplianceError::RepositoryError)
     }
 
     /// List DPIAs by status.
@@ -238,7 +238,7 @@ impl DpiaService {
         self.dpia_repo
             .list_by_status(status)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))
+            .map_err(ComplianceError::RepositoryError)
     }
 }
 
@@ -268,7 +268,7 @@ impl BreachNotificationService {
         self.breach_repo
             .save_breach(&breach)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(breach)
     }
@@ -282,7 +282,7 @@ impl BreachNotificationService {
             .breach_repo
             .find_breach_by_id(breach_id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::InvalidInput("Breach not found".to_string()))?;
 
         breach
@@ -292,7 +292,7 @@ impl BreachNotificationService {
         self.breach_repo
             .save_breach(&breach)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(breach)
     }
@@ -306,7 +306,7 @@ impl BreachNotificationService {
             .breach_repo
             .find_breach_by_id(breach_id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::InvalidInput("Breach not found".to_string()))?;
 
         breach
@@ -316,7 +316,7 @@ impl BreachNotificationService {
         self.breach_repo
             .save_breach(&breach)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(breach)
     }
@@ -330,7 +330,7 @@ impl BreachNotificationService {
             .breach_repo
             .find_breach_by_id(breach_id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::InvalidInput("Breach not found".to_string()))?;
 
         breach
@@ -340,7 +340,7 @@ impl BreachNotificationService {
         self.breach_repo
             .save_breach(&breach)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(breach)
     }
@@ -350,7 +350,7 @@ impl BreachNotificationService {
         self.breach_repo
             .count_pending_authority_notification()
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))
+            .map_err(ComplianceError::RepositoryError)
     }
 
     /// Get a breach by ID.
@@ -358,7 +358,7 @@ impl BreachNotificationService {
         self.breach_repo
             .find_breach_by_id(breach_id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::InvalidInput("Breach not found".to_string()))
     }
 
@@ -367,7 +367,7 @@ impl BreachNotificationService {
         self.breach_repo
             .list_all_breaches()
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))
+            .map_err(ComplianceError::RepositoryError)
     }
 }
 
@@ -402,7 +402,7 @@ impl DataPortabilityService {
         self.portability_repo
             .save_request(&request)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(request)
     }
@@ -415,7 +415,7 @@ impl DataPortabilityService {
         self.portability_repo
             .find_request_by_id(request_id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::InvalidInput(
                 "Data portability request not found".to_string(),
             ))
@@ -429,7 +429,7 @@ impl DataPortabilityService {
         self.portability_repo
             .find_by_customer(customer_id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))
+            .map_err(ComplianceError::RepositoryError)
     }
 }
 
@@ -464,7 +464,7 @@ impl ErasureService {
         self.erasure_repo
             .save_request(&request)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(request)
     }
@@ -503,7 +503,7 @@ impl ErasureService {
         self.erasure_repo
             .find_request_by_id(request_id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::InvalidInput(
                 "Erasure request not found".to_string(),
             ))
@@ -517,7 +517,7 @@ impl ErasureService {
         self.erasure_repo
             .find_by_customer(customer_id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))
+            .map_err(ComplianceError::RepositoryError)
     }
 }
 
@@ -672,7 +672,7 @@ impl EkycService {
         validity_days: Option<i64>,
     ) -> Result<BiometricVerificationDto, ComplianceError> {
         let biometric_type = BiometricType::from_str(verification_type)
-            .map_err(|e| ComplianceError::InvalidInput(e))?;
+            .map_err(ComplianceError::InvalidInput)?;
 
         let validity = validity_days.unwrap_or(90);
 
@@ -696,7 +696,7 @@ impl EkycService {
         self.biometric_repo
             .save_verification(&dto)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(dto)
     }
@@ -714,7 +714,7 @@ impl EkycService {
             .biometric_repo
             .find_verification_by_id(verification_id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::InvalidInput(
                 "Biometric verification not found".to_string(),
             ))?;
@@ -723,13 +723,13 @@ impl EkycService {
         let mut verification = BiometricVerification::new(
             dto.customer_id,
             BiometricType::from_str(&dto.verification_type)
-                .map_err(|e| ComplianceError::InvalidInput(e))?,
+                .map_err(ComplianceError::InvalidInput)?,
             (dto.expires_at - Utc::now()).num_days(),
         )
         .map_err(|e| ComplianceError::DomainError(e.to_string()))?;
 
-        // Set internal state based on DTO
-        if dto.status == "in_progress" {
+        // Set internal state based on DTO — transition to InProgress if needed
+        if dto.status == "pending" || dto.status == "in_progress" {
             verification
                 .mark_in_progress()
                 .map_err(|e| ComplianceError::DomainError(e.to_string()))?;
@@ -762,7 +762,7 @@ impl EkycService {
         self.biometric_repo
             .save_verification(&updated_dto)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(updated_dto)
     }
@@ -776,7 +776,7 @@ impl EkycService {
             .biometric_repo
             .find_verification_by_id(verification_id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?
+            .map_err(ComplianceError::RepositoryError)?
             .ok_or(ComplianceError::InvalidInput(
                 "Biometric verification not found".to_string(),
             ))?;
@@ -790,7 +790,7 @@ impl EkycService {
             .biometric_repo
             .find_verified_by_customer(customer_id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))?;
+            .map_err(ComplianceError::RepositoryError)?;
 
         Ok(verification.is_some())
     }
@@ -803,7 +803,7 @@ impl EkycService {
         self.biometric_repo
             .find_by_customer(customer_id)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))
+            .map_err(ComplianceError::RepositoryError)
     }
 
     /// Get the latest biometric verification for a customer by type
@@ -815,7 +815,7 @@ impl EkycService {
         self.biometric_repo
             .find_latest_by_customer_and_type(customer_id, verification_type)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))
+            .map_err(ComplianceError::RepositoryError)
     }
 
     /// Count verifications by status (for reporting)
@@ -823,7 +823,7 @@ impl EkycService {
         self.biometric_repo
             .count_by_status(status)
             .await
-            .map_err(|e| ComplianceError::RepositoryError(e))
+            .map_err(ComplianceError::RepositoryError)
     }
 }
 

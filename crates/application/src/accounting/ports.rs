@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use chrono::{DateTime, NaiveDate, Utc};
-use rust_decimal::Decimal;
 use uuid::Uuid;
 
 use banko_domain::accounting::{AccountCode, EntryId, ExpectedCreditLoss, JournalEntry, LedgerAccount, FeeDefinition, FeeCharge, FeeGrid};

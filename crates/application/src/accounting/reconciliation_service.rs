@@ -342,19 +342,20 @@ mod tests {
     #[tokio::test]
     async fn test_balanced_accounts() {
         let ledger_repo = Arc::new(MockLedgerRepository::new());
+        // Each account is individually balanced (debits == credits)
         ledger_repo.add_account(
             "11".to_string(),
             "Capital".to_string(),
             "Equity".to_string(),
             10000,
-            0,
+            10000,
         );
         ledger_repo.add_account(
             "42".to_string(),
             "Client deposits".to_string(),
             "Liability".to_string(),
-            0,
-            10000,
+            5000,
+            5000,
         );
 
         let reconciliation_repo = Arc::new(MockReconciliationRepository::new());
@@ -363,8 +364,8 @@ mod tests {
 
         let report = service.reconcile(date).await.unwrap();
 
-        assert_eq!(report.total_debits, Decimal::from(10000));
-        assert_eq!(report.total_credits, Decimal::from(10000));
+        assert_eq!(report.total_debits, Decimal::from(15000));
+        assert_eq!(report.total_credits, Decimal::from(15000));
         assert_eq!(report.total_variance, Decimal::ZERO);
         assert_eq!(report.overall_status, ReconciliationStatus::Balanced);
     }
@@ -400,18 +401,12 @@ mod tests {
     #[tokio::test]
     async fn test_small_variance_auto_resolved() {
         let ledger_repo = Arc::new(MockLedgerRepository::new());
-        ledger_repo.add_account(
-            "11".to_string(),
-            "Capital".to_string(),
-            "Equity".to_string(),
-            10000,
-            0,
-        );
+        // Single account with a small variance (1 TND, under rounding tolerance of 1.00)
         ledger_repo.add_account(
             "42".to_string(),
             "Client deposits".to_string(),
             "Liability".to_string(),
-            0,
+            10000,
             9999, // Variance of 1 TND (under rounding tolerance)
         );
 
@@ -433,21 +428,21 @@ mod tests {
             "Capital".to_string(),
             "Equity".to_string(),
             10000,
-            10000, // Balanced
+            10000, // Balanced (variance = 0)
         );
         ledger_repo.add_account(
             "42".to_string(),
             "Client deposits".to_string(),
             "Liability".to_string(),
-            0,
             5000,
+            5000, // Balanced (variance = 0)
         );
         ledger_repo.add_account(
             "43".to_string(),
             "Bank deposits".to_string(),
             "Liability".to_string(),
-            0,
-            4999, // Small variance (auto-resolved)
+            5000,
+            4999, // Small variance of 1 (auto-resolved, under rounding tolerance)
         );
 
         let reconciliation_repo = Arc::new(MockReconciliationRepository::new());

@@ -47,4 +47,6 @@ pub enum CashManagementError {
     #[error("Domain error: {0}")]
     DomainError(String),
 
-    #[error
+    #[error("Internal error: {0}")]
+    Internal(String),
+}

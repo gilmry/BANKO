@@ -1,11 +1,10 @@
 use chrono::NaiveDate;
 use std::sync::Arc;
-use uuid::Uuid;
 
 use banko_domain::accounting::AccountCode;
 
 use super::errors::AccountingServiceError;
-use super::ports::{ILedgerRepository, AccountBalanceRow};
+use super::ports::ILedgerRepository;
 
 // --- Trial Balance Response DTOs ---
 

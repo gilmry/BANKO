@@ -1,9 +1,7 @@
 use std::sync::Arc;
-use chrono::Utc;
 use uuid::Uuid;
 
 use banko_domain::sanctions::*;
-use banko_domain::shared::errors::DomainError;
 
 use super::errors::SanctionsServiceError;
 use super::ports::*;
@@ -14,7 +12,7 @@ use super::ports::*;
 
 pub struct BatchScreeningService {
     job_repo: Arc<dyn IBatchScreeningJobRepository>,
-    result_repo: Arc<dyn IScreeningResultRepository>,
+    _result_repo: Arc<dyn IScreeningResultRepository>,
 }
 
 impl BatchScreeningService {
@@ -22,7 +20,7 @@ impl BatchScreeningService {
         job_repo: Arc<dyn IBatchScreeningJobRepository>,
         result_repo: Arc<dyn IScreeningResultRepository>,
     ) -> Self {
-        Self { job_repo, result_repo }
+        Self { job_repo, _result_repo: result_repo }
     }
 
     /// Create a new batch screening job

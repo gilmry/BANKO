@@ -3,7 +3,7 @@ use std::sync::Arc;
 use chrono::{DateTime, Utc};
 
 use banko_domain::reference_data::{
-    BankCode, BicCodeVo, BranchCode, CountryCode, CountryCodeVo, CurrencyCodeVo,
+    BankCode, BicCodeVo, CountryCode, CountryCodeVo, CurrencyCodeVo,
     CurrencyReference, FeeScheduleReference, FeeType, HolidayCalendar, HolidayType,
     ReferenceDataId, RegulatoryClassification, RegulatoryCode, SystemParameter,
     SystemParameterType,

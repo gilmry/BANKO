@@ -3,8 +3,8 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use banko_domain::payment::{
-    DirectDebitMandate, DebitExecution, DebitExecutionStatus, Frequency, MandateStatus,
-    StandingOrder, StandingOrderStatus,
+    DirectDebitMandate, DebitExecution, Frequency,
+    StandingOrder,
 };
 
 use super::dto::*;

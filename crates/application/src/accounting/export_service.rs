@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 use banko_domain::accounting::JournalEntry;
-use async_trait::async_trait;
 
 use super::errors::AccountingServiceError;
 use super::ports::IJournalRepository;
@@ -151,7 +150,7 @@ impl ExportService {
                 entry.entry_date()
             ));
 
-            for (idx, line_item) in entry.lines().iter().enumerate() {
+            for line_item in entry.lines().iter() {
                 let value = if line_item.debit() > 0 {
                     line_item.debit()
                 } else {

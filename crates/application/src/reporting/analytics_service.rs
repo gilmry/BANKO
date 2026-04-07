@@ -4,7 +4,6 @@ use uuid::Uuid;
 use serde::{Deserialize, Serialize};
 use rust_decimal::Decimal;
 
-use super::ports::*;
 use super::errors::ReportingServiceError;
 
 // ============================================================
@@ -120,18 +119,18 @@ pub struct TrendDataPoint {
 // ============================================================
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum ReportType {
+pub enum AnalyticsReportType {
     Transactional,
     Compliance,
     Financial,
 }
 
-impl std::fmt::Display for ReportType {
+impl std::fmt::Display for AnalyticsReportType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ReportType::Transactional => write!(f, "Transactional"),
-            ReportType::Compliance => write!(f, "Compliance"),
-            ReportType::Financial => write!(f, "Financial"),
+            AnalyticsReportType::Transactional => write!(f, "Transactional"),
+            AnalyticsReportType::Compliance => write!(f, "Compliance"),
+            AnalyticsReportType::Financial => write!(f, "Financial"),
         }
     }
 }
@@ -159,7 +158,7 @@ impl std::fmt::Display for ReportFormat {
 pub struct ReportDefinition {
     pub id: String,
     pub name: String,
-    pub report_type: ReportType,
+    pub report_type: AnalyticsReportType,
     pub filters: serde_json::Value,
     pub date_from: Option<NaiveDate>,
     pub date_to: Option<NaiveDate>,
@@ -463,7 +462,7 @@ impl ReportBuilderService {
     pub async fn create_report_definition(
         &self,
         name: String,
-        report_type: ReportType,
+        report_type: AnalyticsReportType,
         filters: serde_json::Value,
         date_from: Option<NaiveDate>,
         date_to: Option<NaiveDate>,
@@ -772,7 +771,7 @@ mod tests {
             Ok(Some(ReportDefinition {
                 id: id.to_string(),
                 name: "Test Report".to_string(),
-                report_type: ReportType::Compliance,
+                report_type: AnalyticsReportType::Compliance,
                 filters: serde_json::json!({}),
                 date_from: Some(NaiveDate::from_ymd_opt(2026, 1, 1).unwrap()),
                 date_to: Some(NaiveDate::from_ymd_opt(2026, 12, 31).unwrap()),
@@ -873,7 +872,7 @@ mod tests {
         let definition = service
             .create_report_definition(
                 "Monthly Report".to_string(),
-                ReportType::Financial,
+                AnalyticsReportType::Financial,
                 serde_json::json!({}),
                 Some(NaiveDate::from_ymd_opt(2026, 1, 1).unwrap()),
                 Some(NaiveDate::from_ymd_opt(2026, 1, 31).unwrap()),
@@ -885,7 +884,7 @@ mod tests {
         assert!(definition.is_ok());
         let d = definition.unwrap();
         assert_eq!(d.name, "Monthly Report");
-        assert_eq!(d.report_type, ReportType::Financial);
+        assert_eq!(d.report_type, AnalyticsReportType::Financial);
     }
 
     #[tokio::test]
@@ -911,9 +910,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_report_type_display() {
-        assert_eq!(ReportType::Transactional.to_string(), "Transactional");
-        assert_eq!(ReportType::Compliance.to_string(), "Compliance");
-        assert_eq!(ReportType::Financial.to_string(), "Financial");
+        assert_eq!(AnalyticsReportType::Transactional.to_string(), "Transactional");
+        assert_eq!(AnalyticsReportType::Compliance.to_string(), "Compliance");
+        assert_eq!(AnalyticsReportType::Financial.to_string(), "Financial");
     }
 
     #[tokio::test]

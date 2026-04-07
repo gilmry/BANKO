@@ -1,8 +1,7 @@
 use std::sync::Arc;
-use chrono::Duration;
 
 use banko_domain::arrangement::{
-    Arrangement, ArrangementId, ArrangementType, ArrangementStatus, ArrangementTerms,
+    Arrangement, ArrangementId, ArrangementType, ArrangementTerms,
     RenewalType, ArrangementBundle, ArrangementBundleId,
 };
 use banko_domain::shared::CustomerId;
@@ -276,24 +275,21 @@ impl ArrangementService {
 
         for arrangement in arrangements {
             if arrangement.check_renewal_trigger() {
-                match self.renewal_engine.trigger_renewal_check(arrangement.id()).await {
-                    Ok(true) => {
-                        renewal_count += 1;
+                if let Ok(true) = self.renewal_engine.trigger_renewal_check(arrangement.id()).await {
+                    renewal_count += 1;
 
-                        // Notify customer
-                        if let Some(maturity) = arrangement.maturity_date() {
-                            let days = (maturity - chrono::Utc::now()).num_days();
-                            let _ = self
-                                .notification_service
-                                .notify_maturity_upcoming(
-                                    arrangement.id(),
-                                    arrangement.customer_id(),
-                                    days,
-                                )
-                                .await;
-                        }
+                    // Notify customer
+                    if let Some(maturity) = arrangement.maturity_date() {
+                        let days = (maturity - chrono::Utc::now()).num_days();
+                        let _ = self
+                            .notification_service
+                            .notify_maturity_upcoming(
+                                arrangement.id(),
+                                arrangement.customer_id(),
+                                days,
+                            )
+                            .await;
                     }
-                    _ => {}
                 }
             }
         }

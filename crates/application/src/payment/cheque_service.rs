@@ -6,7 +6,6 @@ use async_trait::async_trait;
 
 use banko_domain::payment::*;
 
-use super::dto::*;
 use super::errors::PaymentServiceError;
 
 // ============================================================
@@ -185,7 +184,7 @@ impl ChequeService {
             req.amount,
             cheque_type,
         )
-        .map_err(|e| PaymentServiceError::InvalidInput(e))?;
+        .map_err(PaymentServiceError::InvalidInput)?;
 
         self.cheque_repo
             .save(&cheque)
@@ -207,7 +206,7 @@ impl ChequeService {
 
         cheque
             .present()
-            .map_err(|e| PaymentServiceError::InvalidInput(e))?;
+            .map_err(PaymentServiceError::InvalidInput)?;
 
         self.cheque_repo
             .save(&cheque)
@@ -231,7 +230,7 @@ impl ChequeService {
         // Check if cheque can be encashed
         cheque
             .can_be_encashed(today)
-            .map_err(|e| PaymentServiceError::InvalidInput(e))?;
+            .map_err(PaymentServiceError::InvalidInput)?;
 
         // For now, mock balance check - in production, check account balance
         let has_balance = true; // TODO: integrate with Account service
@@ -241,7 +240,7 @@ impl ChequeService {
             let mut cheque = self.get_cheque(id).await?;
             cheque
                 .reject(RejectionReason::InsufficientBalance)
-                .map_err(|e| PaymentServiceError::InvalidInput(e))?;
+                .map_err(PaymentServiceError::InvalidInput)?;
 
             self.cheque_repo
                 .save(&cheque)
@@ -257,7 +256,7 @@ impl ChequeService {
         // Encash the cheque
         cheque
             .encash(chrono::Utc::now())
-            .map_err(|e| PaymentServiceError::InvalidInput(e))?;
+            .map_err(PaymentServiceError::InvalidInput)?;
 
         self.cheque_repo
             .save(&cheque)
@@ -282,7 +281,7 @@ impl ChequeService {
 
         cheque
             .reject(rejection_reason)
-            .map_err(|e| PaymentServiceError::InvalidInput(e))?;
+            .map_err(PaymentServiceError::InvalidInput)?;
 
         self.cheque_repo
             .save(&cheque)
@@ -308,7 +307,7 @@ impl ChequeService {
 
         cheque
             .oppose(req.reason.clone())
-            .map_err(|e| PaymentServiceError::InvalidInput(e))?;
+            .map_err(PaymentServiceError::InvalidInput)?;
 
         self.cheque_repo
             .save(&cheque)
@@ -317,7 +316,7 @@ impl ChequeService {
 
         // Save opposition record
         let opposition = ChequeOpposition::new(cheque_id, account_id, req.reason, req.is_legal)
-            .map_err(|e| PaymentServiceError::InvalidInput(e))?;
+            .map_err(PaymentServiceError::InvalidInput)?;
 
         self.opposition_repo
             .save(&opposition)
@@ -373,7 +372,7 @@ impl ChequeService {
 
         blacklist
             .lift(chrono::Utc::now())
-            .map_err(|e| PaymentServiceError::InvalidInput(e))?;
+            .map_err(PaymentServiceError::InvalidInput)?;
 
         self.blacklist_repo
             .update(&blacklist)
@@ -414,7 +413,7 @@ impl ChequeService {
 
         batch
             .submit()
-            .map_err(|e| PaymentServiceError::InvalidInput(e))?;
+            .map_err(PaymentServiceError::InvalidInput)?;
 
         self.clearing_repo
             .save(&batch)
@@ -465,7 +464,7 @@ impl ChequeService {
 
         batch
             .process(clearing_results)
-            .map_err(|e| PaymentServiceError::InvalidInput(e))?;
+            .map_err(PaymentServiceError::InvalidInput)?;
 
         self.clearing_repo
             .update(&batch)
@@ -530,7 +529,7 @@ impl ChequeService {
         account_id: Uuid,
     ) -> Result<(), PaymentServiceError> {
         // Count rejections in past 30 days
-        let rejection_count = self
+        let _rejection_count = self
             .blacklist_repo
             .find_active_by_customer(account_id)
             .await

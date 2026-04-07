@@ -1,5 +1,5 @@
 mod errors;
-mod ports;
+pub mod ports;
 mod service;
 mod session_service;
 mod two_factor_service;

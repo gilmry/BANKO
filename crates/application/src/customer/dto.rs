@@ -18,6 +18,7 @@ pub struct CreateCustomerRequest {
     pub registration_number: Option<String>,
     pub sector: Option<String>,
     pub beneficiaries: Option<Vec<BeneficiaryDto>>,
+    pub segment: Option<String>,  // FR-006
 }
 
 #[derive(Debug, Serialize, Deserialize)]

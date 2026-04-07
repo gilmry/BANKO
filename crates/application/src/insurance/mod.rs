@@ -1,9 +1,9 @@
 mod dto;
 mod errors;
-mod ports;
+pub mod ports;
 mod service;
 
 pub use dto::*;
 pub use errors::*;
 pub use ports::*;
-pub use serv
+pub use service::*;

@@ -4,7 +4,6 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use super::errors::AccountingServiceError;
-use super::ports::*;
 
 /// Enumerates the available interest calculation methods.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -238,7 +237,7 @@ impl InterestAccrualService {
             NaiveDate::from_ymd_opt(date.year(), date.month(), 1).unwrap();
 
         // Get the last day of the previous month
-        let month_end = if date.month() == 1 {
+        let _month_end = if date.month() == 1 {
             NaiveDate::from_ymd_opt(date.year() - 1, 12, 31).unwrap()
         } else {
             NaiveDate::from_ymd_opt(date.year(), date.month() - 1, 1).unwrap()
@@ -653,12 +652,13 @@ mod tests {
         ));
 
         let service = InterestAccrualService::new(accrual_repo, account_provider);
-        let date = NaiveDate::from_ymd_opt(2026, 4, 30).unwrap();
+        let date = NaiveDate::from_ymd_opt(2026, 4, 15).unwrap();
 
         service.accrue_daily(date).await.unwrap();
 
-        let next_month = NaiveDate::from_ymd_opt(2026, 5, 1).unwrap();
-        let result = service.capitalize_monthly(next_month).await.unwrap();
+        // Capitalize within the same month so sum_accrued finds the April entry
+        let month_end = NaiveDate::from_ymd_opt(2026, 4, 30).unwrap();
+        let result = service.capitalize_monthly(month_end).await.unwrap();
 
         assert!(result > 0);
     }

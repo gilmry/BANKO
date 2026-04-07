@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
-use chrono::Utc;
 
 use banko_domain::trade_finance::{
-    BankGuarantee, BankGuaranteeId, CollectionStatus, CollectionType, DocumentaryCollection,
-    DocumentaryCollectionId, GuaranteeType, LCStatus, LCType, LetterOfCredit, LetterOfCreditId,
+    BankGuarantee, BankGuaranteeId, CollectionType, DocumentaryCollection,
+    DocumentaryCollectionId, GuaranteeType, LCType, LetterOfCredit, LetterOfCreditId,
     LimitType, TradeFinanceLimit, TradeFinanceLimitId,
 };
 use banko_domain::shared::{Currency, CustomerId, Money};
@@ -363,7 +362,7 @@ impl TradeFinanceService {
             .await
             .map_err(TradeFinanceError::Internal)?;
 
-        Ok(self.limit_to_response(&limit)?)
+        self.limit_to_response(&limit)
     }
 
     pub async fn get_trade_finance_limit(
@@ -398,7 +397,7 @@ impl TradeFinanceService {
             .map_err(TradeFinanceError::Internal)?
             .ok_or(TradeFinanceError::TradeFinanceLimitNotFound)?;
 
-        let amount_money = Money::from_f64(amount, limit.total_limit().currency().clone())
+        let amount_money = Money::from_f64(amount, limit.total_limit().currency())
             .map_err(|e| TradeFinanceError::DomainError(e.to_string()))?;
 
         limit
@@ -597,4 +596,26 @@ mod tests {
         }
         async fn find_by_customer(
             &self,
-            _cust
+            _customer_id: &CustomerId,
+        ) -> Result<Vec<TradeFinanceLimit>, String> {
+            Ok(vec![])
+        }
+        async fn delete(&self, _id: &TradeFinanceLimitId) -> Result<(), String> {
+            Ok(())
+        }
+    }
+
+    fn create_service() -> TradeFinanceService {
+        TradeFinanceService::new(
+            Arc::new(MockLcRepository),
+            Arc::new(MockGuaranteeRepository),
+            Arc::new(MockCollectionRepository),
+            Arc::new(MockLimitRepository),
+        )
+    }
+
+    #[test]
+    fn test_service_creation() {
+        let _service = create_service();
+    }
+}
