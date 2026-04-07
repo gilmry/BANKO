@@ -1,8 +1,6 @@
 use actix_web::{web, App, HttpServer};
-use std::sync::Arc;
 
 use banko_infrastructure::config::JwtConfig;
-use banko_infrastructure::jobs::{SessionCleanupJob, CreditClassificationJob};
 use banko_infrastructure::web::metrics::{create_prometheus_metrics, metrics_handler};
 use banko_infrastructure::web::routes::{
     configure_api_routes, configure_auth_routes,

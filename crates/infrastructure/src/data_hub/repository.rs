@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use banko_application::data_hub::{
+use banko_application::data_hub::ports::{
     IDataEntityRepository, IQualityRuleRepository, IDataLineageRepository,
     IDataReconciliationRepository, IMasterDataRepository, IGovernancePolicyRepository,
 };

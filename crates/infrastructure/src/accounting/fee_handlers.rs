@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use banko_application::accounting::{
-    FeeService, ChargeResult, AccountingServiceError,
+    FeeService, AccountingServiceError,
 };
 use banko_domain::accounting::{
     FeeCategory, FeeCharge, FeeCondition, FeeDefinition, FeeGrid,
@@ -166,7 +166,7 @@ pub async fn list_fee_definitions_handler(
     {
         Ok(Ok(defs)) => {
             let response: Vec<FeeDefinitionResponse> =
-                defs.iter().map(|d| fee_def_to_response(d)).collect();
+                defs.iter().map(fee_def_to_response).collect();
             HttpResponse::Ok().json(response)
         }
         Ok(Err(e)) => {
@@ -235,7 +235,7 @@ pub async fn list_account_fees_handler(
     {
         Ok(Ok(charges)) => {
             let response: Vec<FeeChargeResponse> =
-                charges.iter().map(|c| fee_charge_to_response(c)).collect();
+                charges.iter().map(fee_charge_to_response).collect();
             HttpResponse::Ok().json(response)
         }
         Ok(Err(e)) => {
@@ -294,7 +294,7 @@ pub async fn list_fee_grids_handler(
     {
         Ok(Ok(grids)) => {
             let response: Vec<FeeGridResponse> =
-                grids.iter().map(|g| fee_grid_to_response(g)).collect();
+                grids.iter().map(fee_grid_to_response).collect();
             HttpResponse::Ok().json(response)
         }
         Ok(Err(e)) => {

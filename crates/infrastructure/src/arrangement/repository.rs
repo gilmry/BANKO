@@ -3,11 +3,10 @@ use chrono::{DateTime, Duration, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use banko_application::arrangement::{IArrangementRepository, IArrangementBundleRepository};
+use banko_application::arrangement::ports::{IArrangementRepository, IArrangementBundleRepository};
 use banko_domain::arrangement::{
     Arrangement, ArrangementId, ArrangementStatus, ArrangementType, ArrangementBundle,
-    ArrangementBundleId, ArrangementTerms, RenewalType, ArrangementEvent, ArrangementEventId,
-    ArrangementEventType,
+    ArrangementBundleId, ArrangementTerms, RenewalType,
 };
 use banko_domain::shared::{CustomerId, AccountId};
 

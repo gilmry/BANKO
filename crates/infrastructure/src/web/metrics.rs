@@ -19,9 +19,9 @@ pub async fn metrics_handler() -> HttpResponse {
     let metric_families = prometheus::gather();
 
     match encoder.encode(&metric_families, &mut Vec::new()) {
-        Ok(buffer) => {
+        Ok(_buffer) => {
             let buf = Vec::new();
-            if let Ok(_) = encoder.encode(&metric_families, &mut buf.clone()) {
+            if encoder.encode(&metric_families, &mut buf.clone()).is_ok() {
                 return HttpResponse::Ok()
                     .content_type("text/plain; version=0.0.4")
                     .body(String::from_utf8_lossy(&buf).to_string());

@@ -1,13 +1,13 @@
-/// Travel Rule R.16 Compliance for International Wire Transfers
-///
-/// Implements STORY-COMP-13: Compliance with Financial Action Task Force (FATF)
-/// Recommendation 16 (Travel Rule) for cross-border wire transfers.
-///
-/// Travel Rule R.16 requires that originator and beneficiary information be
-/// transmitted with wire transfers to jurisdictions that require it, or when
-/// transfers exceed certain thresholds.
-///
-/// Reference: FATF Recommendations (2012), Travel Rule Guidance
+//! Travel Rule R.16 Compliance for International Wire Transfers
+//!
+//! Implements STORY-COMP-13: Compliance with Financial Action Task Force (FATF)
+//! Recommendation 16 (Travel Rule) for cross-border wire transfers.
+//!
+//! Travel Rule R.16 requires that originator and beneficiary information be
+//! transmitted with wire transfers to jurisdictions that require it, or when
+//! transfers exceed certain thresholds.
+//!
+//! Reference: FATF Recommendations (2012), Travel Rule Guidance
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

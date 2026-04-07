@@ -4,7 +4,6 @@ use tokio::time::{interval, Duration};
 use tracing::{debug, error, info};
 
 use banko_application::credit::LoanService;
-use banko_domain::credit::LoanId;
 
 /// Batch result of a classification run.
 #[derive(Debug, Clone)]

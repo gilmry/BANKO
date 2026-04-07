@@ -556,11 +556,13 @@ mod tests {
     async fn test_update_roles_as_admin_returns_403() {
         let service = make_test_user_service();
         let jwt = test_jwt_config();
+        let audit_service = make_test_audit_service();
         let admin_token = get_admin_token(&jwt).await;
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(service))
                 .app_data(web::Data::new(jwt))
+                .app_data(web::Data::new(audit_service))
                 .configure(configure),
         )
         .await;
@@ -580,11 +582,13 @@ mod tests {
     async fn test_update_roles_as_user_returns_403() {
         let service = make_test_user_service();
         let jwt = test_jwt_config();
+        let audit_service = make_test_audit_service();
         let user_token = get_user_token(&jwt).await;
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(service))
                 .app_data(web::Data::new(jwt))
+                .app_data(web::Data::new(audit_service))
                 .configure(configure),
         )
         .await;
@@ -604,10 +608,12 @@ mod tests {
     async fn test_update_roles_invalid_role() {
         let service = make_test_user_service();
         let jwt = test_jwt_config();
+        let audit_service = make_test_audit_service();
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(service))
                 .app_data(web::Data::new(jwt.clone()))
+                .app_data(web::Data::new(audit_service))
                 .configure(configure),
         )
         .await;
@@ -641,11 +647,13 @@ mod tests {
     async fn test_update_own_roles_prevented() {
         let service = make_test_user_service();
         let jwt = test_jwt_config();
+        let audit_service = make_test_audit_service();
         let sa_token = get_super_admin_token(&jwt).await;
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(service))
                 .app_data(web::Data::new(jwt))
+                .app_data(web::Data::new(audit_service))
                 .configure(configure),
         )
         .await;

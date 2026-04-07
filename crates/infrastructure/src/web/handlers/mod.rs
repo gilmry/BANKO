@@ -12,6 +12,7 @@ pub mod fx_handlers;
 pub mod governance_handlers;
 pub mod mobile_handlers;
 pub mod notification_handlers;
+#[allow(ambiguous_glob_reexports)]
 pub mod payment_handlers;
 pub mod product_handlers;
 pub mod profile_handlers;

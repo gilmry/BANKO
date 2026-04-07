@@ -1,6 +1,5 @@
 use chrono::{DateTime, NaiveDate, Utc};
 use std::fmt;
-use std::sync::Arc;
 use tracing::{debug, error, info, warn};
 
 /// Represents the status of a single EOD processing step.
@@ -271,6 +270,7 @@ pub struct EodOrchestrator {
     retry_delay_secs: u64,
 }
 
+#[allow(clippy::new_without_default)]
 impl EodOrchestrator {
     /// Creates a new EodOrchestrator with default steps in order:
     /// 1. InterestAccrualStep

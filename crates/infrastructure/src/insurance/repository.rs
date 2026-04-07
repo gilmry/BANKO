@@ -52,7 +52,7 @@ impl InsurancePolicyRow {
             PolicyType::from_str(&self.policy_type).map_err(|e| e.to_string())?;
         let customer_id = CustomerId::from_uuid(self.customer_id);
         let currency = Currency::from_code(&self.currency).map_err(|e| e.to_string())?;
-        let premium = Money::from_cents(self.premium_amount, currency.clone());
+        let premium = Money::from_cents(self.premium_amount, currency);
         let coverage = Money::from_cents(self.coverage_amount, currency);
         let premium_frequency =
             PremiumFrequency::from_str(&self.premium_frequency).map_err(|e| e.to_string())?;
@@ -518,4 +518,22 @@ impl IInsuranceCommissionRepository for PgInsuranceCommissionRepository {
         .bind(policy_id.as_uuid())
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| format!("Failed to find insurance commissions:
+        .map_err(|e| format!("Failed to find insurance commissions: {e}"))?;
+
+        let mut commissions = Vec::new();
+        for row in rows {
+            commissions.push(row.into_domain()?);
+        }
+        Ok(commissions)
+    }
+
+    async fn delete(&self, id: &InsuranceCommissionId) -> Result<(), String> {
+        sqlx::query("DELETE FROM insurance.insurance_commissions WHERE id = $1")
+            .bind(id.as_uuid())
+            .execute(&self.pool)
+            .await
+            .map_err(|e| format!("Failed to delete insurance commission: {e}"))?;
+
+        Ok(())
+    }
+}

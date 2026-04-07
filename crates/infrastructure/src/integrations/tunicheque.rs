@@ -1,11 +1,11 @@
-/// TuniCheque Integration for Real-Time Cheque Verification
-///
-/// Implements STORY-COMP-11: Integration with TuniCheque API for real-time cheque
-/// verification and bounced cheque reporting as per Central Bank of Tunisia
-/// Circular 2025-03.
-///
-/// TuniCheque is the real-time cheque verification system operated by the Tunisian
-/// Bankers Association (ATB) and managed by the Central Bank of Tunisia.
+//! TuniCheque Integration for Real-Time Cheque Verification
+//!
+//! Implements STORY-COMP-11: Integration with TuniCheque API for real-time cheque
+//! verification and bounced cheque reporting as per Central Bank of Tunisia
+//! Circular 2025-03.
+//!
+//! TuniCheque is the real-time cheque verification system operated by the Tunisian
+//! Bankers Association (ATB) and managed by the Central Bank of Tunisia.
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -207,8 +207,8 @@ pub struct BounceReportResponse {
 
 /// Client for TuniCheque real-time verification system
 pub struct TuniChequeClient {
-    base_url: String,
-    api_key: String,
+    _base_url: String,
+    _api_key: String,
 }
 
 impl TuniChequeClient {
@@ -224,7 +224,7 @@ impl TuniChequeClient {
             ));
         }
 
-        Ok(TuniChequeClient { base_url, api_key })
+        Ok(TuniChequeClient { _base_url: base_url, _api_key: api_key })
     }
 
     /// Verify cheque status in real-time

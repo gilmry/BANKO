@@ -144,8 +144,8 @@ mod tests {
     #[tokio::test]
     async fn test_run_once_with_expired_sessions() {
         let repo = Arc::new(MockSessionRepository::new());
-        let service = SessionService::with_ttl(Arc::new(repo), -10); // Create with expired TTL
-        let job = SessionCleanupJob::new(Arc::new(service.clone()));
+        let service = Arc::new(SessionService::with_ttl(repo, -10)); // Create with expired TTL
+        let job = SessionCleanupJob::new(service.clone());
 
         // Create an expired session
         let user_id = UserId::new();

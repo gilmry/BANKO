@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use banko_application::reporting::{
     AnalyticsService, ReportBuilderService, ClientPortfolio, OperationalKpis,
-    ReportDefinition, ReportOutput, ReportType, ReportFormat, TrendDataPoint,
+    ReportDefinition, ReportOutput, TrendDataPoint,
 };
 
 #[derive(Debug, Serialize, Deserialize)]

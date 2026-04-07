@@ -36,10 +36,13 @@ struct SmsiControlRow {
     theme: String,
     description: Option<String>,
     status: String,
-    responsible: Option<String>,
+    #[sqlx(rename = "responsible")]
+    _responsible: Option<String>,
     evidence: Option<String>,
-    last_audit_date: Option<DateTime<Utc>>,
-    next_audit_date: Option<DateTime<Utc>>,
+    #[sqlx(rename = "last_audit_date")]
+    _last_audit_date: Option<DateTime<Utc>>,
+    #[sqlx(rename = "next_audit_date")]
+    _next_audit_date: Option<DateTime<Utc>>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
 }
@@ -64,15 +67,20 @@ impl SmsiControlRow {
 struct RiskEntryRow {
     id: Uuid,
     risk_ref: String,
-    title: String,
+    #[sqlx(rename = "title")]
+    _title: String,
     description: Option<String>,
-    category: String,
-    likelihood: i16,
+    #[sqlx(rename = "category")]
+    _category: String,
+    #[sqlx(rename = "likelihood")]
+    _likelihood: i16,
     impact: i16,
     inherent_score: i16,
-    residual_score: i16,
+    #[sqlx(rename = "residual_score")]
+    _residual_score: i16,
     mitigations: Option<Vec<String>>,
-    owner: Option<String>,
+    #[sqlx(rename = "owner")]
+    _owner: Option<String>,
     status: String,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
@@ -179,11 +187,7 @@ impl ISmsiRepository for PgSmsiRepository {
     }
 
     async fn save_risk(&self, risk: &RiskEntry) -> Result<(), String> {
-        let mitigations: Option<Vec<String>> = if let Some(m) = &risk.mitigations {
-            Some(m.split(',').map(|s| s.trim().to_string()).collect())
-        } else {
-            None
-        };
+        let mitigations: Option<Vec<String>> = risk.mitigations.as_ref().map(|m| m.split(',').map(|s| s.trim().to_string()).collect());
 
         sqlx::query(
             r#"
@@ -278,13 +282,18 @@ struct TokenVaultRow {
     id: Uuid,
     token: String,
     masked_pan: String,
-    card_holder_encrypted: Option<Vec<u8>>,
-    expiry_month: i16,
-    expiry_year: i16,
+    #[sqlx(rename = "card_holder_encrypted")]
+    _card_holder_encrypted: Option<Vec<u8>>,
+    #[sqlx(rename = "expiry_month")]
+    _expiry_month: i16,
+    #[sqlx(rename = "expiry_year")]
+    _expiry_year: i16,
     token_status: String,
-    encryption_key_id: String,
+    #[sqlx(rename = "encryption_key_id")]
+    _encryption_key_id: String,
     created_at: DateTime<Utc>,
-    expires_at: Option<DateTime<Utc>>,
+    #[sqlx(rename = "expires_at")]
+    _expires_at: Option<DateTime<Utc>>,
 }
 
 impl TokenVaultRow {
@@ -405,7 +414,8 @@ struct InpdpConsentRow {
     expiry_date: Option<DateTime<Utc>>,
     legal_basis: String,
     data_categories: Option<Vec<String>>,
-    created_at: DateTime<Utc>,
+    #[sqlx(rename = "created_at")]
+    _created_at: DateTime<Utc>,
 }
 
 impl InpdpConsentRow {
@@ -694,7 +704,8 @@ struct BreachNotificationRow {
     notified_authority_at: Option<DateTime<Utc>>,
     notified_subjects_at: Option<DateTime<Utc>>,
     status: String,
-    created_at: DateTime<Utc>,
+    #[sqlx(rename = "created_at")]
+    _created_at: DateTime<Utc>,
 }
 
 impl BreachNotificationRow {
@@ -823,7 +834,8 @@ impl PgDataPortabilityRepository {
 struct DataPortabilityRequestRow {
     id: Uuid,
     customer_id: Uuid,
-    request_type: String,
+    #[sqlx(rename = "request_type")]
+    _request_type: String,
     status: String,
     reason: Option<String>,
     requested_at: DateTime<Utc>,
@@ -922,7 +934,8 @@ impl PgErasureRepository {
 struct ErasureRequestRow {
     id: Uuid,
     customer_id: Uuid,
-    request_type: String,
+    #[sqlx(rename = "request_type")]
+    _request_type: String,
     status: String,
     reason: Option<String>,
     requested_at: DateTime<Utc>,

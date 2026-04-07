@@ -5,10 +5,7 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
 use banko_application::payment::{
-    ChequeService, IssueChequeRequest, ChequeResponse, OpposeChequeRequest,
-    ClearingBatchResponse, BlacklistResponse, ClearingResultRequest,
-    IChequeRepository, IChequeOppositionRepository, IBankingBlacklistRepository,
-    IClearingBatchRepository,
+    ChequeService, IssueChequeRequest, ChequeResponse, OpposeChequeRequest, ClearingResultRequest,
 };
 use banko_application::payment::PaymentServiceError;
 
@@ -186,11 +183,11 @@ pub async fn list_cheques_handler(
 /// GET /api/v1/cheques/{id}
 /// Get a specific cheque
 pub async fn get_cheque_handler(
-    service: web::Data<Arc<ChequeService>>,
+    _service: web::Data<Arc<ChequeService>>,
     path: web::Path<String>,
     _user: AuthenticatedUser,
 ) -> HttpResponse {
-    let cheque_id = path.into_inner();
+    let _cheque_id = path.into_inner();
 
     // Need to retrieve cheque - would require additional method
     // For now, return not implemented

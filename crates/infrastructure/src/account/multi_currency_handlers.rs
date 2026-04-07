@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use banko_application::account::{
-    MultiCurrencyService, AccountServiceError, ConsolidatedBalance,
+    MultiCurrencyService, AccountServiceError,
 };
 use banko_domain::account::Currency;
 

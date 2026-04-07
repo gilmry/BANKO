@@ -8,8 +8,8 @@ use banko_application::compliance::{
     BiometricVerificationDto, DataPortabilityRequest, ErasureRequest, IBiometricRepository,
     IBreachNotificationRepository, IDataPortabilityRepository, IDpiaRepository, IErasureRepository,
     IInpdpConsentRepository, ISmsiRepository, ITokenVaultRepository, RiskEntry, SmsiControl,
+    TokenVaultEntry,
 };
-use banko_domain::compliance::{ConsentPurpose, LegalBasis};
 
 // ============================================================
 // Request/Response DTOs
@@ -415,9 +415,9 @@ pub async fn list_tokens(
 
 pub async fn grant_consent(
     req: web::Json<GrantConsentRequest>,
-    repo: web::Data<Arc<dyn IInpdpConsentRepository>>,
+    _repo: web::Data<Arc<dyn IInpdpConsentRepository>>,
 ) -> impl Responder {
-    let customer_id = match Uuid::parse_str(&req.customer_id) {
+    let _customer_id = match Uuid::parse_str(&req.customer_id) {
         Ok(id) => id,
         Err(_) => return HttpResponse::BadRequest().json(ErrorResponse {
             error: "Invalid customer ID format".to_string(),
@@ -473,7 +473,7 @@ pub async fn get_consents(
 
 pub async fn save_dpia(
     req: web::Json<SaveDpiaRequest>,
-    repo: web::Data<Arc<dyn IDpiaRepository>>,
+    _repo: web::Data<Arc<dyn IDpiaRepository>>,
 ) -> impl Responder {
     // Note: In a real implementation, this would use DpiaService
     // to handle DPIA creation with proper domain logic.
@@ -514,7 +514,7 @@ pub async fn list_dpias(
 
 pub async fn report_breach(
     req: web::Json<ReportBreachRequest>,
-    repo: web::Data<Arc<dyn IBreachNotificationRepository>>,
+    _repo: web::Data<Arc<dyn IBreachNotificationRepository>>,
 ) -> impl Responder {
     // Note: In a real implementation, this would use BreachNotificationService
     let response = BreachResponse {
@@ -806,27 +806,21 @@ pub async fn get_verified_biometric(
 pub async fn get_compliance_dashboard(
     smsi_repo: web::Data<Arc<dyn ISmsiRepository>>,
     breach_repo: web::Data<Arc<dyn IBreachNotificationRepository>>,
-    dpia_repo: web::Data<Arc<dyn IDpiaRepository>>,
+    _dpia_repo: web::Data<Arc<dyn IDpiaRepository>>,
 ) -> impl Responder {
     let total_controls = match smsi_repo.list_all_controls().await {
         Ok(controls) => controls.len() as i64,
         Err(_) => 0,
     };
 
-    let implemented_controls = match smsi_repo.count_by_status("Implemented").await {
-        Ok(count) => count,
-        Err(_) => 0,
-    };
+    let implemented_controls: i64 = smsi_repo.count_by_status("Implemented").await.unwrap_or_default();
 
     let high_risks = match smsi_repo.list_high_risks().await {
         Ok(risks) => risks.len() as i64,
         Err(_) => 0,
     };
 
-    let pending_breaches = match breach_repo.count_pending_authority_notification().await {
-        Ok(count) => count,
-        Err(_) => 0,
-    };
+    let pending_breaches: i64 = breach_repo.count_pending_authority_notification().await.unwrap_or_default();
 
     let active_consents = 0i64; // Would need consent repo to count
 

@@ -1,10 +1,7 @@
 use async_trait::async_trait;
 use sqlx::PgPool;
-use uuid::Uuid;
 
-use banko_application::account::IAccountLimitRepository;
 use banko_domain::account::{AccountId, AccountLimit, BalanceNotification, InternalAccount, InternalAccountType, InterestCapitalization};
-use banko_domain::shared::{Currency, Money};
 
 /// Repository for AccountLimit persistence (FR-025)
 pub struct PgAccountLimitRepository {
@@ -50,7 +47,7 @@ impl PgAccountLimitRepository {
         Ok(())
     }
 
-    pub async fn find_by_account_id(&self, account_id: &AccountId) -> Result<Option<AccountLimit>, String> {
+    pub async fn find_by_account_id(&self, _account_id: &AccountId) -> Result<Option<AccountLimit>, String> {
         // This is a placeholder implementation
         // In production, would fetch from account_limits table and reconstruct entity
         Ok(None)
@@ -101,12 +98,12 @@ impl PgInternalAccountRepository {
         Ok(())
     }
 
-    pub async fn find_by_id(&self, id: &AccountId) -> Result<Option<InternalAccount>, String> {
+    pub async fn find_by_id(&self, _id: &AccountId) -> Result<Option<InternalAccount>, String> {
         // Placeholder: would fetch from internal_accounts table
         Ok(None)
     }
 
-    pub async fn find_by_type(&self, internal_type: InternalAccountType) -> Result<Vec<InternalAccount>, String> {
+    pub async fn find_by_type(&self, _internal_type: InternalAccountType) -> Result<Vec<InternalAccount>, String> {
         // Placeholder: would filter by internal_type
         Ok(vec![])
     }
@@ -149,7 +146,7 @@ impl PgInterestCapitalizationRepository {
         Ok(())
     }
 
-    pub async fn find_by_account_id(&self, account_id: &AccountId) -> Result<Option<InterestCapitalization>, String> {
+    pub async fn find_by_account_id(&self, _account_id: &AccountId) -> Result<Option<InterestCapitalization>, String> {
         // Placeholder: would fetch and reconstruct entity
         Ok(None)
     }
@@ -184,7 +181,7 @@ impl PgBalanceNotificationRepository {
         .bind(notification.account_id().as_uuid())
         .bind(notification.notification_type().as_str())
         .bind(notification.threshold().map(|m| m.amount_cents()))
-        .bind(notification.threshold().map(|m| m.currency().code()))
+        .bind(notification.threshold().map(|m| m.currency().code().to_string()))
         .bind(notification.is_active())
         .bind(notification.created_at())
         .execute(&self.pool)
@@ -194,15 +191,15 @@ impl PgBalanceNotificationRepository {
         Ok(())
     }
 
-    pub async fn find_by_account_id(&self, account_id: &AccountId) -> Result<Vec<BalanceNotification>, String> {
+    pub async fn find_by_account_id(&self, _account_id: &AccountId) -> Result<Vec<BalanceNotification>, String> {
         // Placeholder: would fetch all notifications for account
         Ok(vec![])
     }
 
     pub async fn find_by_account_id_and_type(
         &self,
-        account_id: &AccountId,
-        notification_type: &str,
+        _account_id: &AccountId,
+        _notification_type: &str,
     ) -> Result<Option<BalanceNotification>, String> {
         // Placeholder: would fetch specific notification
         Ok(None)

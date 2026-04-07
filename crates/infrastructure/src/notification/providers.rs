@@ -1,6 +1,6 @@
 use std::env;
 use uuid::Uuid;
-use tracing::{debug, warn};
+use tracing::debug;
 
 /// Email provider for SMTP-based email delivery
 #[derive(Debug, Clone)]
@@ -57,7 +57,7 @@ impl SmtpEmailProvider {
         &self,
         to: &str,
         subject: &str,
-        body: &str,
+        _body: &str,
     ) -> Result<String, String> {
         // Validate email format
         if !to.contains('@') || to.is_empty() {

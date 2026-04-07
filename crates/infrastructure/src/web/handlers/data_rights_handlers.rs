@@ -4,7 +4,6 @@ use actix_web::{web, HttpResponse};
 use serde::{Deserialize, Serialize};
 
 use banko_application::customer::{CustomerServiceError, DataRightsService};
-use banko_domain::customer::DataRequestId;
 
 use crate::web::middleware::AuthenticatedUser;
 

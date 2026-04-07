@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use banko_application::reference_data::IReferenceDataRepository;
+use banko_application::reference_data::ports::IReferenceDataRepository;
 use banko_domain::reference_data::{
     BankCode, BicCodeVo, BranchCode, CountryCode, CountryCodeVo, CurrencyCodeVo,
     CurrencyReference, FeeScheduleReference, FeeType, HolidayCalendar, HolidayType,

@@ -50,6 +50,7 @@ impl FromRequest for AuthenticatedUser {
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
         let jwt_config = req.app_data::<web::Data<JwtConfig>>();
 
+        #[allow(clippy::result_large_err)]
         let result = (|| {
             let config = jwt_config.ok_or_else(|| {
                 actix_web::error::InternalError::from_response(

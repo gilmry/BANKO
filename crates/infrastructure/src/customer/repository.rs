@@ -5,8 +5,8 @@ use uuid::Uuid;
 
 use banko_application::customer::ICustomerRepository;
 use banko_domain::customer::{
-    Address, Beneficiary, ConsentStatus, Customer, CustomerStatus, CustomerType, KycProfile,
-    PepStatus, RiskScore, SourceOfFunds,
+    Address, Beneficiary, ConsentStatus, Customer, CustomerSegment, CustomerStatus, CustomerType,
+    KycProfile, PepStatus, RiskScore, SourceOfFunds,
 };
 use banko_domain::shared::value_objects::{CustomerId, EmailAddress, PhoneNumber};
 
@@ -159,6 +159,8 @@ fn row_to_domain(
         risk_score,
         status,
         consent,
+        CustomerSegment::Retail,  // TODO: persist and load segment from DB
+        vec![],                   // TODO: persist and load documents from DB
         row.created_at,
         row.updated_at,
         row.closed_at,
@@ -433,6 +435,23 @@ impl ICustomerRepository for PgCustomerRepository {
             .map_err(|e| format!("DB delete error: {e}"))?;
 
         Ok(())
+    }
+
+    async fn search(
+        &self,
+        _full_name: Option<&str>,
+        _email: Option<&str>,
+        _cin_or_rcs: Option<&str>,
+        _customer_type: Option<&str>,
+        _status: Option<&str>,
+        _segment: Option<&str>,
+        _risk_score_min: Option<u8>,
+        _risk_score_max: Option<u8>,
+        _limit: i64,
+        _offset: i64,
+    ) -> Result<(i64, Vec<Customer>), String> {
+        // TODO: Implement multi-criteria search query (FR-014)
+        Ok((0, vec![]))
     }
 
     async fn find_closed_before(&self, before: DateTime<Utc>) -> Result<Vec<Customer>, String> {

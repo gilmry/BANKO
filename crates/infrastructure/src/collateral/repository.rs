@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::Utc;
 use sqlx::{postgres::PgPool, Row};
 use uuid::Uuid;
 
@@ -82,9 +82,9 @@ impl ICollateralRepository for PostgresCollateralRepository {
         .map_err(|e| format!("Database error: {}", e))?;
 
         Ok(row.map(|r| {
-            let collateral_type = CollateralType::from_str(r.get::<String, _>("collateral_type"))
+            let collateral_type = CollateralType::from_str(&r.get::<String, _>("collateral_type"))
                 .unwrap_or(CollateralType::Other);
-            let status = CollateralStatus::from_str(r.get::<String, _>("status"))
+            let status = CollateralStatus::from_str(&r.get::<String, _>("status"))
                 .unwrap_or(CollateralStatus::Pending);
 
             let customer_uuid: Uuid = r.get("customer_id");
@@ -137,9 +137,9 @@ impl ICollateralRepository for PostgresCollateralRepository {
         Ok(rows
             .into_iter()
             .map(|r| {
-                let collateral_type = CollateralType::from_str(r.get::<String, _>("collateral_type"))
+                let collateral_type = CollateralType::from_str(&r.get::<String, _>("collateral_type"))
                     .unwrap_or(CollateralType::Other);
-                let status = CollateralStatus::from_str(r.get::<String, _>("status"))
+                let status = CollateralStatus::from_str(&r.get::<String, _>("status"))
                     .unwrap_or(CollateralStatus::Pending);
 
                 let customer_uuid: Uuid = r.get("customer_id");
@@ -201,10 +201,10 @@ impl ICollateralRepository for PostgresCollateralRepository {
             q = q.bind(cid.as_uuid());
         }
         if let Some(s) = status {
-            q = q.bind(s.as_str());
+            q = q.bind(s.as_str().to_string());
         }
         if let Some(ct) = collateral_type {
-            q = q.bind(ct.as_str());
+            q = q.bind(ct.as_str().to_string());
         }
 
         q = q.bind(limit).bind(offset);
@@ -217,9 +217,9 @@ impl ICollateralRepository for PostgresCollateralRepository {
         Ok(rows
             .into_iter()
             .map(|r| {
-                let collateral_type = CollateralType::from_str(r.get::<String, _>("collateral_type"))
+                let collateral_type = CollateralType::from_str(&r.get::<String, _>("collateral_type"))
                     .unwrap_or(CollateralType::Other);
-                let status = CollateralStatus::from_str(r.get::<String, _>("status"))
+                let status = CollateralStatus::from_str(&r.get::<String, _>("status"))
                     .unwrap_or(CollateralStatus::Pending);
 
                 let customer_uuid: Uuid = r.get("customer_id");
@@ -274,10 +274,10 @@ impl ICollateralRepository for PostgresCollateralRepository {
             q = q.bind(cid.as_uuid());
         }
         if let Some(s) = status {
-            q = q.bind(s.as_str());
+            q = q.bind(s.as_str().to_string());
         }
         if let Some(ct) = collateral_type {
-            q = q.bind(ct.as_str());
+            q = q.bind(ct.as_str().to_string());
         }
 
         let row = q
@@ -289,7 +289,7 @@ impl ICollateralRepository for PostgresCollateralRepository {
     }
 
     async fn find_revaluation_due(&self) -> Result<Vec<Collateral>, String> {
-        let today = NaiveDate::from(Utc::now().naive_utc().date());
+        let today = Utc::now().naive_utc().date();
 
         let rows = sqlx::query(
             r#"
@@ -310,9 +310,9 @@ impl ICollateralRepository for PostgresCollateralRepository {
         Ok(rows
             .into_iter()
             .map(|r| {
-                let collateral_type = CollateralType::from_str(r.get::<String, _>("collateral_type"))
+                let collateral_type = CollateralType::from_str(&r.get::<String, _>("collateral_type"))
                     .unwrap_or(CollateralType::Other);
-                let status = CollateralStatus::from_str(r.get::<String, _>("status"))
+                let status = CollateralStatus::from_str(&r.get::<String, _>("status"))
                     .unwrap_or(CollateralStatus::Pending);
 
                 let customer_uuid: Uuid = r.get("customer_id");
@@ -415,7 +415,7 @@ impl ICollateralValuationRepository for PostgresCollateralValuationRepository {
         Ok(rows
             .into_iter()
             .map(|r| {
-                let method = ValuationMethod::from_str(r.get::<String, _>("method"))
+                let method = ValuationMethod::from_str(&r.get::<String, _>("method"))
                     .unwrap_or(ValuationMethod::MarketComparison);
                 let market_value_cents: i64 = r.get("market_value");
                 let market_value = Money::from_cents(market_value_cents, Currency::TND);
@@ -454,7 +454,7 @@ impl ICollateralValuationRepository for PostgresCollateralValuationRepository {
         .map_err(|e| format!("Database error: {}", e))?;
 
         Ok(row.map(|r| {
-            let method = ValuationMethod::from_str(r.get::<String, _>("method"))
+            let method = ValuationMethod::from_str(&r.get::<String, _>("method"))
                 .unwrap_or(ValuationMethod::MarketComparison);
             let market_value_cents: i64 = r.get("market_value");
             let market_value = Money::from_cents(market_value_cents, Currency::TND);
@@ -532,7 +532,7 @@ impl ICollateralAllocationRepository for PostgresCollateralAllocationRepository 
                 CollateralAllocation::new(
                     CollateralId::from_uuid(r.get("collateral_id")),
                     r.get("loan_id"),
-                    allocated_amount,
+                    allocated_amount.clone(),
                     r.get("allocation_date"),
                 )
                 .unwrap_or_else(|_| {
@@ -572,7 +572,7 @@ impl ICollateralAllocationRepository for PostgresCollateralAllocationRepository 
                 CollateralAllocation::new(
                     CollateralId::from_uuid(r.get("collateral_id")),
                     r.get("loan_id"),
-                    allocated_amount,
+                    allocated_amount.clone(),
                     r.get("allocation_date"),
                 )
                 .unwrap_or_else(|_| {
@@ -616,9 +616,32 @@ impl ICollateralAllocationRepository for PostgresCollateralAllocationRepository 
                 CollateralAllocation::new(
                     CollateralId::from_uuid(r.get("collateral_id")),
                     r.get("loan_id"),
-                    allocated_amount,
+                    allocated_amount.clone(),
                     r.get("allocation_date"),
                 )
                 .unwrap_or_else(|_| {
                     CollateralAllocation::new(
-     
+                        CollateralId::from_uuid(r.get("collateral_id")),
+                        r.get("loan_id"),
+                        allocated_amount,
+                        r.get("allocation_date"),
+                    )
+                    .unwrap()
+                })
+            })
+            .collect())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_repository_types() {
+        // Type checks to ensure implementations compile
+        let _: &dyn ICollateralRepository;
+        let _: &dyn ICollateralValuationRepository;
+        let _: &dyn ICollateralAllocationRepository;
+    }
+}

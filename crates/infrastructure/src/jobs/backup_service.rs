@@ -1,8 +1,8 @@
-use chrono::{DateTime, Utc, NaiveDate};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use uuid::Uuid;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 // ============================================================
 // Backup Enums and Data Structures (STORY-DR-01 to DR-03)
@@ -133,7 +133,7 @@ pub struct DrReport {
 
 pub struct BackupService {
     s3_bucket: String,
-    s3_endpoint: String,
+    _s3_endpoint: String,
     retention_policy: BackupRetentionPolicy,
 }
 
@@ -145,7 +145,7 @@ impl BackupService {
     ) -> Self {
         BackupService {
             s3_bucket,
-            s3_endpoint,
+            _s3_endpoint: s3_endpoint,
             retention_policy,
         }
     }
@@ -256,12 +256,12 @@ impl BackupService {
 // ============================================================
 
 pub struct RestoreService {
-    s3_bucket: String,
+    _s3_bucket: String,
 }
 
 impl RestoreService {
     pub fn new(s3_bucket: String) -> Self {
-        RestoreService { s3_bucket }
+        RestoreService { _s3_bucket: s3_bucket }
     }
 
     /// Restore from a full backup
@@ -730,8 +730,8 @@ mod tests {
         assert_eq!(record.backup_type, BackupType::Full);
     }
 
-    #[test]
-    fn test_backup_scheduler_spawn_validation() {
+    #[tokio::test]
+    async fn test_backup_scheduler_spawn_validation() {
         // Valid hour
         let handle = BackupScheduler::spawn_daily(2);
         assert!(!handle.is_finished());

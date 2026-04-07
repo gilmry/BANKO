@@ -1,10 +1,10 @@
-/// goAML Integration for CTAF (Commission Tunisienne des Analyses Financières)
-///
-/// Handles Suspicious Transaction Reports (STR/DOS) submission to Tunisia's Financial
-/// Intelligence Unit through the UN goAML platform's XML format.
-///
-/// Reference: UN FATF goAML reporting standard
-/// Jurisdiction: Tunisia (Country Code: TN)
+//! goAML Integration for CTAF (Commission Tunisienne des Analyses Financières)
+//!
+//! Handles Suspicious Transaction Reports (STR/DOS) submission to Tunisia's Financial
+//! Intelligence Unit through the UN goAML platform's XML format.
+//!
+//! Reference: UN FATF goAML reporting standard
+//! Jurisdiction: Tunisia (Country Code: TN)
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -342,8 +342,8 @@ pub struct SubmissionResponse {
 
 /// Client for interfacing with CTAF's goAML platform
 pub struct GoAmlClient {
-    base_url: String,
-    api_key: String,
+    _base_url: String,
+    _api_key: String,
 }
 
 impl GoAmlClient {
@@ -359,7 +359,7 @@ impl GoAmlClient {
             ));
         }
 
-        Ok(GoAmlClient { base_url, api_key })
+        Ok(GoAmlClient { _base_url: base_url, _api_key: api_key })
     }
 
     /// Generate goAML-compliant XML for a report
@@ -455,7 +455,7 @@ impl GoAmlClient {
         report.validate()?;
 
         // Generate XML
-        let xml = self.generate_xml(report)?;
+        let _xml = self.generate_xml(report)?;
 
         // In production, this would be:
         // POST to {self.base_url}/api/v1/reports

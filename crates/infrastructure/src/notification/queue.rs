@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::interval;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 use super::providers::SmtpEmailProvider;
 
@@ -18,7 +18,7 @@ pub struct ProcessingResult {
 /// It periodically processes pending notifications in batches with exponential
 /// backoff for retries: 2^retry_count * 30 seconds
 pub struct NotificationQueueWorker {
-    email_provider: Arc<SmtpEmailProvider>,
+    _email_provider: Arc<SmtpEmailProvider>,
     interval_duration: Duration,
     batch_size: usize,
 }
@@ -30,7 +30,7 @@ impl NotificationQueueWorker {
     /// Default batch size: 50 notifications
     pub fn new(email_provider: Arc<SmtpEmailProvider>) -> Self {
         NotificationQueueWorker {
-            email_provider,
+            _email_provider: email_provider,
             interval_duration: Duration::from_secs(30),
             batch_size: 50,
         }
@@ -42,7 +42,7 @@ impl NotificationQueueWorker {
         interval_secs: u64,
     ) -> Self {
         NotificationQueueWorker {
-            email_provider,
+            _email_provider: email_provider,
             interval_duration: Duration::from_secs(interval_secs),
             batch_size: 50,
         }
@@ -55,7 +55,7 @@ impl NotificationQueueWorker {
         batch_size: usize,
     ) -> Self {
         NotificationQueueWorker {
-            email_provider,
+            _email_provider: email_provider,
             interval_duration: Duration::from_secs(interval_secs),
             batch_size,
         }

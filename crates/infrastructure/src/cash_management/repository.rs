@@ -339,8 +339,8 @@ impl CashForecastRow {
         let id = CashForecastId::from_uuid(self.id);
         let account_id = AccountId::from_uuid(self.account_id);
         let currency = Currency::from_code(&self.currency).map_err(|e| e.to_string())?;
-        let expected_inflows = Money::from_cents(self.expected_inflows, currency.clone());
-        let expected_outflows = Money::from_cents(self.expected_outflows, currency.clone());
+        let expected_inflows = Money::from_cents(self.expected_inflows, currency);
+        let expected_outflows = Money::from_cents(self.expected_outflows, currency);
         let net_position = Money::from_cents(self.net_position, currency);
         let confidence_level =
             ConfidenceLevel::from_str(&self.confidence_level).map_err(|e| e.to_string())?;
@@ -479,20 +479,20 @@ struct LiquidityPositionRow {
 impl LiquidityPositionRow {
     fn into_domain(self) -> Result<LiquidityPosition, String> {
         let currency = Currency::from_code(&self.currency).map_err(|e| e.to_string())?;
-        let total_assets = Money::from_cents(self.total_assets, currency.clone());
-        let total_liabilities = Money::from_cents(self.total_liabilities, currency.clone());
-        let net_position = Money::from_cents(self.net_position, currency.clone());
-        let lcr_eligible_assets = Money::from_cents(self.lcr_eligible_assets, currency.clone());
+        let total_assets = Money::from_cents(self.total_assets, currency);
+        let total_liabilities = Money::from_cents(self.total_liabilities, currency);
+        let _net_position = Money::from_cents(self.net_position, currency);
+        let lcr_eligible_assets = Money::from_cents(self.lcr_eligible_assets, currency);
         let nsfr_stable_funding = Money::from_cents(self.nsfr_stable_funding, currency);
 
-        Ok(LiquidityPosition::new(
+        LiquidityPosition::new(
             self.date,
-            Currency::from_code(&self.currency).map_err(|e| e.to_string())?,
+            currency,
             total_assets,
             total_liabilities,
             lcr_eligible_assets,
             nsfr_stable_funding,
-        )?)
+        ).map_err(|e| e.to_string())
     }
 }
 
@@ -677,4 +677,26 @@ impl IFundingStrategyRepository for PgFundingStrategyRepository {
 
     async fn find_all_active(&self) -> Result<Vec<FundingStrategy>, String> {
         let rows = sqlx::query_as::<_, FundingStrategyRow>(
-            "SELECT * FROM cash_manageme
+            "SELECT * FROM cash_management.funding_strategies WHERE is_active = true",
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| format!("Failed to find funding strategies: {e}"))?;
+
+        let mut strategies = Vec::new();
+        for row in rows {
+            strategies.push(row.into_domain()?);
+        }
+        Ok(strategies)
+    }
+
+    async fn delete(&self, id: &FundingStrategyId) -> Result<(), String> {
+        sqlx::query("DELETE FROM cash_management.funding_strategies WHERE id = $1")
+            .bind(id.as_uuid())
+            .execute(&self.pool)
+            .await
+            .map_err(|e| format!("Failed to delete funding strategy: {e}"))?;
+
+        Ok(())
+    }
+}

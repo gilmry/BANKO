@@ -146,7 +146,7 @@ pub async fn list_notifications_handler(
     _auth_user: AuthenticatedUser,
     query: web::Query<std::collections::HashMap<String, String>>,
 ) -> HttpResponse {
-    let customer_id = match query.get("customer_id") {
+    let _customer_id = match query.get("customer_id") {
         Some(id) => {
             if let Err(err) = Uuid::parse_str(id) {
                 return map_uuid_error(err);
@@ -180,7 +180,7 @@ pub async fn get_notification_handler(
     _auth_user: AuthenticatedUser,
     path: web::Path<String>,
 ) -> HttpResponse {
-    let notification_id = match Uuid::parse_str(&path.into_inner()) {
+    let _notification_id = match Uuid::parse_str(&path.into_inner()) {
         Ok(id) => id,
         Err(err) => return map_uuid_error(err),
     };
@@ -202,7 +202,7 @@ pub async fn get_preferences_handler(
     _auth_user: AuthenticatedUser,
     path: web::Path<String>,
 ) -> HttpResponse {
-    let customer_id = match Uuid::parse_str(&path.into_inner()) {
+    let _customer_id = match Uuid::parse_str(&path.into_inner()) {
         Ok(id) => id,
         Err(err) => return map_uuid_error(err),
     };
