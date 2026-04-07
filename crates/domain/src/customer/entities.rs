@@ -1,11 +1,12 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::shared::errors::DomainError;
 use crate::shared::value_objects::CustomerId;
 
 use super::value_objects::{
-    Beneficiary, ConsentStatus, CustomerStatus, CustomerType, KycProfile, PepStatus, RiskScore,
+    Beneficiary, ConsentStatus, CustomerSegment, CustomerStatus, CustomerType, Document,
+    KycProfile, PepStatus, RiskScore,
 };
 
 /// Customer aggregate root.
@@ -18,6 +19,8 @@ pub struct Customer {
     risk_score: RiskScore,
     status: CustomerStatus,
     consent: ConsentStatus,
+    segment: CustomerSegment,  // FR-006: Customer segmentation
+    documents: Vec<Document>,  // FR-008: Document lifecycle management
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
     closed_at: Option<DateTime<Utc>>,
@@ -30,6 +33,7 @@ impl Customer {
         kyc_profile: KycProfile,
         beneficiaries: Vec<Beneficiary>,
         consent: ConsentStatus,
+        segment: CustomerSegment,  // FR-006
     ) -> Result<Self, DomainError> {
         // INV-13: INPDP consent required
         if consent == ConsentStatus::NotGiven {
@@ -60,6 +64,8 @@ impl Customer {
             risk_score: RiskScore::new(0).unwrap(),
             status: CustomerStatus::Pending,
             consent,
+            segment,  // FR-006
+            documents: vec![],  // FR-008
             created_at: now,
             updated_at: now,
             closed_at: None,
@@ -76,6 +82,8 @@ impl Customer {
         risk_score: RiskScore,
         status: CustomerStatus,
         consent: ConsentStatus,
+        segment: CustomerSegment,  // FR-006
+        documents: Vec<Document>,  // FR-008
         created_at: DateTime<Utc>,
         updated_at: DateTime<Utc>,
         closed_at: Option<DateTime<Utc>>,
@@ -88,6 +96,8 @@ impl Customer {
             risk_score,
             status,
             consent,
+            segment,  // FR-006
+            documents,  // FR-008
             created_at,
             updated_at,
             closed_at,
@@ -134,6 +144,14 @@ impl Customer {
 
     pub fn closed_at(&self) -> Option<DateTime<Utc>> {
         self.closed_at
+    }
+
+    pub fn segment(&self) -> CustomerSegment {
+        self.segment
+    }
+
+    pub fn documents(&self) -> &[Document] {
+        &self.documents
     }
 
     // --- Domain behavior ---
@@ -230,6 +248,45 @@ impl Customer {
     pub fn is_anonymized(&self) -> bool {
         self.status == CustomerStatus::Anonymized
     }
+
+    // --- Document Management (FR-008) ---
+
+    /// Add a document to the customer's profile.
+    pub fn add_document(&mut self, document: Document) -> Result<(), DomainError> {
+        self.documents.push(document);
+        self.updated_at = Utc::now();
+        Ok(())
+    }
+
+    /// Remove a document by ID.
+    pub fn remove_document(&mut self, document_id: &std::uuid::Uuid) -> Result<(), DomainError> {
+        let initial_len = self.documents.len();
+        self.documents.retain(|d| d.id() != document_id);
+        if self.documents.len() == initial_len {
+            return Err(DomainError::DocumentNotFound);
+        }
+        self.updated_at = Utc::now();
+        Ok(())
+    }
+
+    /// Get expired documents.
+    pub fn expired_documents(&self, now: chrono::NaiveDate) -> Vec<&Document> {
+        self.documents.iter().filter(|d| d.is_expired(now)).collect()
+    }
+
+    /// Get documents expiring within N days (for renewal alerts).
+    pub fn documents_expiring_soon(&self, now: chrono::NaiveDate, days: i64) -> Vec<&Document> {
+        self.documents
+            .iter()
+            .filter(|d| d.expires_within_days(now, days))
+            .collect()
+    }
+
+    /// Update customer segment (FR-006).
+    pub fn update_segment(&mut self, segment: CustomerSegment) {
+        self.segment = segment;
+        self.updated_at = Utc::now();
+    }
 }
 
 // ==================== TESTS ====================
@@ -298,6 +355,7 @@ mod tests {
             valid_individual_kyc(),
             vec![],
             ConsentStatus::Given,
+            CustomerSegment::Retail,  // FR-006
         );
         assert!(customer.is_ok());
         let c = customer.unwrap();
@@ -306,6 +364,7 @@ mod tests {
         assert!(!c.is_kyc_validated());
         assert_eq!(c.risk_score().value(), 0);
         assert_eq!(c.consent(), ConsentStatus::Given);
+        assert_eq!(c.segment(), CustomerSegment::Retail);  // FR-006
     }
 
     #[test]
@@ -315,11 +374,13 @@ mod tests {
             valid_legal_entity_kyc(),
             vec![valid_beneficiary()],
             ConsentStatus::Given,
+            CustomerSegment::Corporate,  // FR-006
         );
         assert!(customer.is_ok());
         let c = customer.unwrap();
         assert_eq!(c.customer_type(), CustomerType::LegalEntity);
         assert_eq!(c.beneficiaries().len(), 1);
+        assert_eq!(c.segment(), CustomerSegment::Corporate);  // FR-006
     }
 
     #[test]
@@ -329,6 +390,7 @@ mod tests {
             valid_individual_kyc(),
             vec![],
             ConsentStatus::NotGiven,
+            CustomerSegment::Retail,  // FR-006
         );
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), DomainError::ConsentRequired);
@@ -341,6 +403,7 @@ mod tests {
             valid_legal_entity_kyc(),
             vec![], // no beneficiaries
             ConsentStatus::Given,
+            CustomerSegment::Corporate,  // FR-006
         );
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), DomainError::MissingBeneficiaries);
@@ -355,6 +418,7 @@ mod tests {
             valid_legal_entity_kyc(),
             vec![b1, b2],
             ConsentStatus::Given,
+            CustomerSegment::Corporate,  // FR-006
         );
         assert!(result.is_err());
         match result.unwrap_err() {
@@ -374,6 +438,7 @@ mod tests {
             valid_individual_kyc(),
             vec![],
             ConsentStatus::Given,
+            CustomerSegment::Retail,  // FR-006
         )
         .unwrap();
         assert!(!customer.is_kyc_validated());
@@ -390,6 +455,7 @@ mod tests {
             valid_individual_kyc(),
             vec![],
             ConsentStatus::Given,
+            CustomerSegment::Retail,  // FR-006
         )
         .unwrap();
 
@@ -405,6 +471,7 @@ mod tests {
             valid_individual_kyc(),
             vec![],
             ConsentStatus::Given,
+            CustomerSegment::Retail,  // FR-006
         )
         .unwrap();
 
@@ -421,6 +488,7 @@ mod tests {
             valid_individual_kyc(),
             vec![],
             ConsentStatus::Given,
+            CustomerSegment::Retail,  // FR-006
         )
         .unwrap();
         assert_eq!(customer.risk_score().value(), 0);
@@ -437,6 +505,7 @@ mod tests {
             valid_individual_kyc(),
             vec![],
             ConsentStatus::Given,
+            CustomerSegment::Retail,  // FR-006
         )
         .unwrap();
 
@@ -475,7 +544,7 @@ mod tests {
         .unwrap();
 
         let customer =
-            Customer::new(CustomerType::Individual, kyc, vec![], ConsentStatus::Given).unwrap();
+            Customer::new(CustomerType::Individual, kyc, vec![], ConsentStatus::Given, CustomerSegment::Retail).unwrap();  // FR-006
 
         assert!(customer.is_pep());
     }
@@ -487,6 +556,7 @@ mod tests {
             valid_individual_kyc(),
             vec![],
             ConsentStatus::Given,
+            CustomerSegment::Retail,  // FR-006
         );
         assert!(customer.is_ok());
     }
@@ -503,6 +573,8 @@ mod tests {
             RiskScore::new(30).unwrap(),
             CustomerStatus::Approved,
             ConsentStatus::Given,
+            CustomerSegment::Retail,  // FR-006
+            vec![],  // FR-008 (documents)
             now,
             now,
             None,
@@ -521,6 +593,7 @@ mod tests {
             valid_individual_kyc(),
             vec![],
             ConsentStatus::Given,
+            CustomerSegment::Retail,  // FR-006
         )
         .unwrap();
         customer.approve_kyc();
@@ -538,6 +611,7 @@ mod tests {
             valid_individual_kyc(),
             vec![],
             ConsentStatus::Given,
+            CustomerSegment::Retail,  // FR-006
         )
         .unwrap();
         customer.close().unwrap();
@@ -557,6 +631,8 @@ mod tests {
             RiskScore::new(10).unwrap(),
             CustomerStatus::Closed,
             ConsentStatus::Given,
+            CustomerSegment::Retail,  // FR-006
+            vec![],  // FR-008 (documents)
             closed_at - chrono::Duration::days(365),
             closed_at,
             Some(closed_at),
@@ -584,6 +660,8 @@ mod tests {
             RiskScore::new(10).unwrap(),
             CustomerStatus::Closed,
             ConsentStatus::Given,
+            CustomerSegment::Retail,  // FR-006
+            vec![],  // FR-008 (documents)
             closed_at - chrono::Duration::days(365),
             closed_at,
             Some(closed_at),
@@ -612,6 +690,8 @@ mod tests {
             RiskScore::new(10).unwrap(),
             CustomerStatus::Closed,
             ConsentStatus::Given,
+            CustomerSegment::Retail,  // FR-006
+            vec![],  // FR-008 (documents)
             closed_at - chrono::Duration::days(365),
             closed_at,
             Some(closed_at),
@@ -631,6 +711,7 @@ mod tests {
             valid_individual_kyc(),
             vec![],
             ConsentStatus::Given,
+            CustomerSegment::Retail,  // FR-006
         )
         .unwrap();
 
@@ -646,8 +727,103 @@ mod tests {
             valid_individual_kyc(),
             vec![],
             ConsentStatus::Given,
+            CustomerSegment::Retail,  // FR-006
         )
         .unwrap();
         assert!(!customer.is_anonymized());
+    }
+
+    // --- Document Management tests (FR-008) ---
+
+    #[test]
+    fn test_customer_add_document() {
+        let mut customer = Customer::new(
+            CustomerType::Individual,
+            valid_individual_kyc(),
+            vec![],
+            ConsentStatus::Given,
+            CustomerSegment::Retail,  // FR-006
+        )
+        .unwrap();
+
+        let doc = Document::new(
+            super::value_objects::DocumentType::NationalId,
+            "CIN-12345678",
+            NaiveDate::from_ymd_opt(2020, 1, 1).unwrap(),
+            NaiveDate::from_ymd_opt(2030, 1, 1).unwrap(),
+        )
+        .unwrap();
+
+        assert!(customer.add_document(doc).is_ok());
+        assert_eq!(customer.documents().len(), 1);
+    }
+
+    #[test]
+    fn test_customer_remove_document() {
+        let mut customer = Customer::new(
+            CustomerType::Individual,
+            valid_individual_kyc(),
+            vec![],
+            ConsentStatus::Given,
+            CustomerSegment::Retail,  // FR-006
+        )
+        .unwrap();
+
+        let doc = Document::new(
+            super::value_objects::DocumentType::NationalId,
+            "CIN-12345678",
+            NaiveDate::from_ymd_opt(2020, 1, 1).unwrap(),
+            NaiveDate::from_ymd_opt(2030, 1, 1).unwrap(),
+        )
+        .unwrap();
+
+        let doc_id = *doc.id();
+        customer.add_document(doc).unwrap();
+        assert_eq!(customer.documents().len(), 1);
+
+        assert!(customer.remove_document(&doc_id).is_ok());
+        assert_eq!(customer.documents().len(), 0);
+    }
+
+    #[test]
+    fn test_customer_documents_expiring_soon() {
+        let mut customer = Customer::new(
+            CustomerType::Individual,
+            valid_individual_kyc(),
+            vec![],
+            ConsentStatus::Given,
+            CustomerSegment::Retail,  // FR-006
+        )
+        .unwrap();
+
+        let doc = Document::new(
+            super::value_objects::DocumentType::NationalId,
+            "CIN-12345678",
+            NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+            NaiveDate::from_ymd_opt(2026, 2, 1).unwrap(),
+        )
+        .unwrap();
+
+        customer.add_document(doc).unwrap();
+
+        let now = NaiveDate::from_ymd_opt(2026, 1, 5).unwrap();
+        let expiring = customer.documents_expiring_soon(now, 30);
+        assert_eq!(expiring.len(), 1);
+    }
+
+    #[test]
+    fn test_customer_update_segment() {
+        let mut customer = Customer::new(
+            CustomerType::Individual,
+            valid_individual_kyc(),
+            vec![],
+            ConsentStatus::Given,
+            CustomerSegment::Retail,  // FR-006
+        )
+        .unwrap();
+
+        assert_eq!(customer.segment(), CustomerSegment::Retail);
+        customer.update_segment(CustomerSegment::Vip);
+        assert_eq!(customer.segment(), CustomerSegment::Vip);
     }
 }

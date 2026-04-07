@@ -160,6 +160,202 @@ impl fmt::Display for SourceOfFunds {
     }
 }
 
+// --- CustomerSegment (FR-006: Customer Segmentation) ---
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum CustomerSegment {
+    Retail,
+    Corporate,
+    Vip,
+    PrivateBanking,
+    Institutional,
+}
+
+impl CustomerSegment {
+    pub fn from_str_segment(s: &str) -> Result<Self, DomainError> {
+        match s.to_lowercase().as_str() {
+            "retail" => Ok(CustomerSegment::Retail),
+            "corporate" => Ok(CustomerSegment::Corporate),
+            "vip" => Ok(CustomerSegment::Vip),
+            "privatebanking" | "private_banking" => Ok(CustomerSegment::PrivateBanking),
+            "institutional" => Ok(CustomerSegment::Institutional),
+            _ => Err(DomainError::ValidationError(format!(
+                "Unknown customer segment: {s}"
+            ))),
+        }
+    }
+
+    pub fn as_str(&self) -> &str {
+        match self {
+            CustomerSegment::Retail => "Retail",
+            CustomerSegment::Corporate => "Corporate",
+            CustomerSegment::Vip => "VIP",
+            CustomerSegment::PrivateBanking => "PrivateBanking",
+            CustomerSegment::Institutional => "Institutional",
+        }
+    }
+}
+
+impl fmt::Display for CustomerSegment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+// --- DocumentType (FR-008: Document Lifecycle) ---
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum DocumentType {
+    NationalId,      // CIN: 10 years validity
+    Passport,        // Validity varies
+    CommercialReg,   // K-bis: Varies
+    TaxCertificate,  // Varies
+    Other,
+}
+
+impl DocumentType {
+    pub fn validity_years(&self) -> u32 {
+        match self {
+            DocumentType::NationalId => 10,
+            DocumentType::Passport => 10,
+            DocumentType::CommercialReg => 3,
+            DocumentType::TaxCertificate => 1,
+            DocumentType::Other => 5,
+        }
+    }
+
+    pub fn from_str_type(s: &str) -> Result<Self, DomainError> {
+        match s.to_lowercase().as_str() {
+            "nationalid" | "national_id" | "cin" => Ok(DocumentType::NationalId),
+            "passport" => Ok(DocumentType::Passport),
+            "commercialreg" | "commercial_reg" | "kbis" => Ok(DocumentType::CommercialReg),
+            "taxcertificate" | "tax_certificate" => Ok(DocumentType::TaxCertificate),
+            "other" => Ok(DocumentType::Other),
+            _ => Err(DomainError::ValidationError(format!(
+                "Unknown document type: {s}"
+            ))),
+        }
+    }
+
+    pub fn as_str(&self) -> &str {
+        match self {
+            DocumentType::NationalId => "NationalId",
+            DocumentType::Passport => "Passport",
+            DocumentType::CommercialReg => "CommercialReg",
+            DocumentType::TaxCertificate => "TaxCertificate",
+            DocumentType::Other => "Other",
+        }
+    }
+}
+
+impl fmt::Display for DocumentType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+// --- Document (FR-008: Document with expiry tracking) ---
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Document {
+    document_id: Uuid,
+    document_type: DocumentType,
+    reference: String,
+    issued_at: NaiveDate,
+    expires_at: NaiveDate,
+    uploaded_at: DateTime<Utc>,
+}
+
+impl Document {
+    pub fn new(
+        document_type: DocumentType,
+        reference: &str,
+        issued_at: NaiveDate,
+        expires_at: NaiveDate,
+    ) -> Result<Self, DomainError> {
+        let reference = reference.trim().to_string();
+        if reference.is_empty() {
+            return Err(DomainError::ValidationError(
+                "Document reference cannot be empty".to_string(),
+            ));
+        }
+        if issued_at >= expires_at {
+            return Err(DomainError::ValidationError(
+                "Document expiry date must be after issue date".to_string(),
+            ));
+        }
+        Ok(Document {
+            document_id: Uuid::new_v4(),
+            document_type,
+            reference,
+            issued_at,
+            expires_at,
+            uploaded_at: Utc::now(),
+        })
+    }
+
+    pub fn reconstitute(
+        document_id: Uuid,
+        document_type: DocumentType,
+        reference: String,
+        issued_at: NaiveDate,
+        expires_at: NaiveDate,
+        uploaded_at: DateTime<Utc>,
+    ) -> Self {
+        Document {
+            document_id,
+            document_type,
+            reference,
+            issued_at,
+            expires_at,
+            uploaded_at,
+        }
+    }
+
+    pub fn id(&self) -> &Uuid {
+        &self.document_id
+    }
+
+    pub fn document_type(&self) -> DocumentType {
+        self.document_type
+    }
+
+    pub fn reference(&self) -> &str {
+        &self.reference
+    }
+
+    pub fn issued_at(&self) -> NaiveDate {
+        self.issued_at
+    }
+
+    pub fn expires_at(&self) -> NaiveDate {
+        self.expires_at
+    }
+
+    pub fn uploaded_at(&self) -> DateTime<Utc> {
+        self.uploaded_at
+    }
+
+    /// Check if document has expired.
+    pub fn is_expired(&self, now: NaiveDate) -> bool {
+        now > self.expires_at
+    }
+
+    /// Check if document expires within N days (for renewal alerts).
+    pub fn expires_within_days(&self, now: NaiveDate, days: i64) -> bool {
+        !self.is_expired(now) && (self.expires_at - now).num_days() <= days
+    }
+
+    /// Get days until expiry. Returns None if already expired.
+    pub fn days_until_expiry(&self, now: NaiveDate) -> Option<i64> {
+        if self.is_expired(now) {
+            None
+        } else {
+            Some((self.expires_at - now).num_days())
+        }
+    }
+}
+
 // --- ConsentStatus ---
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -986,5 +1182,134 @@ mod tests {
             SourceOfFunds::Business,
         );
         assert!(profile.is_err());
+    }
+
+    // --- CustomerSegment tests (FR-006) ---
+
+    #[test]
+    fn test_customer_segment_from_str() {
+        assert_eq!(
+            CustomerSegment::from_str_segment("Retail").unwrap(),
+            CustomerSegment::Retail
+        );
+        assert_eq!(
+            CustomerSegment::from_str_segment("corporate").unwrap(),
+            CustomerSegment::Corporate
+        );
+        assert_eq!(
+            CustomerSegment::from_str_segment("VIP").unwrap(),
+            CustomerSegment::Vip
+        );
+        assert_eq!(
+            CustomerSegment::from_str_segment("private_banking").unwrap(),
+            CustomerSegment::PrivateBanking
+        );
+        assert_eq!(
+            CustomerSegment::from_str_segment("institutional").unwrap(),
+            CustomerSegment::Institutional
+        );
+    }
+
+    #[test]
+    fn test_customer_segment_invalid() {
+        assert!(CustomerSegment::from_str_segment("unknown").is_err());
+    }
+
+    // --- DocumentType tests (FR-008) ---
+
+    #[test]
+    fn test_document_type_validity_years() {
+        assert_eq!(DocumentType::NationalId.validity_years(), 10);
+        assert_eq!(DocumentType::Passport.validity_years(), 10);
+        assert_eq!(DocumentType::CommercialReg.validity_years(), 3);
+        assert_eq!(DocumentType::TaxCertificate.validity_years(), 1);
+        assert_eq!(DocumentType::Other.validity_years(), 5);
+    }
+
+    #[test]
+    fn test_document_type_from_str() {
+        assert_eq!(
+            DocumentType::from_str_type("NationalId").unwrap(),
+            DocumentType::NationalId
+        );
+        assert_eq!(
+            DocumentType::from_str_type("passport").unwrap(),
+            DocumentType::Passport
+        );
+        assert_eq!(
+            DocumentType::from_str_type("commercial_reg").unwrap(),
+            DocumentType::CommercialReg
+        );
+    }
+
+    // --- Document tests (FR-008) ---
+
+    #[test]
+    fn test_document_new_valid() {
+        let issued = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
+        let expires = NaiveDate::from_ymd_opt(2030, 1, 1).unwrap();
+        let doc = Document::new(DocumentType::NationalId, "CIN-12345678", issued, expires);
+        assert!(doc.is_ok());
+        let d = doc.unwrap();
+        assert_eq!(d.document_type(), DocumentType::NationalId);
+        assert_eq!(d.reference(), "CIN-12345678");
+        assert_eq!(d.issued_at(), issued);
+        assert_eq!(d.expires_at(), expires);
+    }
+
+    #[test]
+    fn test_document_empty_reference() {
+        let issued = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
+        let expires = NaiveDate::from_ymd_opt(2030, 1, 1).unwrap();
+        let doc = Document::new(DocumentType::NationalId, "", issued, expires);
+        assert!(doc.is_err());
+    }
+
+    #[test]
+    fn test_document_invalid_dates() {
+        let issued = NaiveDate::from_ymd_opt(2030, 1, 1).unwrap();
+        let expires = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
+        let doc = Document::new(DocumentType::NationalId, "CIN-12345678", issued, expires);
+        assert!(doc.is_err());
+    }
+
+    #[test]
+    fn test_document_is_expired() {
+        let issued = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
+        let expires = NaiveDate::from_ymd_opt(2022, 1, 1).unwrap();
+        let doc = Document::new(DocumentType::NationalId, "CIN-12345678", issued, expires)
+            .unwrap();
+
+        let now_before = NaiveDate::from_ymd_opt(2021, 12, 31).unwrap();
+        assert!(!doc.is_expired(now_before));
+
+        let now_after = NaiveDate::from_ymd_opt(2022, 1, 2).unwrap();
+        assert!(doc.is_expired(now_after));
+    }
+
+    #[test]
+    fn test_document_expires_within_days() {
+        let issued = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+        let expires = NaiveDate::from_ymd_opt(2026, 2, 1).unwrap();
+        let doc = Document::new(DocumentType::NationalId, "CIN-12345678", issued, expires)
+            .unwrap();
+
+        let now = NaiveDate::from_ymd_opt(2026, 1, 5).unwrap();
+        assert!(doc.expires_within_days(now, 30));
+        assert!(!doc.expires_within_days(now, 20));
+    }
+
+    #[test]
+    fn test_document_days_until_expiry() {
+        let issued = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+        let expires = NaiveDate::from_ymd_opt(2026, 2, 1).unwrap();
+        let doc = Document::new(DocumentType::NationalId, "CIN-12345678", issued, expires)
+            .unwrap();
+
+        let now = NaiveDate::from_ymd_opt(2026, 1, 5).unwrap();
+        assert_eq!(doc.days_until_expiry(now), Some(27));
+
+        let now_after = NaiveDate::from_ymd_opt(2026, 2, 5).unwrap();
+        assert_eq!(doc.days_until_expiry(now_after), None);
     }
 }

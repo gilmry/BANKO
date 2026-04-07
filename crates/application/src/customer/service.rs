@@ -314,6 +314,31 @@ impl CustomerService {
             .await
             .map_err(CustomerServiceError::Internal)
     }
+
+    /// FR-014: Multi-criteria search for customers.
+    pub async fn search_customers(
+        &self,
+        query: super::dto::CustomerSearchQuery,
+    ) -> Result<(i64, Vec<Customer>), CustomerServiceError> {
+        let (total, customers) = self
+            .repo
+            .search(
+                query.full_name.as_deref(),
+                query.email.as_deref(),
+                query.cin_or_rcs.as_deref(),
+                query.customer_type.as_deref(),
+                query.status.as_deref(),
+                query.segment.as_deref(),
+                query.min_risk_score,
+                query.max_risk_score,
+                query.get_limit(),
+                query.get_offset(),
+            )
+            .await
+            .map_err(CustomerServiceError::Internal)?;
+
+        Ok((total, customers))
+    }
 }
 
 #[cfg(test)]

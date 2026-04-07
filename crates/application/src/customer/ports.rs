@@ -16,6 +16,20 @@ pub trait ICustomerRepository: Send + Sync {
     async fn delete(&self, id: &CustomerId) -> Result<(), String>;
     /// Find all customers with status Closed and closed_at before the given date.
     async fn find_closed_before(&self, before: DateTime<Utc>) -> Result<Vec<Customer>, String>;
+    /// FR-014: Multi-criteria search. Returns (total_count, matching_customers).
+    async fn search(
+        &self,
+        full_name: Option<&str>,
+        email: Option<&str>,
+        cin_or_rcs: Option<&str>,
+        customer_type: Option<&str>,
+        status: Option<&str>,
+        segment: Option<&str>,
+        risk_score_min: Option<u8>,
+        risk_score_max: Option<u8>,
+        limit: i64,
+        offset: i64,
+    ) -> Result<(i64, Vec<Customer>), String>;
 }
 
 /// Port for PEP checking — implemented by infrastructure layer.
