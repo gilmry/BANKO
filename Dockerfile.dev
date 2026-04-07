@@ -1,43 +1,62 @@
+# BANKO - Dockerfile pour le développement
+# Usage: docker compose -f docker-compose.dev.yml up --build
+#
+# Inclut: cargo-watch (hot reload Rust), clippy, rustfmt, sqlx-cli,
+#          cargo-tarpaulin (couverture), cargo-expand (debug macros)
+
 FROM rust:1.82-bookworm
 
-# System dependencies
+# ── Dépendances système ──────────────────────────────────────────────
 RUN apt-get update && apt-get install -y \
     postgresql-client \
     libssl-dev \
     pkg-config \
     curl \
     git \
+    watch \
+    jq \
     && rm -rf /var/lib/apt/lists/*
 
-# Rust tools
-RUN cargo install sqlx-cli --no-default-features --features postgres \
+# ── Toolchain Rust dev ───────────────────────────────────────────────
+RUN rustup component add clippy rustfmt \
+    && cargo install cargo-watch \
+    && cargo install sqlx-cli --no-default-features --features postgres \
     && cargo install cargo-tarpaulin \
-    && rustup component add clippy rustfmt
+    && cargo install cargo-expand
 
-# Node.js for frontend
+# ── Node.js 22 (pour le frontend Astro/Svelte) ──────────────────────
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y nodejs
+    && apt-get install -y nodejs \
+    && npm install -g npm@latest
 
 WORKDIR /app
 
-# Pre-cache dependencies
+# ── Pré-cache des dépendances Rust (layer caching) ──────────────────
+# On copie d'abord les Cargo.toml pour profiter du cache Docker
 COPY Cargo.toml Cargo.lock ./
 COPY crates/domain/Cargo.toml crates/domain/Cargo.toml
 COPY crates/application/Cargo.toml crates/application/Cargo.toml
 COPY crates/infrastructure/Cargo.toml crates/infrastructure/Cargo.toml
+
+# Créer des stubs pour que cargo build cache les dépendances
 RUN mkdir -p crates/domain/src crates/application/src crates/infrastructure/src \
-    && echo "fn main() {}" > crates/domain/src/lib.rs \
-    && echo "fn main() {}" > crates/application/src/lib.rs \
-    && echo "fn main() {}" > crates/infrastructure/src/lib.rs \
+    && echo "// stub" > crates/domain/src/lib.rs \
+    && echo "// stub" > crates/application/src/lib.rs \
+    && echo "// stub" > crates/infrastructure/src/lib.rs \
     && mkdir -p crates/infrastructure/src/bin \
     && echo "fn main() {}" > crates/infrastructure/src/bin/server.rs \
     && cargo build 2>/dev/null || true \
     && rm -rf crates/*/src
 
-# Copy full source
-COPY . .
+# ── Le code source sera monté en volume (pas copié) ─────────────────
+# En dev, on monte le code source en volume pour le hot reload
+# Le CMD sera overridé par docker-compose.dev.yml
 
 ENV SQLX_OFFLINE=true
-ENV DATABASE_URL=postgres://banko:banko@postgres:5432/banko
+ENV RUST_LOG=banko=debug,actix_web=info,sqlx=warn
+ENV RUST_BACKTRACE=1
 
-CMD ["cargo", "test"]
+EXPOSE 8080
+
+# Commande par défaut : cargo watch rebuild + restart
+CMD ["cargo", "watch", "-x", "run --bin server", "-w", "crates/", "-i", "*.swp", "-i", "*.swo"]

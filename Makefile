@@ -1,7 +1,7 @@
 # BANKO - Makefile pour contributeurs
 # Usage: make help
 
-.PHONY: help dev up down logs test test-unit test-int test-bdd codegen lint format build clean install setup migrate reset-db docs audit ci pre-commit
+.PHONY: help dev dev-up dev-down dev-logs dev-build dev-test dev-clippy dev-coverage dev-migrate dev-shell up down logs test test-unit test-int test-bdd codegen lint format build clean install setup migrate reset-db docs audit ci pre-commit
 
 # Couleurs pour output
 GREEN  := \033[0;32m
@@ -20,30 +20,75 @@ help: ## 📖 Afficher cette aide
 ## 🚀 Développement
 ##
 
-dev: ## 🔥 Démarrer dev avec hot reload (Traefik + backend + frontend)
-	@echo "$(GREEN)🚀 Démarrage environnement dev...$(NC)"
-	@echo "  📍 Frontend: http://localhost"
-	@echo "  📍 API:      http://localhost/api/v1"
-	@echo "  📍 Traefik:  http://localhost:8081"
+dev: ## 🔥 Démarrer dev avec hot reload (cargo watch + Astro HMR)
+	@echo "$(GREEN)🚀 Démarrage environnement dev BANKO...$(NC)"
 	@echo ""
-	docker compose up
+	@echo "  📍 Frontend (HMR):  http://localhost:3000"
+	@echo "  📍 API (direct):    http://localhost:8080/api/v1"
+	@echo "  📍 API (Traefik):   http://localhost/api/v1"
+	@echo "  📍 Traefik:         http://localhost:8081"
+	@echo "  📍 MinIO Console:   http://localhost:9001"
+	@echo ""
+	@echo "  🔄 Backend:  cargo watch recompile à chaque modification"
+	@echo "  🔄 Frontend: Astro dev server avec HMR Svelte"
+	@echo ""
+	docker compose -f docker-compose.dev.yml up --build
 
-up: dev ## Alias pour 'make dev'
+dev-up: ## 🔥 Démarrer dev en arrière-plan
+	docker compose -f docker-compose.dev.yml up --build -d
 
-down: ## 🛑 Arrêter tous les services
+dev-down: ## 🛑 Arrêter environnement dev
+	docker compose -f docker-compose.dev.yml down
+
+dev-logs: ## 📋 Logs dev (usage: make dev-logs SERVICE=backend)
+	@if [ -z "$(SERVICE)" ]; then \
+		docker compose -f docker-compose.dev.yml logs -f; \
+	else \
+		docker compose -f docker-compose.dev.yml logs -f $(SERVICE); \
+	fi
+
+dev-build: ## 🔨 Rebuild images dev
+	docker compose -f docker-compose.dev.yml build --no-cache
+
+dev-test: ## 🧪 Lancer tests dans le container dev
+	docker compose -f docker-compose.dev.yml run --rm devtools cargo test
+
+dev-clippy: ## 🔍 Lancer clippy dans le container dev
+	docker compose -f docker-compose.dev.yml run --rm devtools cargo clippy --all-targets -- -D warnings
+
+dev-coverage: ## 📊 Couverture de code avec tarpaulin
+	docker compose -f docker-compose.dev.yml run --rm devtools cargo tarpaulin --out Html --output-dir /app/coverage
+
+dev-migrate: ## 📊 Lancer les migrations dans le container dev
+	docker compose -f docker-compose.dev.yml run --rm devtools sqlx migrate run --source /app/migrations
+
+dev-shell: ## 🐚 Shell dans le container devtools
+	docker compose -f docker-compose.dev.yml run --rm devtools bash
+
+dev-reset: ## ⚠️  Reset complet dev (volumes + rebuild)
+	@echo "$(YELLOW)⚠️  Reset complet de l'environnement dev...$(NC)"
+	docker compose -f docker-compose.dev.yml down -v
+	@echo "$(GREEN)✅ Volumes supprimés. Relancer avec: make dev$(NC)"
+
+## Production (docker-compose.yml original)
+
+up: ## 🚀 Démarrer prod (docker-compose.yml)
+	docker compose up -d
+
+down: ## 🛑 Arrêter prod
 	docker compose down
 
-logs: ## 📋 Voir les logs (usage: make logs SERVICE=backend)
+logs: ## 📋 Logs prod (usage: make logs SERVICE=backend)
 	@if [ -z "$(SERVICE)" ]; then \
 		docker compose logs -f; \
 	else \
 		docker compose logs -f $(SERVICE); \
 	fi
 
-restart: ## 🔄 Redémarrer les services
+restart: ## 🔄 Redémarrer prod
 	docker compose restart
 
-build: ## 🔨 Rebuild les images Docker
+build: ## 🔨 Rebuild images prod
 	docker compose build
 
 clean: ## 🧹 Nettoyer artifacts et volumes Docker

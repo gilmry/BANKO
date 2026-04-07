@@ -1,0 +1,280 @@
+# BANKO - Docker Compose pour le développement
+#
+# Usage:
+#   docker compose -f docker-compose.dev.yml up --build
+#   docker compose -f docker-compose.dev.yml up -d          # détaché
+#   docker compose -f docker-compose.dev.yml logs -f        # logs
+#   docker compose -f docker-compose.dev.yml down -v        # reset tout
+#
+# Hot reload:
+#   - Backend:  cargo watch recompile automatiquement à chaque modification dans crates/
+#   - Frontend: astro dev avec HMR natif (Svelte + Tailwind)
+#
+# URLs:
+#   Frontend (Astro dev)     → http://localhost:3000
+#   API REST (via Traefik)   → http://localhost/api/v1
+#   API REST (direct)        → http://localhost:8080/api/v1
+#   Traefik Dashboard        → http://localhost:8081
+#   PostgreSQL               → localhost:5432
+#   MinIO API                → localhost:9000
+#   MinIO Console            → localhost:9001
+
+services:
+
+  # ═══════════════════════════════════════════════════════════════════
+  # TRAEFIK - Reverse proxy
+  # ═══════════════════════════════════════════════════════════════════
+  traefik:
+    image: traefik:v2.11
+    container_name: banko-dev-traefik
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--log.level=DEBUG"
+    ports:
+      - "80:80"
+      - "8081:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - banko-dev
+    restart: unless-stopped
+
+  # ═══════════════════════════════════════════════════════════════════
+  # POSTGRESQL 16 - Base de données
+  # ═══════════════════════════════════════════════════════════════════
+  postgres:
+    image: postgres:16-alpine
+    container_name: banko-dev-postgres
+    environment:
+      POSTGRES_DB: banko_db
+      POSTGRES_USER: banko
+      POSTGRES_PASSWORD: banko_dev_2026
+      POSTGRES_INITDB_ARGS: "--locale=fr_FR.UTF-8"
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U banko -d banko_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - banko-dev
+    restart: unless-stopped
+
+  # ═══════════════════════════════════════════════════════════════════
+  # BACKEND RUST - cargo watch (hot reload)
+  # ═══════════════════════════════════════════════════════════════════
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: banko-dev-backend
+    command: >
+      cargo watch
+        -x "run --bin server"
+        -w crates/
+        -i "*.swp" -i "*.swo" -i "target/"
+        --poll
+    environment:
+      DATABASE_URL: postgresql://banko:banko_dev_2026@postgres:5432/banko_db
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 8080
+      RUST_LOG: banko=debug,actix_web=info,sqlx=warn
+      RUST_BACKTRACE: 1
+      SQLX_OFFLINE: "true"
+      # JWT dev keys
+      JWT_SECRET: banko-dev-jwt-secret-change-in-production
+      JWT_EXPIRY_SECONDS: 3600
+      JWT_REFRESH_EXPIRY_SECONDS: 86400
+      # MinIO
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: banko-dev
+    volumes:
+      # Monte le code source pour le hot reload
+      - ./crates:/app/crates:cached
+      - ./Cargo.toml:/app/Cargo.toml:ro
+      - ./Cargo.lock:/app/Cargo.lock:ro
+      - ./migrations:/app/migrations:ro
+      # Cache cargo pour éviter de retélécharger les dépendances
+      - cargo_registry:/usr/local/cargo/registry
+      - cargo_git:/usr/local/cargo/git
+      - backend_target:/app/target
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`localhost`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.api.entrypoints=web"
+      - "traefik.http.services.api.loadbalancer.server.port=8080"
+      # Health check endpoint
+      - "traefik.http.routers.api-health.rule=Host(`localhost`) && Path(`/health`)"
+      - "traefik.http.routers.api-health.entrypoints=web"
+      # Metrics
+      - "traefik.http.routers.api-metrics.rule=Host(`localhost`) && Path(`/metrics`)"
+      - "traefik.http.routers.api-metrics.entrypoints=web"
+    networks:
+      - banko-dev
+    restart: unless-stopped
+    # stdin_open et tty pour un meilleur affichage cargo watch
+    stdin_open: true
+    tty: true
+
+  # ═══════════════════════════════════════════════════════════════════
+  # MIGRATIONS - Exécute les migrations SQLx au démarrage
+  # ═══════════════════════════════════════════════════════════════════
+  migrations:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: banko-dev-migrations
+    command: >
+      sh -c "
+        echo '⏳ Attente PostgreSQL...' &&
+        until pg_isready -h postgres -U banko -d banko_db; do sleep 1; done &&
+        echo '🔄 Exécution des migrations...' &&
+        sqlx migrate run --source /app/migrations &&
+        echo '✅ Migrations terminées'
+      "
+    environment:
+      DATABASE_URL: postgresql://banko:banko_dev_2026@postgres:5432/banko_db
+    volumes:
+      - ./migrations:/app/migrations:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - banko-dev
+    # S'arrête après exécution
+    restart: "no"
+
+  # ═══════════════════════════════════════════════════════════════════
+  # FRONTEND ASTRO + SVELTE - Dev server avec HMR
+  # ═══════════════════════════════════════════════════════════════════
+  frontend:
+    image: node:22-bookworm-slim
+    container_name: banko-dev-frontend
+    working_dir: /app
+    command: >
+      sh -c "
+        npm install &&
+        echo '🚀 Démarrage Astro dev server avec HMR...' &&
+        npm run dev
+      "
+    environment:
+      PUBLIC_API_URL: http://localhost/api/v1
+      NODE_ENV: development
+      # Astro HMR config
+      HOST: "0.0.0.0"
+    volumes:
+      # Monte le code frontend pour le hot reload
+      - ./frontend:/app:cached
+      # Sépare node_modules du host pour éviter les conflits OS
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`localhost`) && !PathPrefix(`/api`) && !Path(`/metrics`) && !Path(`/health`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.routers.frontend.priority=1"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+    networks:
+      - banko-dev
+    restart: unless-stopped
+
+  # ═══════════════════════════════════════════════════════════════════
+  # MINIO - Stockage S3-compatible
+  # ═══════════════════════════════════════════════════════════════════
+  minio:
+    image: minio/minio:latest
+    container_name: banko-dev-minio
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - minio_dev_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:9000/minio/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - banko-dev
+    restart: unless-stopped
+
+  # ═══════════════════════════════════════════════════════════════════
+  # OUTILS DEV - Container one-shot pour les commandes dev
+  # Usage: docker compose -f docker-compose.dev.yml run --rm devtools <cmd>
+  #   Exemples:
+  #     docker compose -f docker-compose.dev.yml run --rm devtools cargo test
+  #     docker compose -f docker-compose.dev.yml run --rm devtools cargo clippy
+  #     docker compose -f docker-compose.dev.yml run --rm devtools cargo tarpaulin
+  #     docker compose -f docker-compose.dev.yml run --rm devtools sqlx migrate list
+  # ═══════════════════════════════════════════════════════════════════
+  devtools:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: banko-dev-tools
+    environment:
+      DATABASE_URL: postgresql://banko:banko_dev_2026@postgres:5432/banko_db
+      SQLX_OFFLINE: "true"
+      RUST_LOG: banko=debug
+    volumes:
+      - ./crates:/app/crates:cached
+      - ./Cargo.toml:/app/Cargo.toml:ro
+      - ./Cargo.lock:/app/Cargo.lock:ro
+      - ./migrations:/app/migrations:ro
+      - ./tests:/app/tests:ro
+      - cargo_registry:/usr/local/cargo/registry
+      - cargo_git:/usr/local/cargo/git
+      - backend_target:/app/target
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - banko-dev
+    profiles:
+      - tools
+
+# ═══════════════════════════════════════════════════════════════════
+# VOLUMES
+# ═══════════════════════════════════════════════════════════════════
+volumes:
+  postgres_dev_data:
+    name: banko-dev-postgres
+  minio_dev_data:
+    name: banko-dev-minio
+  cargo_registry:
+    name: banko-dev-cargo-registry
+  cargo_git:
+    name: banko-dev-cargo-git
+  backend_target:
+    name: banko-dev-target
+  frontend_node_modules:
+    name: banko-dev-node-modules
+
+# ═══════════════════════════════════════════════════════════════════
+# NETWORK
+# ═══════════════════════════════════════════════════════════════════
+networks:
+  banko-dev:
+    driver: bridge
+    name: banko-dev

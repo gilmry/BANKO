@@ -1,0 +1,30 @@
+# BANKO - Dev override (cargo check/build en live)
+# Usage: docker compose run --rm dev cargo check
+#        docker compose run --rm dev cargo build --release -p banko-infrastructure
+#        docker compose run --rm dev bash  (shell interactif)
+
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: banko-dev
+    working_dir: /app
+    volumes:
+      - .:/app
+      - cargo-registry:/usr/local/cargo/registry
+      - cargo-git:/usr/local/cargo/git
+      - target-cache:/app/target
+    environment:
+      SQLX_OFFLINE: "true"
+      CARGO_HOME: /usr/local/cargo
+    command: ["bash"]
+    stdin_open: true
+    tty: true
+    networks:
+      - banko-net
+
+volumes:
+  cargo-registry:
+  cargo-git:
+  target-cache:
