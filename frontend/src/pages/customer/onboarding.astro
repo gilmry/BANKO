@@ -1,10 +1,10 @@
 ---
-import AppLayout from "../../layouts/AppLayout.astro";
+import DashboardLayout from "../../layouts/DashboardLayout.astro";
 import KycWizard from "../../components/customer/KycWizard.svelte";
 ---
 
-<AppLayout title="Enregistrement client (KYC)">
+<DashboardLayout title="Enregistrement client (KYC)">
   <div class="mx-auto max-w-3xl">
     <KycWizard client:load />
   </div>
-</AppLayout>
+</DashboardLayout>

@@ -1,0 +1,176 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout title="Rapports">
+  <!-- Report Categories -->
+  <section class="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
+    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200 hover:shadow-md transition-shadow">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="rounded-lg bg-blue-100 p-2.5">
+          <span class="text-xl">🏛️</span>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-900">Rapports BCT</h3>
+          <p class="text-xs text-gray-500">Banque Centrale de Tunisie</p>
+        </div>
+      </div>
+      <p class="text-sm text-gray-600 mb-4">Déclarations réglementaires obligatoires : bilans, ratios prudentiels, reporting SURFI.</p>
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-500">5 rapports</span>
+        <button class="text-sm font-medium text-blue-600 hover:text-blue-800">Générer</button>
+      </div>
+    </div>
+
+    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200 hover:shadow-md transition-shadow">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="rounded-lg bg-red-100 p-2.5">
+          <span class="text-xl">⚠️</span>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-900">Rapports AML/CTAF</h3>
+          <p class="text-xs text-gray-500">Anti-blanchiment</p>
+        </div>
+      </div>
+      <p class="text-sm text-gray-600 mb-4">Déclarations de soupçon (DOS), rapports goAML, statistiques de screening.</p>
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-500">3 rapports</span>
+        <button class="text-sm font-medium text-blue-600 hover:text-blue-800">Générer</button>
+      </div>
+    </div>
+
+    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200 hover:shadow-md transition-shadow">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="rounded-lg bg-green-100 p-2.5">
+          <span class="text-xl">📊</span>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-900">Rapports Bâle III</h3>
+          <p class="text-xs text-gray-500">Prudentiel</p>
+        </div>
+      </div>
+      <p class="text-sm text-gray-600 mb-4">Ratios de solvabilité (CET1, Tier 1), LCR, NSFR, leverage ratio.</p>
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-500">4 rapports</span>
+        <button class="text-sm font-medium text-blue-600 hover:text-blue-800">Générer</button>
+      </div>
+    </div>
+
+    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200 hover:shadow-md transition-shadow">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="rounded-lg bg-purple-100 p-2.5">
+          <span class="text-xl">📈</span>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-900">Rapports IFRS 9</h3>
+          <p class="text-xs text-gray-500">Comptabilité</p>
+        </div>
+      </div>
+      <p class="text-sm text-gray-600 mb-4">Classification des actifs, ECL (Expected Credit Losses), staging, provisions.</p>
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-500">3 rapports</span>
+        <button class="text-sm font-medium text-blue-600 hover:text-blue-800">Générer</button>
+      </div>
+    </div>
+
+    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200 hover:shadow-md transition-shadow">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="rounded-lg bg-amber-100 p-2.5">
+          <span class="text-xl">💰</span>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-900">Rapports financiers</h3>
+          <p class="text-xs text-gray-500">Comptabilité générale</p>
+        </div>
+      </div>
+      <p class="text-sm text-gray-600 mb-4">Bilan, compte de résultat, balance générale, journaux comptables NCT.</p>
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-500">6 rapports</span>
+        <button class="text-sm font-medium text-blue-600 hover:text-blue-800">Générer</button>
+      </div>
+    </div>
+
+    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200 hover:shadow-md transition-shadow">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="rounded-lg bg-teal-100 p-2.5">
+          <span class="text-xl">📋</span>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-900">Rapports opérationnels</h3>
+          <p class="text-xs text-gray-500">Activité quotidienne</p>
+        </div>
+      </div>
+      <p class="text-sm text-gray-600 mb-4">Transactions du jour, ouvertures de comptes, KYC en cours, prêts accordés.</p>
+      <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-500">8 rapports</span>
+        <button class="text-sm font-medium text-blue-600 hover:text-blue-800">Générer</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Recent Reports -->
+  <section class="rounded-lg border border-gray-200 bg-white shadow-sm">
+    <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-900">Rapports récents</h2>
+      <button class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
+        Générer un rapport
+      </button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 text-left text-gray-600">
+          <tr>
+            <th class="px-6 py-3 font-medium">Rapport</th>
+            <th class="px-6 py-3 font-medium">Catégorie</th>
+            <th class="px-6 py-3 font-medium">Période</th>
+            <th class="px-6 py-3 font-medium">Généré le</th>
+            <th class="px-6 py-3 font-medium">Statut</th>
+            <th class="px-6 py-3 font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 font-medium text-gray-900">Ratio de solvabilité CET1</td>
+            <td class="px-6 py-4"><span class="inline-flex rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">Bâle III</span></td>
+            <td class="px-6 py-4 text-gray-600">T1 2026</td>
+            <td class="px-6 py-4 text-gray-600">07/04/2026</td>
+            <td class="px-6 py-4"><span class="inline-flex rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">Prêt</span></td>
+            <td class="px-6 py-4">
+              <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">Télécharger</button>
+            </td>
+          </tr>
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 font-medium text-gray-900">Rapport goAML mensuel</td>
+            <td class="px-6 py-4"><span class="inline-flex rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700">AML/CTAF</span></td>
+            <td class="px-6 py-4 text-gray-600">Mars 2026</td>
+            <td class="px-6 py-4 text-gray-600">01/04/2026</td>
+            <td class="px-6 py-4"><span class="inline-flex rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">Envoyé</span></td>
+            <td class="px-6 py-4">
+              <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">Voir</button>
+            </td>
+          </tr>
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 font-medium text-gray-900">Balance générale NCT</td>
+            <td class="px-6 py-4"><span class="inline-flex rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">Financier</span></td>
+            <td class="px-6 py-4 text-gray-600">Mars 2026</td>
+            <td class="px-6 py-4 text-gray-600">31/03/2026</td>
+            <td class="px-6 py-4"><span class="inline-flex rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">Prêt</span></td>
+            <td class="px-6 py-4">
+              <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">Télécharger</button>
+            </td>
+          </tr>
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 font-medium text-gray-900">Provisions IFRS 9 - ECL</td>
+            <td class="px-6 py-4"><span class="inline-flex rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-medium text-purple-700">IFRS 9</span></td>
+            <td class="px-6 py-4 text-gray-600">T1 2026</td>
+            <td class="px-6 py-4 text-gray-600">28/03/2026</td>
+            <td class="px-6 py-4"><span class="inline-flex rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">En cours</span></td>
+            <td class="px-6 py-4">
+              <span class="text-gray-400 text-sm">En attente</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</DashboardLayout>

@@ -1,0 +1,152 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout title="Sanctions">
+  <!-- KPI Cards -->
+  <section class="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+      <p class="text-sm font-medium text-gray-500">Alertes actives</p>
+      <p class="mt-2 text-3xl font-bold text-red-600">8</p>
+      <p class="mt-1 text-sm text-red-600">+3 depuis hier</p>
+    </div>
+    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+      <p class="text-sm font-medium text-gray-500">Screening du jour</p>
+      <p class="mt-2 text-3xl font-bold text-blue-600">1,247</p>
+      <p class="mt-1 text-sm text-gray-500">Transactions vérifiées</p>
+    </div>
+    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+      <p class="text-sm font-medium text-gray-500">Listes actives</p>
+      <p class="mt-2 text-3xl font-bold text-purple-600">12</p>
+      <p class="mt-1 text-sm text-gray-500">OFAC, EU, UN, CTAF...</p>
+    </div>
+    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+      <p class="text-sm font-medium text-gray-500">Taux de faux positifs</p>
+      <p class="mt-2 text-3xl font-bold text-green-600">2.1%</p>
+      <p class="mt-1 text-sm text-green-600">-0.3% ce mois</p>
+    </div>
+  </section>
+
+  <!-- Active Alerts -->
+  <section class="rounded-lg border border-gray-200 bg-white shadow-sm mb-8">
+    <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-900">Alertes sanctions en cours</h2>
+      <div class="flex gap-2">
+        <select class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm">
+          <option value="">Toutes les listes</option>
+          <option value="ofac">OFAC SDN</option>
+          <option value="eu">EU Sanctions</option>
+          <option value="un">UN Consolidated</option>
+          <option value="ctaf">CTAF Tunisie</option>
+        </select>
+        <select class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm">
+          <option value="">Tous les statuts</option>
+          <option value="new">Nouveau</option>
+          <option value="investigating">En investigation</option>
+          <option value="escalated">Escaladé</option>
+        </select>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 text-left text-gray-600">
+          <tr>
+            <th class="px-6 py-3 font-medium">Réf.</th>
+            <th class="px-6 py-3 font-medium">Date</th>
+            <th class="px-6 py-3 font-medium">Entité</th>
+            <th class="px-6 py-3 font-medium">Liste</th>
+            <th class="px-6 py-3 font-medium">Score</th>
+            <th class="px-6 py-3 font-medium">Statut</th>
+            <th class="px-6 py-3 font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 font-mono text-xs text-gray-600">SAN-2026-0412</td>
+            <td class="px-6 py-4 text-gray-600">07/04/2026</td>
+            <td class="px-6 py-4 font-medium text-gray-900">Al-Mahdi Trading Co.</td>
+            <td class="px-6 py-4"><span class="inline-flex rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700">OFAC SDN</span></td>
+            <td class="px-6 py-4"><span class="font-semibold text-red-600">92%</span></td>
+            <td class="px-6 py-4"><span class="inline-flex rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">Investigation</span></td>
+            <td class="px-6 py-4">
+              <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">Voir</button>
+            </td>
+          </tr>
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 font-mono text-xs text-gray-600">SAN-2026-0411</td>
+            <td class="px-6 py-4 text-gray-600">07/04/2026</td>
+            <td class="px-6 py-4 font-medium text-gray-900">Mohamed K. Hassan</td>
+            <td class="px-6 py-4"><span class="inline-flex rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">UN Consolidated</span></td>
+            <td class="px-6 py-4"><span class="font-semibold text-amber-600">78%</span></td>
+            <td class="px-6 py-4"><span class="inline-flex rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700">Nouveau</span></td>
+            <td class="px-6 py-4">
+              <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">Voir</button>
+            </td>
+          </tr>
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 font-mono text-xs text-gray-600">SAN-2026-0410</td>
+            <td class="px-6 py-4 text-gray-600">06/04/2026</td>
+            <td class="px-6 py-4 font-medium text-gray-900">Société Import-Export Sfax</td>
+            <td class="px-6 py-4"><span class="inline-flex rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-medium text-purple-700">EU Sanctions</span></td>
+            <td class="px-6 py-4"><span class="font-semibold text-amber-600">65%</span></td>
+            <td class="px-6 py-4"><span class="inline-flex rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">Investigation</span></td>
+            <td class="px-6 py-4">
+              <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">Voir</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Screening Lists Status -->
+  <section class="rounded-lg border border-gray-200 bg-white shadow-sm">
+    <div class="border-b border-gray-200 px-6 py-4">
+      <h2 class="text-lg font-semibold text-gray-900">Listes de sanctions actives</h2>
+    </div>
+    <div class="grid gap-4 p-6 md:grid-cols-2 lg:grid-cols-3">
+      <div class="rounded-lg border border-gray-200 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <p class="font-semibold text-gray-900">OFAC SDN</p>
+          <span class="inline-flex rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">À jour</span>
+        </div>
+        <p class="text-sm text-gray-500">12,847 entrées · Mis à jour: 06/04/2026</p>
+      </div>
+      <div class="rounded-lg border border-gray-200 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <p class="font-semibold text-gray-900">EU Consolidated</p>
+          <span class="inline-flex rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">À jour</span>
+        </div>
+        <p class="text-sm text-gray-500">2,156 entrées · Mis à jour: 05/04/2026</p>
+      </div>
+      <div class="rounded-lg border border-gray-200 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <p class="font-semibold text-gray-900">UN Consolidated</p>
+          <span class="inline-flex rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">À jour</span>
+        </div>
+        <p class="text-sm text-gray-500">1,048 entrées · Mis à jour: 04/04/2026</p>
+      </div>
+      <div class="rounded-lg border border-gray-200 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <p class="font-semibold text-gray-900">CTAF Tunisie</p>
+          <span class="inline-flex rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">À jour</span>
+        </div>
+        <p class="text-sm text-gray-500">342 entrées · Mis à jour: 03/04/2026</p>
+      </div>
+      <div class="rounded-lg border border-gray-200 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <p class="font-semibold text-gray-900">UK HMT</p>
+          <span class="inline-flex rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">Mise à jour</span>
+        </div>
+        <p class="text-sm text-gray-500">3,421 entrées · Mis à jour: 01/04/2026</p>
+      </div>
+      <div class="rounded-lg border border-gray-200 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <p class="font-semibold text-gray-900">PEP Database</p>
+          <span class="inline-flex rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">À jour</span>
+        </div>
+        <p class="text-sm text-gray-500">45,230 entrées · Mis à jour: 07/04/2026</p>
+      </div>
+    </div>
+  </section>
+</DashboardLayout>

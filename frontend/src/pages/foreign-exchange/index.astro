@@ -1,0 +1,150 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout title="Devises & Change">
+  <!-- KPI Cards -->
+  <section class="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+      <p class="text-sm font-medium text-gray-500">USD/TND</p>
+      <p class="mt-2 text-3xl font-bold text-gray-900">3.1245</p>
+      <p class="mt-1 text-sm text-green-600">+0.12% aujourd'hui</p>
+    </div>
+    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+      <p class="text-sm font-medium text-gray-500">EUR/TND</p>
+      <p class="mt-2 text-3xl font-bold text-gray-900">3.3890</p>
+      <p class="mt-1 text-sm text-red-600">-0.08% aujourd'hui</p>
+    </div>
+    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+      <p class="text-sm font-medium text-gray-500">GBP/TND</p>
+      <p class="mt-2 text-3xl font-bold text-gray-900">3.9510</p>
+      <p class="mt-1 text-sm text-green-600">+0.05% aujourd'hui</p>
+    </div>
+    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+      <p class="text-sm font-medium text-gray-500">Opérations du jour</p>
+      <p class="mt-2 text-3xl font-bold text-blue-600">47</p>
+      <p class="mt-1 text-sm text-gray-500">Volume: 2.3M TND</p>
+    </div>
+  </section>
+
+  <!-- Exchange Rate Table -->
+  <section class="rounded-lg border border-gray-200 bg-white shadow-sm mb-8">
+    <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-900">Taux de change BCT</h2>
+      <span class="text-sm text-gray-500">Dernière mise à jour: 07/04/2026 09:30</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 text-left text-gray-600">
+          <tr>
+            <th class="px-6 py-3 font-medium">Devise</th>
+            <th class="px-6 py-3 font-medium">Code</th>
+            <th class="px-6 py-3 font-medium text-right">Achat</th>
+            <th class="px-6 py-3 font-medium text-right">Vente</th>
+            <th class="px-6 py-3 font-medium text-right">Variation</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 font-medium text-gray-900">Dollar américain</td>
+            <td class="px-6 py-4 text-gray-600">USD</td>
+            <td class="px-6 py-4 text-right text-gray-900">3.1200</td>
+            <td class="px-6 py-4 text-right text-gray-900">3.1290</td>
+            <td class="px-6 py-4 text-right text-green-600">+0.12%</td>
+          </tr>
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 font-medium text-gray-900">Euro</td>
+            <td class="px-6 py-4 text-gray-600">EUR</td>
+            <td class="px-6 py-4 text-right text-gray-900">3.3840</td>
+            <td class="px-6 py-4 text-right text-gray-900">3.3940</td>
+            <td class="px-6 py-4 text-right text-red-600">-0.08%</td>
+          </tr>
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 font-medium text-gray-900">Livre sterling</td>
+            <td class="px-6 py-4 text-gray-600">GBP</td>
+            <td class="px-6 py-4 text-right text-gray-900">3.9460</td>
+            <td class="px-6 py-4 text-right text-gray-900">3.9560</td>
+            <td class="px-6 py-4 text-right text-green-600">+0.05%</td>
+          </tr>
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 font-medium text-gray-900">Yen japonais (100)</td>
+            <td class="px-6 py-4 text-gray-600">JPY</td>
+            <td class="px-6 py-4 text-right text-gray-900">2.0850</td>
+            <td class="px-6 py-4 text-right text-gray-900">2.0950</td>
+            <td class="px-6 py-4 text-right text-green-600">+0.03%</td>
+          </tr>
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 font-medium text-gray-900">Dirham marocain</td>
+            <td class="px-6 py-4 text-gray-600">MAD</td>
+            <td class="px-6 py-4 text-right text-gray-900">0.3150</td>
+            <td class="px-6 py-4 text-right text-gray-900">0.3190</td>
+            <td class="px-6 py-4 text-right text-red-600">-0.02%</td>
+          </tr>
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 font-medium text-gray-900">Dinar algérien</td>
+            <td class="px-6 py-4 text-gray-600">DZD</td>
+            <td class="px-6 py-4 text-right text-gray-900">0.0232</td>
+            <td class="px-6 py-4 text-right text-gray-900">0.0238</td>
+            <td class="px-6 py-4 text-right text-gray-500">0.00%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Recent FX Operations -->
+  <section class="rounded-lg border border-gray-200 bg-white shadow-sm">
+    <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-900">Opérations de change récentes</h2>
+      <button class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
+        Nouvelle opération
+      </button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 text-left text-gray-600">
+          <tr>
+            <th class="px-6 py-3 font-medium">Date</th>
+            <th class="px-6 py-3 font-medium">Client</th>
+            <th class="px-6 py-3 font-medium">Type</th>
+            <th class="px-6 py-3 font-medium text-right">Montant</th>
+            <th class="px-6 py-3 font-medium text-right">Taux</th>
+            <th class="px-6 py-3 font-medium">Statut</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 text-gray-600">07/04/2026 14:20</td>
+            <td class="px-6 py-4 font-medium text-gray-900">Ahmed Ben Ali</td>
+            <td class="px-6 py-4 text-gray-600">Achat EUR</td>
+            <td class="px-6 py-4 text-right text-gray-900">10,000.00 EUR</td>
+            <td class="px-6 py-4 text-right text-gray-900">3.3890</td>
+            <td class="px-6 py-4">
+              <span class="inline-flex rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">Exécuté</span>
+            </td>
+          </tr>
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 text-gray-600">07/04/2026 11:05</td>
+            <td class="px-6 py-4 font-medium text-gray-900">Société TunisExport</td>
+            <td class="px-6 py-4 text-gray-600">Vente USD</td>
+            <td class="px-6 py-4 text-right text-gray-900">50,000.00 USD</td>
+            <td class="px-6 py-4 text-right text-gray-900">3.1245</td>
+            <td class="px-6 py-4">
+              <span class="inline-flex rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">En cours</span>
+            </td>
+          </tr>
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 text-gray-600">06/04/2026 16:45</td>
+            <td class="px-6 py-4 font-medium text-gray-900">Leïla Saïdi</td>
+            <td class="px-6 py-4 text-gray-600">Achat GBP</td>
+            <td class="px-6 py-4 text-right text-gray-900">5,000.00 GBP</td>
+            <td class="px-6 py-4 text-right text-gray-900">3.9510</td>
+            <td class="px-6 py-4">
+              <span class="inline-flex rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">Exécuté</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</DashboardLayout>
