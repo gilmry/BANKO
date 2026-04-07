@@ -1373,6 +1373,134 @@ pub fn configure_reference_data_routes(cfg: &mut web::ServiceConfig) {
     );
 }
 
+// P1 Bounded Contexts Routes
+
+pub fn configure_collateral_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/collateral")
+            .route("", web::post().to(not_implemented_handler))
+            .route("", web::get().to(not_implemented_handler))
+            .route("/{id}", web::get().to(not_implemented_handler))
+            .route("/{id}", web::put().to(not_implemented_handler))
+            .route("/{id}/valuations", web::post().to(not_implemented_handler))
+            .route("/{id}/valuations", web::get().to(not_implemented_handler))
+            .route("/{id}/allocations", web::post().to(not_implemented_handler))
+            .route("/{id}/allocations", web::get().to(not_implemented_handler))
+            .route("/{id}/ltv", web::get().to(not_implemented_handler))
+    );
+}
+
+pub fn configure_islamic_banking_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/islamic-banking")
+            .route("", web::post().to(not_implemented_handler))
+            .route("", web::get().to(not_implemented_handler))
+            .route("/{id}", web::get().to(not_implemented_handler))
+            .route("/{id}/sharia-compliance", web::get().to(not_implemented_handler))
+            .route("/{id}/zakat", web::get().to(not_implemented_handler))
+            .route("/{id}/zakah-payment", web::post().to(not_implemented_handler))
+            .route("/murabaha", web::post().to(not_implemented_handler))
+            .route("/mudharabah", web::post().to(not_implemented_handler))
+            .route("/musharaka", web::post().to(not_implemented_handler))
+    );
+}
+
+pub fn configure_cash_management_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/cash-management")
+            .route("", web::post().to(not_implemented_handler))
+            .route("", web::get().to(not_implemented_handler))
+            .route("/{id}", web::get().to(not_implemented_handler))
+            .route("/{id}/liquidity", web::get().to(not_implemented_handler))
+            .route("/{id}/forecasts", web::get().to(not_implemented_handler))
+            .route("/{id}/forecasts", web::post().to(not_implemented_handler))
+            .route("/{id}/positions", web::get().to(not_implemented_handler))
+            .route("/optimization", web::post().to(not_implemented_handler))
+    );
+}
+
+pub fn configure_trade_finance_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/trade-finance")
+            .route("", web::post().to(not_implemented_handler))
+            .route("", web::get().to(not_implemented_handler))
+            .route("/{id}", web::get().to(not_implemented_handler))
+            .route("/{id}/documents", web::post().to(not_implemented_handler))
+            .route("/{id}/documents", web::get().to(not_implemented_handler))
+            .route("/{id}/lc", web::post().to(not_implemented_handler))
+            .route("/{id}/lc", web::get().to(not_implemented_handler))
+            .route("/{id}/lc/{lc_id}/amend", web::post().to(not_implemented_handler))
+    );
+}
+
+pub fn configure_insurance_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/insurance")
+            .route("", web::post().to(not_implemented_handler))
+            .route("", web::get().to(not_implemented_handler))
+            .route("/{id}", web::get().to(not_implemented_handler))
+            .route("/{id}/claims", web::post().to(not_implemented_handler))
+            .route("/{id}/claims", web::get().to(not_implemented_handler))
+            .route("/{id}/premiums", web::get().to(not_implemented_handler))
+            .route("/{id}/coverage", web::get().to(not_implemented_handler))
+            .route("/{id}/renewal", web::post().to(not_implemented_handler))
+    );
+}
+
+// P2 Bounded Contexts Routes
+
+pub fn configure_securities_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/securities")
+            .route("", web::post().to(not_implemented_handler))
+            .route("", web::get().to(not_implemented_handler))
+            .route("/{id}", web::get().to(not_implemented_handler))
+            .route("/{id}/orders", web::post().to(not_implemented_handler))
+            .route("/{id}/orders", web::get().to(not_implemented_handler))
+            .route("/{id}/orders/{order_id}", web::get().to(not_implemented_handler))
+            .route("/{id}/orders/{order_id}/cancel", web::post().to(not_implemented_handler))
+            .route("/{id}/holdings", web::get().to(not_implemented_handler))
+            .route("/{id}/portfolio", web::get().to(not_implemented_handler))
+            .route("/{id}/settlements", web::get().to(not_implemented_handler))
+            .route("/{id}/corporate-actions", web::get().to(not_implemented_handler))
+    );
+}
+
+pub fn configure_data_hub_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/data-hub")
+            .route("/entities", web::post().to(not_implemented_handler))
+            .route("/entities", web::get().to(not_implemented_handler))
+            .route("/entities/{id}", web::get().to(not_implemented_handler))
+            .route("/quality-rules", web::post().to(not_implemented_handler))
+            .route("/quality-rules", web::get().to(not_implemented_handler))
+            .route("/quality-rules/{id}", web::get().to(not_implemented_handler))
+            .route("/lineage", web::post().to(not_implemented_handler))
+            .route("/lineage", web::get().to(not_implemented_handler))
+            .route("/reconciliations", web::post().to(not_implemented_handler))
+            .route("/reconciliations", web::get().to(not_implemented_handler))
+            .route("/master-records", web::get().to(not_implemented_handler))
+            .route("/governance-policies", web::get().to(not_implemented_handler))
+    );
+}
+
+pub fn configure_arrangement_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/v1/arrangements")
+            .route("", web::post().to(not_implemented_handler))
+            .route("", web::get().to(not_implemented_handler))
+            .route("/{id}", web::get().to(not_implemented_handler))
+            .route("/{id}", web::put().to(not_implemented_handler))
+            .route("/{id}/events", web::get().to(not_implemented_handler))
+            .route("/{id}/modify", web::post().to(not_implemented_handler))
+            .route("/{id}/renew", web::post().to(not_implemented_handler))
+            .route("/{id}/close", web::post().to(not_implemented_handler))
+            .route("/bundles", web::post().to(not_implemented_handler))
+            .route("/bundles", web::get().to(not_implemented_handler))
+            .route("/bundles/{bundle_id}", web::get().to(not_implemented_handler))
+    );
+}
+
 /// Placeholder handler for endpoints not yet implemented.
 /// Returns 501 Not Implemented.
 async fn not_implemented_handler() -> actix_web::HttpResponse {

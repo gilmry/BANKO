@@ -20,6 +20,13 @@ use banko_infrastructure::web::routes::{
     configure_fx_enhanced_routes, configure_governance_enhanced_routes,
     configure_identity_enhanced_routes, configure_reporting_enhanced_routes,
     configure_reference_data_routes,
+    // P1 Bounded Contexts
+    configure_collateral_routes, configure_islamic_banking_routes,
+    configure_cash_management_routes, configure_trade_finance_routes,
+    configure_insurance_routes,
+    // P2 Bounded Contexts
+    configure_securities_routes, configure_data_hub_routes,
+    configure_arrangement_routes,
 };
 
 #[actix_web::main]
@@ -84,6 +91,16 @@ async fn main() -> std::io::Result<()> {
             .configure(configure_identity_enhanced_routes)
             .configure(configure_reporting_enhanced_routes)
             .configure(configure_reference_data_routes)
+            // P1 Bounded Contexts
+            .configure(configure_collateral_routes)
+            .configure(configure_islamic_banking_routes)
+            .configure(configure_cash_management_routes)
+            .configure(configure_trade_finance_routes)
+            .configure(configure_insurance_routes)
+            // P2 Bounded Contexts
+            .configure(configure_securities_routes)
+            .configure(configure_data_hub_routes)
+            .configure(configure_arrangement_routes)
     })
     .bind("0.0.0.0:8080")?
     .run()
