@@ -65,6 +65,9 @@ pub enum DomainError {
     #[error("Customer not found")]
     CustomerNotFound,
 
+    #[error("Document not found")]
+    DocumentNotFound,
+
     #[error("Insufficient funds")]
     InsufficientFunds,
 

@@ -441,6 +441,932 @@ impl DomainEvent for AccountingEntryCreatedEvent {
 }
 
 // ============================================================
+// Customer Events
+// ============================================================
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CustomerCreatedEvent {
+    pub customer_id: Uuid,
+    pub customer_type: String,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl CustomerCreatedEvent {
+    pub fn new(customer_id: Uuid, customer_type: String) -> Self {
+        CustomerCreatedEvent {
+            customer_id,
+            customer_type,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for CustomerCreatedEvent {
+    fn event_type(&self) -> &str {
+        "CustomerCreated"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.customer_id
+    }
+    fn aggregate_type(&self) -> &str {
+        "Customer"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize CustomerCreatedEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CustomerKycUpdatedEvent {
+    pub customer_id: Uuid,
+    pub kyc_level: String,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl CustomerKycUpdatedEvent {
+    pub fn new(customer_id: Uuid, kyc_level: String) -> Self {
+        CustomerKycUpdatedEvent {
+            customer_id,
+            kyc_level,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for CustomerKycUpdatedEvent {
+    fn event_type(&self) -> &str {
+        "CustomerKycUpdated"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.customer_id
+    }
+    fn aggregate_type(&self) -> &str {
+        "Customer"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize CustomerKycUpdatedEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CustomerRiskScoredEvent {
+    pub customer_id: Uuid,
+    pub risk_score: u32,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl CustomerRiskScoredEvent {
+    pub fn new(customer_id: Uuid, risk_score: u32) -> Self {
+        CustomerRiskScoredEvent {
+            customer_id,
+            risk_score,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for CustomerRiskScoredEvent {
+    fn event_type(&self) -> &str {
+        "CustomerRiskScored"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.customer_id
+    }
+    fn aggregate_type(&self) -> &str {
+        "Customer"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize CustomerRiskScoredEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+// ============================================================
+// Credit Events
+// ============================================================
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct LoanDisbursedEvent {
+    pub loan_id: Uuid,
+    pub amount_cents: i64,
+    pub currency: String,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl LoanDisbursedEvent {
+    pub fn new(loan_id: Uuid, amount_cents: i64, currency: String) -> Self {
+        LoanDisbursedEvent {
+            loan_id,
+            amount_cents,
+            currency,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for LoanDisbursedEvent {
+    fn event_type(&self) -> &str {
+        "LoanDisbursed"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.loan_id
+    }
+    fn aggregate_type(&self) -> &str {
+        "Loan"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize LoanDisbursedEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct LoanRepaymentReceivedEvent {
+    pub loan_id: Uuid,
+    pub installment_id: Uuid,
+    pub amount_cents: i64,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl LoanRepaymentReceivedEvent {
+    pub fn new(loan_id: Uuid, installment_id: Uuid, amount_cents: i64) -> Self {
+        LoanRepaymentReceivedEvent {
+            loan_id,
+            installment_id,
+            amount_cents,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for LoanRepaymentReceivedEvent {
+    fn event_type(&self) -> &str {
+        "LoanRepaymentReceived"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.loan_id
+    }
+    fn aggregate_type(&self) -> &str {
+        "Loan"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize LoanRepaymentReceivedEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct LoanClassificationChangedEvent {
+    pub loan_id: Uuid,
+    pub old_class: u8,
+    pub new_class: u8,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl LoanClassificationChangedEvent {
+    pub fn new(loan_id: Uuid, old_class: u8, new_class: u8) -> Self {
+        LoanClassificationChangedEvent {
+            loan_id,
+            old_class,
+            new_class,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for LoanClassificationChangedEvent {
+    fn event_type(&self) -> &str {
+        "LoanClassificationChanged"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.loan_id
+    }
+    fn aggregate_type(&self) -> &str {
+        "Loan"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize LoanClassificationChangedEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+// ============================================================
+// Sanctions Events
+// ============================================================
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SanctionsScreeningCompletedEvent {
+    pub entity_id: Uuid,
+    pub matches_found: u32,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl SanctionsScreeningCompletedEvent {
+    pub fn new(entity_id: Uuid, matches_found: u32) -> Self {
+        SanctionsScreeningCompletedEvent {
+            entity_id,
+            matches_found,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for SanctionsScreeningCompletedEvent {
+    fn event_type(&self) -> &str {
+        "SanctionsScreeningCompleted"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.entity_id
+    }
+    fn aggregate_type(&self) -> &str {
+        "SanctionsScreening"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize SanctionsScreeningCompletedEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SanctionsHitConfirmedEvent {
+    pub screening_id: Uuid,
+    pub entry_id: Uuid,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl SanctionsHitConfirmedEvent {
+    pub fn new(screening_id: Uuid, entry_id: Uuid) -> Self {
+        SanctionsHitConfirmedEvent {
+            screening_id,
+            entry_id,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for SanctionsHitConfirmedEvent {
+    fn event_type(&self) -> &str {
+        "SanctionsHitConfirmed"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.screening_id
+    }
+    fn aggregate_type(&self) -> &str {
+        "SanctionsScreening"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize SanctionsHitConfirmedEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+// ============================================================
+// Prudential Events
+// ============================================================
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PrudentialRatioCalculatedEvent {
+    pub ratio_type: String,
+    pub value: f64,
+    pub threshold: f64,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl PrudentialRatioCalculatedEvent {
+    pub fn new(ratio_type: String, value: f64, threshold: f64) -> Self {
+        PrudentialRatioCalculatedEvent {
+            ratio_type,
+            value,
+            threshold,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for PrudentialRatioCalculatedEvent {
+    fn event_type(&self) -> &str {
+        "PrudentialRatioCalculated"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        Uuid::new_v4() // Prudential ratios are system-level, not tied to a specific entity
+    }
+    fn aggregate_type(&self) -> &str {
+        "PrudentialRatio"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize PrudentialRatioCalculatedEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PrudentialBreachDetectedEvent {
+    pub ratio_type: String,
+    pub value: f64,
+    pub threshold: f64,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl PrudentialBreachDetectedEvent {
+    pub fn new(ratio_type: String, value: f64, threshold: f64) -> Self {
+        PrudentialBreachDetectedEvent {
+            ratio_type,
+            value,
+            threshold,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for PrudentialBreachDetectedEvent {
+    fn event_type(&self) -> &str {
+        "PrudentialBreachDetected"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        Uuid::new_v4() // System-level event
+    }
+    fn aggregate_type(&self) -> &str {
+        "PrudentialRatio"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize PrudentialBreachDetectedEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+// ============================================================
+// Governance Events
+// ============================================================
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct AuditEntryCreatedEvent {
+    pub entry_id: Uuid,
+    pub action: String,
+    pub actor_id: Uuid,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl AuditEntryCreatedEvent {
+    pub fn new(entry_id: Uuid, action: String, actor_id: Uuid) -> Self {
+        AuditEntryCreatedEvent {
+            entry_id,
+            action,
+            actor_id,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for AuditEntryCreatedEvent {
+    fn event_type(&self) -> &str {
+        "AuditEntryCreated"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.entry_id
+    }
+    fn aggregate_type(&self) -> &str {
+        "AuditEntry"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize AuditEntryCreatedEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CommitteeDecisionRecordedEvent {
+    pub committee_id: Uuid,
+    pub decision: String,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl CommitteeDecisionRecordedEvent {
+    pub fn new(committee_id: Uuid, decision: String) -> Self {
+        CommitteeDecisionRecordedEvent {
+            committee_id,
+            decision,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for CommitteeDecisionRecordedEvent {
+    fn event_type(&self) -> &str {
+        "CommitteeDecisionRecorded"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.committee_id
+    }
+    fn aggregate_type(&self) -> &str {
+        "CommitteeDecision"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize CommitteeDecisionRecordedEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+// ============================================================
+// Identity Events
+// ============================================================
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct UserCreatedEvent {
+    pub user_id: Uuid,
+    pub role: String,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl UserCreatedEvent {
+    pub fn new(user_id: Uuid, role: String) -> Self {
+        UserCreatedEvent {
+            user_id,
+            role,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for UserCreatedEvent {
+    fn event_type(&self) -> &str {
+        "UserCreated"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.user_id
+    }
+    fn aggregate_type(&self) -> &str {
+        "User"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize UserCreatedEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct UserAuthenticatedEvent {
+    pub user_id: Uuid,
+    pub method: String,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl UserAuthenticatedEvent {
+    pub fn new(user_id: Uuid, method: String) -> Self {
+        UserAuthenticatedEvent {
+            user_id,
+            method,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for UserAuthenticatedEvent {
+    fn event_type(&self) -> &str {
+        "UserAuthenticated"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.user_id
+    }
+    fn aggregate_type(&self) -> &str {
+        "User"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize UserAuthenticatedEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TwoFactorEnabledEvent {
+    pub user_id: Uuid,
+    pub method: String,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl TwoFactorEnabledEvent {
+    pub fn new(user_id: Uuid, method: String) -> Self {
+        TwoFactorEnabledEvent {
+            user_id,
+            method,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for TwoFactorEnabledEvent {
+    fn event_type(&self) -> &str {
+        "TwoFactorEnabled"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.user_id
+    }
+    fn aggregate_type(&self) -> &str {
+        "User"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize TwoFactorEnabledEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+// ============================================================
+// Compliance Events
+// ============================================================
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ConsentGrantedEvent {
+    pub customer_id: Uuid,
+    pub purpose: String,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl ConsentGrantedEvent {
+    pub fn new(customer_id: Uuid, purpose: String) -> Self {
+        ConsentGrantedEvent {
+            customer_id,
+            purpose,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for ConsentGrantedEvent {
+    fn event_type(&self) -> &str {
+        "ConsentGranted"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.customer_id
+    }
+    fn aggregate_type(&self) -> &str {
+        "Consent"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize ConsentGrantedEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ConsentRevokedEvent {
+    pub customer_id: Uuid,
+    pub purpose: String,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl ConsentRevokedEvent {
+    pub fn new(customer_id: Uuid, purpose: String) -> Self {
+        ConsentRevokedEvent {
+            customer_id,
+            purpose,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for ConsentRevokedEvent {
+    fn event_type(&self) -> &str {
+        "ConsentRevoked"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.customer_id
+    }
+    fn aggregate_type(&self) -> &str {
+        "Consent"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize ConsentRevokedEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct BreachReportedEvent {
+    pub breach_id: Uuid,
+    pub severity: String,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl BreachReportedEvent {
+    pub fn new(breach_id: Uuid, severity: String) -> Self {
+        BreachReportedEvent {
+            breach_id,
+            severity,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for BreachReportedEvent {
+    fn event_type(&self) -> &str {
+        "BreachReported"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.breach_id
+    }
+    fn aggregate_type(&self) -> &str {
+        "Breach"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize BreachReportedEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct DpiaCompletedEvent {
+    pub dpia_id: Uuid,
+    pub status: String,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl DpiaCompletedEvent {
+    pub fn new(dpia_id: Uuid, status: String) -> Self {
+        DpiaCompletedEvent {
+            dpia_id,
+            status,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for DpiaCompletedEvent {
+    fn event_type(&self) -> &str {
+        "DpiaCompleted"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.dpia_id
+    }
+    fn aggregate_type(&self) -> &str {
+        "DPIA"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize DpiaCompletedEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+// ============================================================
+// Notification Events
+// ============================================================
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct NotificationSentEvent {
+    pub notification_id: Uuid,
+    pub channel: String,
+    pub recipient_id: Uuid,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl NotificationSentEvent {
+    pub fn new(notification_id: Uuid, channel: String, recipient_id: Uuid) -> Self {
+        NotificationSentEvent {
+            notification_id,
+            channel,
+            recipient_id,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for NotificationSentEvent {
+    fn event_type(&self) -> &str {
+        "NotificationSent"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.notification_id
+    }
+    fn aggregate_type(&self) -> &str {
+        "Notification"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize NotificationSentEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+// ============================================================
+// Product Events
+// ============================================================
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ProductCreatedEvent {
+    pub product_id: Uuid,
+    pub product_type: String,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl ProductCreatedEvent {
+    pub fn new(product_id: Uuid, product_type: String) -> Self {
+        ProductCreatedEvent {
+            product_id,
+            product_type,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for ProductCreatedEvent {
+    fn event_type(&self) -> &str {
+        "ProductCreated"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.product_id
+    }
+    fn aggregate_type(&self) -> &str {
+        "Product"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize ProductCreatedEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ProductActivatedEvent {
+    pub product_id: Uuid,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl ProductActivatedEvent {
+    pub fn new(product_id: Uuid) -> Self {
+        ProductActivatedEvent {
+            product_id,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for ProductActivatedEvent {
+    fn event_type(&self) -> &str {
+        "ProductActivated"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        self.product_id
+    }
+    fn aggregate_type(&self) -> &str {
+        "Product"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize ProductActivatedEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+// ============================================================
+// ReferenceData Events
+// ============================================================
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ReferenceDataUpdatedEvent {
+    pub data_type: String,
+    pub code: String,
+    pub timestamp: DateTime<Utc>,
+}
+
+impl ReferenceDataUpdatedEvent {
+    pub fn new(data_type: String, code: String) -> Self {
+        ReferenceDataUpdatedEvent {
+            data_type,
+            code,
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl DomainEvent for ReferenceDataUpdatedEvent {
+    fn event_type(&self) -> &str {
+        "ReferenceDataUpdated"
+    }
+    fn aggregate_id(&self) -> Uuid {
+        Uuid::new_v4() // Reference data is system-level
+    }
+    fn aggregate_type(&self) -> &str {
+        "ReferenceData"
+    }
+    fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
+    }
+    fn payload(&self) -> serde_json::Value {
+        serde_json::to_value(self).expect("Failed to serialize ReferenceDataUpdatedEvent")
+    }
+    fn event_id(&self) -> Uuid {
+        Uuid::new_v4()
+    }
+}
+
+// ============================================================
 // Tests
 // ============================================================
 
@@ -573,5 +1499,69 @@ mod tests {
         assert_eq!(event.aggregate_type(), "AccountingEntry");
         assert_eq!(event.debit_account, "101");
         assert_eq!(event.credit_account, "201");
+    }
+
+    #[test]
+    fn test_customer_created_event() {
+        let customer_id = Uuid::new_v4();
+        let event = CustomerCreatedEvent::new(customer_id, "INDIVIDUAL".to_string());
+
+        assert_eq!(event.event_type(), "CustomerCreated");
+        assert_eq!(event.aggregate_id(), customer_id);
+        assert_eq!(event.aggregate_type(), "Customer");
+        assert_eq!(event.customer_type, "INDIVIDUAL");
+    }
+
+    #[test]
+    fn test_loan_disbursed_event() {
+        let loan_id = Uuid::new_v4();
+        let event = LoanDisbursedEvent::new(loan_id, 100000, "EUR".to_string());
+
+        assert_eq!(event.event_type(), "LoanDisbursed");
+        assert_eq!(event.aggregate_id(), loan_id);
+        assert_eq!(event.amount_cents, 100000);
+        assert_eq!(event.currency, "EUR");
+    }
+
+    #[test]
+    fn test_sanctions_screening_completed_event() {
+        let entity_id = Uuid::new_v4();
+        let event = SanctionsScreeningCompletedEvent::new(entity_id, 2);
+
+        assert_eq!(event.event_type(), "SanctionsScreeningCompleted");
+        assert_eq!(event.aggregate_id(), entity_id);
+        assert_eq!(event.matches_found, 2);
+    }
+
+    #[test]
+    fn test_user_created_event() {
+        let user_id = Uuid::new_v4();
+        let event = UserCreatedEvent::new(user_id, "ADMIN".to_string());
+
+        assert_eq!(event.event_type(), "UserCreated");
+        assert_eq!(event.aggregate_id(), user_id);
+        assert_eq!(event.aggregate_type(), "User");
+        assert_eq!(event.role, "ADMIN");
+    }
+
+    #[test]
+    fn test_consent_granted_event() {
+        let customer_id = Uuid::new_v4();
+        let event = ConsentGrantedEvent::new(customer_id, "MARKETING".to_string());
+
+        assert_eq!(event.event_type(), "ConsentGranted");
+        assert_eq!(event.aggregate_id(), customer_id);
+        assert_eq!(event.aggregate_type(), "Consent");
+        assert_eq!(event.purpose, "MARKETING");
+    }
+
+    #[test]
+    fn test_product_created_event() {
+        let product_id = Uuid::new_v4();
+        let event = ProductCreatedEvent::new(product_id, "SAVINGS_ACCOUNT".to_string());
+
+        assert_eq!(event.event_type(), "ProductCreated");
+        assert_eq!(event.aggregate_id(), product_id);
+        assert_eq!(event.product_type, "SAVINGS_ACCOUNT");
     }
 }

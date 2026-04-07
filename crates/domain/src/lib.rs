@@ -1,5 +1,6 @@
 pub mod shared;
 pub mod events;
+pub mod invariants;
 
 pub mod account;
 pub mod accounting;
@@ -14,5 +15,6 @@ pub mod notification;
 pub mod payment;
 pub mod product;
 pub mod prudential;
+pub mod reference_data;
 pub mod reporting;
 pub mod sanctions;
