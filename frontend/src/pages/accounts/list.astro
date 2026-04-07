@@ -1,0 +1,170 @@
+---
+import DashboardLayout from '@/layouts/DashboardLayout.astro';
+import SearchBar from '@/components/common/SearchBar.svelte';
+import DataTable from '@/components/common/DataTable.svelte';
+import StatusBadge from '@/components/common/StatusBadge.svelte';
+import type { Column } from '@/components/common/DataTable.svelte';
+
+interface Account {
+  id: string;
+  account_number: string;
+  customer_name: string;
+  account_type: 'checking' | 'savings' | 'investment' | 'credit';
+  balance: string;
+  status: 'active' | 'suspended' | 'closed';
+  created_at: string;
+}
+
+const accounts: Account[] = [
+  {
+    id: '1',
+    account_number: 'FR76 0000 0000 0000 0000 0000 001',
+    customer_name: 'Ahmed Ben Ali',
+    account_type: 'checking',
+    balance: '15,000.00 TND',
+    status: 'active',
+    created_at: '2026-03-15T10:30:00Z',
+  },
+  {
+    id: '2',
+    account_number: 'FR76 0000 0000 0000 0000 0000 002',
+    customer_name: 'Ahmed Ben Ali',
+    account_type: 'savings',
+    balance: '50,000.00 TND',
+    status: 'active',
+    created_at: '2026-03-15T10:30:00Z',
+  },
+  {
+    id: '3',
+    account_number: 'FR76 0000 0000 0000 0000 0000 003',
+    customer_name: 'Fatima Kefi',
+    account_type: 'checking',
+    balance: '8,500.50 TND',
+    status: 'active',
+    created_at: '2026-03-20T14:15:00Z',
+  },
+  {
+    id: '4',
+    account_number: 'FR76 0000 0000 0000 0000 0000 004',
+    customer_name: 'Mohamed Jdaidi',
+    account_type: 'credit',
+    balance: '-5,000.00 TND',
+    status: 'suspended',
+    created_at: '2026-04-01T09:45:00Z',
+  },
+];
+
+const columns: Column<Account>[] = [
+  {
+    key: 'account_number',
+    label: 'IBAN',
+    sortable: true,
+    render: (value) => `...${(value as string).slice(-4)}`,
+  },
+  {
+    key: 'customer_name',
+    label: 'Titulaire',
+    sortable: true,
+  },
+  {
+    key: 'account_type',
+    label: 'Type',
+    sortable: true,
+    render: (value) => {
+      const types: Record<string, string> = {
+        checking: 'Compte Courant',
+        savings: 'Compte Épargne',
+        investment: 'Compte Investissement',
+        credit: 'Compte Crédit',
+      };
+      return types[value as string] || value;
+    },
+  },
+  {
+    key: 'balance',
+    label: 'Solde',
+    sortable: true,
+  },
+  {
+    key: 'status',
+    label: 'Statut',
+    sortable: true,
+  },
+];
+---
+
+<DashboardLayout title="Comptes" breadcrumb={[{ label: 'Comptes' }]}>
+  <!-- Header with button -->
+  <div class="mb-6 flex items-center justify-between">
+    <div class="flex-1">
+      <p class="text-gray-600">Gestion des comptes clients</p>
+    </div>
+    <a
+      href="/accounts"
+      class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+    >
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+      </svg>
+      Nouveau Compte
+    </a>
+  </div>
+
+  <!-- Filters and Search -->
+  <div class="mb-6 grid gap-4 lg:grid-cols-4">
+    <SearchBar
+      client:load
+      placeholder="Rechercher par IBAN ou titulaire..."
+      debounceMs={300}
+      onSearch={(query) => {
+        console.log('Search:', query);
+      }}
+    />
+
+    <select class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm">
+      <option value="">Tous les types</option>
+      <option value="checking">Compte Courant</option>
+      <option value="savings">Compte Épargne</option>
+      <option value="investment">Investissement</option>
+      <option value="credit">Crédit</option>
+    </select>
+
+    <select class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm">
+      <option value="">Tous les statuts</option>
+      <option value="active">Actif</option>
+      <option value="suspended">Suspendu</option>
+      <option value="closed">Fermé</option>
+    </select>
+
+    <select class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm">
+      <option value="">Trier par</option>
+      <option value="created_at">Date création</option>
+      <option value="balance">Solde</option>
+    </select>
+  </div>
+
+  <!-- Accounts Table -->
+  <div class="rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm mb-6">
+    <DataTable client:load columns={columns} rows={accounts} rowLink={(row) => `/accounts/${row.id}`} />
+  </div>
+
+  <!-- Summary Stats -->
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="rounded-lg border border-gray-200 bg-white p-4">
+      <p class="text-sm text-gray-600">Comptes Actifs</p>
+      <p class="mt-2 text-2xl font-bold text-gray-900">3</p>
+    </div>
+    <div class="rounded-lg border border-gray-200 bg-white p-4">
+      <p class="text-sm text-gray-600">Total Dépôts</p>
+      <p class="mt-2 text-2xl font-bold text-green-600">73,500.50 TND</p>
+    </div>
+    <div class="rounded-lg border border-gray-200 bg-white p-4">
+      <p class="text-sm text-gray-600">Comptes Suspendus</p>
+      <p class="mt-2 text-2xl font-bold text-amber-600">1</p>
+    </div>
+    <div class="rounded-lg border border-gray-200 bg-white p-4">
+      <p class="text-sm text-gray-600">Crédits en Cours</p>
+      <p class="mt-2 text-2xl font-bold text-blue-600">5,000.00 TND</p>
+    </div>
+  </div>
+</DashboardLayout>

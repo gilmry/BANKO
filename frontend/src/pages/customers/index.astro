@@ -1,0 +1,158 @@
+---
+import DashboardLayout from '@/layouts/DashboardLayout.astro';
+import SearchBar from '@/components/common/SearchBar.svelte';
+import DataTable from '@/components/common/DataTable.svelte';
+import StatusBadge from '@/components/common/StatusBadge.svelte';
+import type { Column } from '@/components/common/DataTable.svelte';
+
+interface Customer {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  kyc_status: 'pending' | 'submitted' | 'approved' | 'rejected';
+  created_at: string;
+}
+
+// Sample data - in production, this would come from the API
+const customers: Customer[] = [
+  {
+    id: '1',
+    first_name: 'Ahmed',
+    last_name: 'Ben Ali',
+    email: 'ahmed.benali@email.com',
+    kyc_status: 'approved',
+    created_at: '2026-03-15T10:30:00Z',
+  },
+  {
+    id: '2',
+    first_name: 'Fatima',
+    last_name: 'Kefi',
+    email: 'fatima.kefi@email.com',
+    kyc_status: 'submitted',
+    created_at: '2026-03-20T14:15:00Z',
+  },
+  {
+    id: '3',
+    first_name: 'Mohamed',
+    last_name: 'Jdaidi',
+    email: 'm.jdaidi@email.com',
+    kyc_status: 'pending',
+    created_at: '2026-04-01T09:45:00Z',
+  },
+  {
+    id: '4',
+    first_name: 'Leïla',
+    last_name: 'Saïdi',
+    email: 'leila.saidi@email.com',
+    kyc_status: 'approved',
+    created_at: '2026-02-10T11:20:00Z',
+  },
+];
+
+const columns: Column<Customer>[] = [
+  {
+    key: 'first_name',
+    label: 'Nom',
+    sortable: true,
+    render: (value, row) => `${row.first_name} ${row.last_name}`,
+  },
+  {
+    key: 'email',
+    label: 'Email',
+    sortable: true,
+  },
+  {
+    key: 'kyc_status',
+    label: 'Statut KYC',
+    sortable: true,
+    render: (value) => {
+      // Return HTML string for status badge
+      return `<div class="inline-flex"><StatusBadge status="${value}" /></div>`;
+    },
+  },
+  {
+    key: 'created_at',
+    label: 'Date Création',
+    sortable: true,
+    render: (value) => {
+      const date = new Date(value as string);
+      return date.toLocaleDateString('fr-FR');
+    },
+  },
+];
+---
+
+<DashboardLayout title="Clients" breadcrumb={[{ label: 'Clients' }]}>
+  <!-- Header with button -->
+  <div class="mb-6 flex items-center justify-between">
+    <div class="flex-1">
+      <p class="text-gray-600">Gestion des clients et onboarding KYC</p>
+    </div>
+    <a
+      href="/customer/onboarding"
+      class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+    >
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+      </svg>
+      Nouveau Client
+    </a>
+  </div>
+
+  <!-- Filters and Search -->
+  <div class="mb-6 grid gap-4 lg:grid-cols-3">
+    <SearchBar
+      client:load
+      placeholder="Rechercher par nom ou email..."
+      onSearch={(query) => {
+        // Handle search
+        console.log('Search query:', query);
+      }}
+    />
+
+    <select
+      class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+    >
+      <option value="">Tous les statuts KYC</option>
+      <option value="pending">En attente</option>
+      <option value="submitted">Soumis</option>
+      <option value="approved">Approuvé</option>
+      <option value="rejected">Rejeté</option>
+    </select>
+
+    <select
+      class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+    >
+      <option value="">Trier par</option>
+      <option value="created_at">Date création (récent)</option>
+      <option value="-created_at">Date création (ancien)</option>
+      <option value="name">Nom (A-Z)</option>
+      <option value="-name">Nom (Z-A)</option>
+    </select>
+  </div>
+
+  <!-- Customers Table -->
+  <div class="rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm">
+    <DataTable client:load columns={columns} rows={customers} rowLink={(row) => `/customers/${row.id}`} />
+  </div>
+
+  <!-- Pagination (stub) -->
+  <div class="mt-6 flex items-center justify-between border-t border-gray-200 pt-6">
+    <p class="text-sm text-gray-600">
+      Affichage de <span class="font-semibold">1</span> à <span class="font-semibold">4</span> sur
+      <span class="font-semibold">247</span> clients
+    </p>
+    <div class="flex gap-2">
+      <button
+        disabled
+        class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 disabled:bg-gray-50 disabled:text-gray-400"
+      >
+        Précédent
+      </button>
+      <button class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+        Suivant
+      </button>
+    </div>
+  </div>
+</DashboardLayout>

@@ -1,0 +1,197 @@
+---
+import DashboardLayout from '@/layouts/DashboardLayout.astro';
+import KpiCard from '@/components/common/KpiCard.svelte';
+import DataTable from '@/components/common/DataTable.svelte';
+import type { Column } from '@/components/common/DataTable.svelte';
+
+interface RecentTransaction {
+  id: string;
+  date: string;
+  description: string;
+  amount: string;
+  status: 'completed' | 'pending' | 'failed';
+}
+
+const recentTransactions: RecentTransaction[] = [
+  {
+    id: '1',
+    date: '2026-04-07T14:30:00Z',
+    description: 'Virement vers Compte Épargne',
+    amount: '+5,000.00 TND',
+    status: 'completed',
+  },
+  {
+    id: '2',
+    date: '2026-04-06T10:15:00Z',
+    description: 'Achat chez Carrefour',
+    amount: '-125.50 TND',
+    status: 'completed',
+  },
+  {
+    id: '3',
+    date: '2026-04-06T09:45:00Z',
+    description: 'Dépôt espèces',
+    amount: '+1,000.00 TND',
+    status: 'pending',
+  },
+  {
+    id: '4',
+    date: '2026-04-05T16:20:00Z',
+    description: 'Paiement Facture Internet',
+    amount: '-45.00 TND',
+    status: 'completed',
+  },
+];
+
+const columns: Column<RecentTransaction>[] = [
+  { key: 'date', label: 'Date/Heure', sortable: true },
+  { key: 'description', label: 'Description', sortable: true },
+  { key: 'amount', label: 'Montant', sortable: true },
+  { key: 'status', label: 'Statut', sortable: true },
+];
+---
+
+<DashboardLayout title="Tableau de bord">
+  <!-- KPI Cards -->
+  <section class="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+    <KpiCard
+      client:load
+      title="Total Clients"
+      value="2,847"
+      icon="👥"
+      trend={{ value: 12.5, isPositive: true }}
+      variant="info"
+    />
+    <KpiCard
+      client:load
+      title="Comptes Actifs"
+      value="5,432"
+      icon="💳"
+      trend={{ value: 8.2, isPositive: true }}
+      variant="success"
+    />
+    <KpiCard
+      client:load
+      title="Prêts en Cours"
+      value="1,234"
+      icon="📈"
+      trend={{ value: 3.1, isPositive: true }}
+      variant="default"
+    />
+    <KpiCard
+      client:load
+      title="Alertes AML"
+      value="23"
+      icon="⚠️"
+      trend={{ value: 5.8, isPositive: false }}
+      variant="warning"
+    />
+  </section>
+
+  <!-- Key Metrics -->
+  <section class="grid gap-6 lg:grid-cols-3 mb-8">
+    <div class="lg:col-span-2 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+      <h2 class="text-lg font-semibold text-gray-900 mb-6">Solde des Dépôts</h2>
+      <div class="space-y-4">
+        <div class="flex justify-between items-center pb-4 border-b border-gray-200">
+          <span class="text-gray-600">Comptes Courants</span>
+          <span class="text-2xl font-bold text-gray-900">8,523,450.75 TND</span>
+        </div>
+        <div class="flex justify-between items-center pb-4 border-b border-gray-200">
+          <span class="text-gray-600">Comptes Épargne</span>
+          <span class="text-2xl font-bold text-gray-900">12,847,921.50 TND</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-600 font-medium">Total</span>
+          <span class="text-2xl font-bold text-blue-600">21,371,372.25 TND</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+      <h2 class="text-lg font-semibold text-gray-900 mb-6">Indicateurs de Risque</h2>
+      <div class="space-y-4">
+        <div>
+          <div class="flex justify-between mb-2">
+            <span class="text-sm font-medium text-gray-700">Ratio de Solvabilité</span>
+            <span class="text-sm font-semibold text-green-600">18.5%</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="bg-green-500 h-2 rounded-full" style="width: 75%;"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between mb-2">
+            <span class="text-sm font-medium text-gray-700">Ratio LCR</span>
+            <span class="text-sm font-semibold text-green-600">142%</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="bg-green-500 h-2 rounded-full" style="width: 85%;"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between mb-2">
+            <span class="text-sm font-medium text-gray-700">NPL Ratio</span>
+            <span class="text-sm font-semibold text-amber-600">4.2%</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="bg-amber-500 h-2 rounded-full" style="width: 42%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Recent Transactions -->
+  <section class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+    <div class="mb-6 flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-900">Transactions Récentes</h2>
+      <a href="/accounts" class="text-sm font-medium text-blue-600 hover:text-blue-800">Voir tout →</a>
+    </div>
+    <DataTable
+      client:load
+      columns={columns}
+      rows={recentTransactions}
+      rowLink={(row) => `/accounts/${row.id}`}
+    />
+  </section>
+
+  <!-- Quick Actions -->
+  <section class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <a
+      href="/customer/onboarding"
+      class="rounded-lg border border-blue-200 bg-blue-50 p-4 hover:bg-blue-100 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+    >
+      <div class="text-2xl mb-2">👤</div>
+      <h3 class="font-semibold text-gray-900">Nouveau Client</h3>
+      <p class="text-sm text-gray-600">Onboarding KYC</p>
+    </a>
+
+    <a
+      href="/accounts"
+      class="rounded-lg border border-green-200 bg-green-50 p-4 hover:bg-green-100 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+    >
+      <div class="text-2xl mb-2">💳</div>
+      <h3 class="font-semibold text-gray-900">Nouveau Compte</h3>
+      <p class="text-sm text-gray-600">Ouvrir un compte</p>
+    </a>
+
+    <a
+      href="/payments"
+      class="rounded-lg border border-purple-200 bg-purple-50 p-4 hover:bg-purple-100 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+    >
+      <div class="text-2xl mb-2">💰</div>
+      <h3 class="font-semibold text-gray-900">Paiement</h3>
+      <p class="text-sm text-gray-600">Effectuer un virement</p>
+    </a>
+
+    <a
+      href="/credit"
+      class="rounded-lg border border-orange-200 bg-orange-50 p-4 hover:bg-orange-100 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+    >
+      <div class="text-2xl mb-2">📈</div>
+      <h3 class="font-semibold text-gray-900">Crédit</h3>
+      <p class="text-sm text-gray-600">Gestion des prêts</p>
+    </a>
+  </section>
+</DashboardLayout>
