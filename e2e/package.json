@@ -1,0 +1,23 @@
+{
+  "name": "banko-e2e",
+  "version": "0.1.0",
+  "private": true,
+  "description": "BANKO E2E Tests — Playwright + Méthode Maury",
+  "scripts": {
+    "test": "playwright test",
+    "test:chromium": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:webkit": "playwright test --project=webkit",
+    "test:mobile": "playwright test --project=mobile-chrome --project=mobile-safari",
+    "test:all": "playwright test --project=chromium --project=firefox --project=webkit",
+    "test:debug": "playwright test --debug",
+    "test:trace": "playwright test --trace on",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report",
+    "install-browsers": "playwright install --with-deps"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  }
+}
