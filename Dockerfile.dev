@@ -4,7 +4,7 @@
 # Inclut: cargo-watch (hot reload Rust), clippy, rustfmt, sqlx-cli,
 #          cargo-tarpaulin (couverture), cargo-expand (debug macros)
 
-FROM rust:1.82-bookworm
+FROM rust:1-bookworm
 
 # ── Dépendances système ──────────────────────────────────────────────
 RUN apt-get update && apt-get install -y \
@@ -23,11 +23,6 @@ RUN rustup component add clippy rustfmt \
     && cargo install sqlx-cli --no-default-features --features postgres \
     && cargo install cargo-tarpaulin \
     && cargo install cargo-expand
-
-# ── Node.js 22 (pour le frontend Astro/Svelte) ──────────────────────
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y nodejs \
-    && npm install -g npm@latest
 
 WORKDIR /app
 
