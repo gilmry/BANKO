@@ -300,3 +300,207 @@ pub trait IBiometricRepository: Send + Sync {
     /// Count verifications by status
     async fn count_by_status(&self, status: &str) -> Result<i64, String>;
 }
+
+// ============================================================
+// IGafiRepository - GAFI Recommendation Repository Port (FR-171)
+// ============================================================
+
+#[async_trait]
+pub trait IGafiRepository: Send + Sync {
+    /// Save or update a GAFI recommendation
+    async fn save_recommendation(
+        &self,
+        recommendation: &banko_domain::compliance::GafiRecommendation,
+    ) -> Result<(), String>;
+
+    /// Find a recommendation by ID
+    async fn find_by_id(
+        &self,
+        id: &banko_domain::compliance::GafiRecommendationId,
+    ) -> Result<Option<banko_domain::compliance::GafiRecommendation>, String>;
+
+    /// List all GAFI recommendations
+    async fn list_all(
+        &self,
+    ) -> Result<Vec<banko_domain::compliance::GafiRecommendation>, String>;
+
+    /// Count recommendations by status
+    async fn count_by_status(
+        &self,
+        status: banko_domain::compliance::GafiStatus,
+    ) -> Result<i64, String>;
+}
+
+// ============================================================
+// IInternalAuditRepository - Internal Audit Repository Port (FR-173)
+// ============================================================
+
+#[async_trait]
+pub trait IInternalAuditRepository: Send + Sync {
+    /// Save or update an audit
+    async fn save_audit(
+        &self,
+        audit: &banko_domain::compliance::InternalAudit,
+    ) -> Result<(), String>;
+
+    /// Find an audit by ID
+    async fn find_by_id(
+        &self,
+        id: &banko_domain::compliance::InternalAuditId,
+    ) -> Result<Option<banko_domain::compliance::InternalAudit>, String>;
+
+    /// Find audits by status
+    async fn find_by_status(
+        &self,
+        status: banko_domain::compliance::AuditStatus,
+    ) -> Result<Vec<banko_domain::compliance::InternalAudit>, String>;
+
+    /// List all audits
+    async fn list_all(&self) -> Result<Vec<banko_domain::compliance::InternalAudit>, String>;
+}
+
+// ============================================================
+// IComplianceRiskRepository - Compliance Risk Repository Port (FR-174)
+// ============================================================
+
+#[async_trait]
+pub trait IComplianceRiskRepository: Send + Sync {
+    /// Save or update a compliance risk
+    async fn save_risk(
+        &self,
+        risk: &banko_domain::compliance::ComplianceRisk,
+    ) -> Result<(), String>;
+
+    /// Find a risk by ID
+    async fn find_by_id(
+        &self,
+        id: &banko_domain::compliance::ComplianceRiskId,
+    ) -> Result<Option<banko_domain::compliance::ComplianceRisk>, String>;
+
+    /// List all compliance risks
+    async fn list_all(&self) -> Result<Vec<banko_domain::compliance::ComplianceRisk>, String>;
+}
+
+// ============================================================
+// IComplianceTrainingRepository - Compliance Training Repository Port (FR-175)
+// ============================================================
+
+#[async_trait]
+pub trait IComplianceTrainingRepository: Send + Sync {
+    /// Save or update a training record
+    async fn save_training(
+        &self,
+        training: &banko_domain::compliance::ComplianceTraining,
+    ) -> Result<(), String>;
+
+    /// Find a training record by ID
+    async fn find_by_id(
+        &self,
+        id: &banko_domain::compliance::ComplianceTrainingId,
+    ) -> Result<Option<banko_domain::compliance::ComplianceTraining>, String>;
+
+    /// Find trainings for an employee
+    async fn find_by_employee(
+        &self,
+        employee_id: Uuid,
+    ) -> Result<Vec<banko_domain::compliance::ComplianceTraining>, String>;
+
+    /// List all trainings
+    async fn list_all(&self) -> Result<Vec<banko_domain::compliance::ComplianceTraining>, String>;
+}
+
+// ============================================================
+// IRegulatoryChangeRepository - Regulatory Change Repository Port (FR-176)
+// ============================================================
+
+#[async_trait]
+pub trait IRegulatoryChangeRepository: Send + Sync {
+    /// Save or update a regulatory change
+    async fn save_change(
+        &self,
+        change: &banko_domain::compliance::RegulatoryChange,
+    ) -> Result<(), String>;
+
+    /// Find a change by ID
+    async fn find_by_id(
+        &self,
+        id: &banko_domain::compliance::RegulatoryChangeId,
+    ) -> Result<Option<banko_domain::compliance::RegulatoryChange>, String>;
+
+    /// List all regulatory changes
+    async fn list_all(
+        &self,
+    ) -> Result<Vec<banko_domain::compliance::RegulatoryChange>, String>;
+}
+
+// ============================================================
+// IComplianceIncidentRepository - Compliance Incident Repository Port (FR-177)
+// ============================================================
+
+#[async_trait]
+pub trait IComplianceIncidentRepository: Send + Sync {
+    /// Save or update an incident
+    async fn save_incident(
+        &self,
+        incident: &banko_domain::compliance::ComplianceIncident,
+    ) -> Result<(), String>;
+
+    /// Find an incident by ID
+    async fn find_by_id(
+        &self,
+        id: &banko_domain::compliance::ComplianceIncidentId,
+    ) -> Result<Option<banko_domain::compliance::ComplianceIncident>, String>;
+
+    /// List all incidents
+    async fn list_all(
+        &self,
+    ) -> Result<Vec<banko_domain::compliance::ComplianceIncident>, String>;
+}
+
+// ============================================================
+// IWhistleblowerRepository - Whistleblower Report Repository Port (FR-178)
+// ============================================================
+
+#[async_trait]
+pub trait IWhistleblowerRepository: Send + Sync {
+    /// Save or update a whistleblower report
+    async fn save_report(
+        &self,
+        report: &banko_domain::compliance::WhistleblowerReport,
+    ) -> Result<(), String>;
+
+    /// Find a report by ID
+    async fn find_by_id(
+        &self,
+        id: &banko_domain::compliance::WhistleblowerReportId,
+    ) -> Result<Option<banko_domain::compliance::WhistleblowerReport>, String>;
+
+    /// List all reports
+    async fn list_all(
+        &self,
+    ) -> Result<Vec<banko_domain::compliance::WhistleblowerReport>, String>;
+}
+
+// ============================================================
+// IThirdPartyRepository - Third-Party Assessment Repository Port (FR-179)
+// ============================================================
+
+#[async_trait]
+pub trait IThirdPartyRepository: Send + Sync {
+    /// Save or update an assessment
+    async fn save_assessment(
+        &self,
+        assessment: &banko_domain::compliance::ThirdPartyAssessment,
+    ) -> Result<(), String>;
+
+    /// Find an assessment by ID
+    async fn find_by_id(
+        &self,
+        id: &banko_domain::compliance::ThirdPartyAssessmentId,
+    ) -> Result<Option<banko_domain::compliance::ThirdPartyAssessment>, String>;
+
+    /// List all assessments
+    async fn list_all(
+        &self,
+    ) -> Result<Vec<banko_domain::compliance::ThirdPartyAssessment>, String>;
+}

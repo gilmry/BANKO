@@ -131,3 +131,22 @@ CREATE INDEX idx_breach_notifications_type ON compliance.breach_notifications(br
 CREATE INDEX idx_data_rights_requests_customer_id ON compliance.data_rights_requests(customer_id);
 CREATE INDEX idx_data_rights_requests_status ON compliance.data_rights_requests(status);
 CREATE INDEX idx_data_rights_requests_type ON compliance.data_rights_requests(request_type);
+
+-- e-KYC Biometric Verification
+CREATE TABLE compliance.biometric_verifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    customer_id UUID NOT NULL,
+    verification_type VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'verified', 'failed', 'expired')),
+    confidence_score FLOAT NOT NULL DEFAULT 0.0 CHECK (confidence_score BETWEEN 0.0 AND 1.0),
+    liveness_check BOOLEAN NOT NULL DEFAULT false,
+    document_type VARCHAR(50),
+    document_number VARCHAR(255),
+    verified_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX idx_biometric_verifications_customer_id ON compliance.biometric_verifications(customer_id);
+CREATE INDEX idx_biometric_verifications_status ON compliance.biometric_verifications(status);
+CREATE INDEX idx_biometric_verifications_verification_type ON compliance.biometric_verifications(verification_type);
