@@ -406,3 +406,30 @@ pub async fn record_payment_handler(
         }
     }
 }
+
+// --- Classification Summary Handler (mock) ---
+
+/// GET /api/v1/loans/classification/summary
+pub async fn get_classification_summary_handler(
+    _auth_user: AuthenticatedUser,
+) -> HttpResponse {
+    HttpResponse::Ok().json(serde_json::json!({
+        "total": 234,
+        "by_status": {
+            "pending": 12,
+            "approved": 45,
+            "disbursed": 34,
+            "active": 123,
+            "completed": 15,
+            "defaulted": 5
+        },
+        "by_asset_class": {
+            "0": 10,
+            "1": 150,
+            "2": 45,
+            "3": 20,
+            "4": 9
+        },
+        "average_amount": 125000.00
+    }))
+}

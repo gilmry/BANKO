@@ -146,6 +146,10 @@ pub fn configure_credit_routes(cfg: &mut web::ServiceConfig) {
         web::scope("/api/v1/loans")
             .route("", web::post().to(credit_handlers::create_loan_handler))
             .route("", web::get().to(credit_handlers::list_loans_handler))
+            .route(
+                "/classification/summary",
+                web::get().to(credit_handlers::get_classification_summary_handler),
+            )
             .route("/{id}", web::get().to(credit_handlers::get_loan_handler))
             .route(
                 "/{id}/approve",
@@ -180,8 +184,16 @@ pub fn configure_aml_routes(cfg: &mut web::ServiceConfig) {
         web::scope("/api/v1/aml")
             .route("/alerts", web::get().to(aml_handlers::list_alerts_handler))
             .route(
+                "/alerts/stats",
+                web::get().to(aml_handlers::get_alert_stats_handler),
+            )
+            .route(
                 "/alerts/{id}",
                 web::get().to(aml_handlers::get_alert_handler),
+            )
+            .route(
+                "/investigations",
+                web::get().to(aml_handlers::list_investigations_handler),
             )
             .route(
                 "/investigations",
@@ -262,6 +274,10 @@ pub fn configure_prudential_routes(cfg: &mut web::ServiceConfig) {
             .route(
                 "/ratios",
                 web::get().to(prudential_handlers::get_ratios_handler),
+            )
+            .route(
+                "/ratios/{id}/trend",
+                web::get().to(prudential_handlers::get_ratio_trend_handler),
             )
             .route(
                 "/ratios",
@@ -375,6 +391,14 @@ pub fn configure_payment_routes(cfg: &mut web::ServiceConfig) {
                 web::post().to(payment_handlers::create_payment_handler),
             )
             .route("", web::get().to(payment_handlers::list_payments_handler))
+            .route(
+                "/status",
+                web::get().to(payment_handlers::get_payments_status_handler),
+            )
+            .route(
+                "/clearing/status",
+                web::get().to(payment_handlers::get_clearing_status_handler),
+            )
             .route(
                 "/{id}",
                 web::get().to(payment_handlers::get_payment_handler),

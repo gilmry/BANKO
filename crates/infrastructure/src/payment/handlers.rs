@@ -199,3 +199,30 @@ pub async fn run_clearing_handler(
         }),
     }
 }
+
+// --- Stats Handlers (mock) ---
+
+/// GET /api/v1/payments/status
+pub async fn get_payments_status_handler(_auth: AuthenticatedUser) -> HttpResponse {
+    HttpResponse::Ok().json(serde_json::json!({
+        "total_payments": 1847,
+        "pending_count": 45,
+        "screened_count": 12,
+        "submitted_count": 8,
+        "executed_count": 1723,
+        "failed_count": 34,
+        "rejected_count": 25,
+        "total_volume": 45672890.50,
+        "average_amount": 24728.42
+    }))
+}
+
+/// GET /api/v1/payments/clearing/status
+pub async fn get_clearing_status_handler(_auth: AuthenticatedUser) -> HttpResponse {
+    HttpResponse::Ok().json(serde_json::json!({
+        "status": "operational",
+        "last_sync": "2026-04-08T14:30:00Z",
+        "pending_submissions": 3,
+        "failed_submissions": 0
+    }))
+}
