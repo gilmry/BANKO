@@ -24,6 +24,7 @@ impl GrantType {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s {
             "authorization_code" => Ok(GrantType::AuthorizationCode),

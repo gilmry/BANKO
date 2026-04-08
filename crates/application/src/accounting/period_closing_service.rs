@@ -76,7 +76,7 @@ impl PeriodClosingService {
         year: i32,
         month: u32,
     ) -> Result<PeriodClosing, AccountingServiceError> {
-        if month < 1 || month > 12 {
+        if !(1..=12).contains(&month) {
             return Err(AccountingServiceError::InvalidEntry(
                 "Month must be between 1 and 12".to_string(),
             ));

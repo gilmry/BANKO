@@ -309,7 +309,7 @@ impl GafiRecommendation {
         category: String,
         responsible_unit: String,
     ) -> Result<Self, DomainError> {
-        if recommendation_number < 1 || recommendation_number > 40 {
+        if !(1..=40).contains(&recommendation_number) {
             return Err(DomainError::InvalidComplianceData(
                 "GAFI recommendation must be between 1 and 40".to_string(),
             ));
@@ -346,6 +346,7 @@ impl GafiRecommendation {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: GafiRecommendationId,
         recommendation_number: i32,
@@ -536,6 +537,7 @@ impl InternalAudit {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: InternalAuditId,
         audit_code: String,
@@ -797,6 +799,7 @@ pub struct ComplianceRisk {
 }
 
 impl ComplianceRisk {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         risk_code: String,
         title: String,
@@ -843,6 +846,7 @@ impl ComplianceRisk {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: ComplianceRiskId,
         risk_code: String,
@@ -987,6 +991,7 @@ pub struct ComplianceTraining {
 }
 
 impl ComplianceTraining {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         training_code: String,
         title: String,
@@ -1033,6 +1038,7 @@ impl ComplianceTraining {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: ComplianceTrainingId,
         training_code: String,
@@ -1080,7 +1086,7 @@ impl ComplianceTraining {
         score: i32,
         certificate_url: String,
     ) -> Result<(), DomainError> {
-        if score < 0 || score > 100 {
+        if !(0..=100).contains(&score) {
             return Err(DomainError::InvalidComplianceData(
                 "Training score must be between 0 and 100".to_string(),
             ));
@@ -1179,6 +1185,7 @@ pub struct RegulatoryChange {
 }
 
 impl RegulatoryChange {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         change_code: String,
         title: String,
@@ -1225,6 +1232,7 @@ impl RegulatoryChange {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: RegulatoryChangeId,
         change_code: String,
@@ -1266,7 +1274,7 @@ impl RegulatoryChange {
     }
 
     pub fn update_progress(&mut self, progress: i32) -> Result<(), DomainError> {
-        if progress < 0 || progress > 100 {
+        if !(0..=100).contains(&progress) {
             return Err(DomainError::InvalidComplianceData(
                 "Progress must be between 0 and 100".to_string(),
             ));
@@ -1408,6 +1416,7 @@ impl ComplianceIncident {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: ComplianceIncidentId,
         incident_code: String,
@@ -1606,6 +1615,7 @@ impl WhistleblowerReport {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: WhistleblowerReportId,
         report_code: String,
@@ -1860,6 +1870,7 @@ impl ThirdPartyAssessment {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: ThirdPartyAssessmentId,
         vendor_name: String,

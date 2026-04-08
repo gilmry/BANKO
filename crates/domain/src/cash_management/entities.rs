@@ -405,6 +405,7 @@ impl CashForecast {
     }
 
     /// Reconstitute from persistence (no validation).
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: CashForecastId,
         account_id: AccountId,

@@ -57,6 +57,7 @@ pub enum CollateralType {
 }
 
 impl CollateralType {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "real_estate" => Ok(CollateralType::RealEstate),
@@ -152,6 +153,7 @@ pub enum CollateralStatus {
 }
 
 impl CollateralStatus {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "pending" => Ok(CollateralStatus::Pending),
@@ -191,6 +193,7 @@ pub enum ValuationMethod {
 }
 
 impl ValuationMethod {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "market_comparison" => Ok(ValuationMethod::MarketComparison),

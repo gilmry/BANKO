@@ -33,6 +33,7 @@ impl ProductType {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "CurrentAccount" => Ok(ProductType::CurrentAccount),
@@ -64,6 +65,7 @@ impl ProductStatus {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "Draft" => Ok(ProductStatus::Draft),
@@ -99,6 +101,7 @@ impl FeeType {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "Monthly" => Ok(FeeType::Monthly),
@@ -129,6 +132,7 @@ impl CalcMethod {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "Simple" => Ok(CalcMethod::Simple),
@@ -159,6 +163,7 @@ impl CustomerSegment {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "Standard" => Ok(CustomerSegment::Standard),
@@ -189,6 +194,7 @@ impl Frequency {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "Daily" => Ok(Frequency::Daily),
@@ -495,6 +501,7 @@ pub struct Product {
 }
 
 impl Product {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         name: String,
         product_type: ProductType,
@@ -534,6 +541,7 @@ impl Product {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: Uuid,
         name: String,

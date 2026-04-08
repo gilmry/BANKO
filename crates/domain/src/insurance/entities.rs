@@ -31,6 +31,7 @@ pub struct InsurancePolicy {
 
 impl InsurancePolicy {
     /// Create a new insurance policy. Enforces domain invariants.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         policy_type: PolicyType,
         customer_id: CustomerId,
@@ -327,6 +328,7 @@ impl InsuranceClaim {
     }
 
     /// Reconstitute from persistence (no validation).
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: InsuranceClaimId,
         policy_id: InsurancePolicyId,
@@ -509,6 +511,7 @@ impl BancassuranceProduct {
     }
 
     /// Reconstitute from persistence (no validation).
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: BancassuranceProductId,
         insurance_provider: String,
@@ -616,6 +619,7 @@ impl InsuranceCommission {
     }
 
     /// Reconstitute from persistence (no validation).
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: InsuranceCommissionId,
         policy_id: InsurancePolicyId,

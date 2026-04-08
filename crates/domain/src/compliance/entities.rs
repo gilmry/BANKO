@@ -246,6 +246,7 @@ impl SmsiControl {
     }
 
     /// Reconstruct from persistence
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: SmsiControlId,
         control_ref: String,
@@ -512,6 +513,7 @@ pub struct RiskEntry {
 
 impl RiskEntry {
     /// Create a new RiskEntry with validation
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         risk_ref: String,
         title: String,
@@ -566,6 +568,7 @@ impl RiskEntry {
     }
 
     /// Reconstruct from persistence
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: RiskEntryId,
         risk_ref: String,
@@ -775,13 +778,13 @@ impl TokenVault {
             ));
         }
 
-        if expiry_month < 1 || expiry_month > 12 {
+        if !(1..=12).contains(&expiry_month) {
             return Err(DomainError::InvalidComplianceData(
                 "Invalid expiry month (1-12)".to_string(),
             ));
         }
 
-        if expiry_year < 2000 || expiry_year > 2100 {
+        if !(2000..=2100).contains(&expiry_year) {
             return Err(DomainError::InvalidComplianceData(
                 "Invalid expiry year".to_string(),
             ));
@@ -817,6 +820,7 @@ impl TokenVault {
     }
 
     /// Reconstruct from persistence
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: TokenVaultId,
         token: String,
@@ -1277,6 +1281,7 @@ pub enum ConsentPurpose {
 }
 
 impl ConsentPurpose {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "marketing" => Ok(ConsentPurpose::Marketing),
@@ -1322,6 +1327,7 @@ pub enum LegalBasis {
 }
 
 impl LegalBasis {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "consent" => Ok(LegalBasis::Consent),
@@ -1494,6 +1500,7 @@ pub enum DpiaStatus {
 }
 
 impl DpiaStatus {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "draft" => Ok(DpiaStatus::Draft),
@@ -1715,6 +1722,7 @@ pub enum BreachStatus {
 }
 
 impl BreachStatus {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "detected" => Ok(BreachStatus::Detected),
@@ -2127,6 +2135,7 @@ impl BiometricType {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "facial_recognition" => Ok(BiometricType::FacialRecognition),
@@ -2165,6 +2174,7 @@ impl BiometricStatus {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "pending" => Ok(BiometricStatus::Pending),

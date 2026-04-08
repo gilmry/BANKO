@@ -547,6 +547,7 @@ impl BankingBlacklist {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: Uuid,
         customer_id: Uuid,
@@ -659,6 +660,7 @@ impl ChequeClearing {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: Uuid,
         clearing_date: NaiveDate,

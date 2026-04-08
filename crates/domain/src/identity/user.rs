@@ -227,6 +227,7 @@ impl User {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: UserId,
         email: EmailAddress,

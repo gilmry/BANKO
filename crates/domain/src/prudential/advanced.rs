@@ -160,6 +160,7 @@ pub struct RiskWeightedAsset {
 }
 
 impl RiskWeightedAsset {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         institution_id: Uuid,
         asset_class: AssetClass,
@@ -280,6 +281,7 @@ pub struct StressScenario {
 }
 
 impl StressScenario {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         institution_id: Uuid,
         scenario_type: StressScenarioType,

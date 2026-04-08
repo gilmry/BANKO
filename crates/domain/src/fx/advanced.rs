@@ -231,6 +231,7 @@ pub struct FxForward {
 }
 
 impl FxForward {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         institution_id: Uuid,
         beneficiary_id: Uuid,
@@ -346,6 +347,7 @@ pub struct FxSwap {
 }
 
 impl FxSwap {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         institution_id: Uuid,
         beneficiary_id: Uuid,
@@ -466,6 +468,7 @@ pub struct FxOption {
 }
 
 impl FxOption {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         institution_id: Uuid,
         beneficiary_id: Uuid,

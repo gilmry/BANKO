@@ -31,6 +31,7 @@ pub struct LetterOfCredit {
 
 impl LetterOfCredit {
     /// Create a new letter of credit. Enforces domain invariants.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         lc_type: LCType,
         applicant_id: CustomerId,
@@ -259,6 +260,7 @@ pub struct BankGuarantee {
 
 impl BankGuarantee {
     /// Create a new bank guarantee. Enforces domain invariants.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         guarantee_type: GuaranteeType,
         principal_id: CustomerId,
@@ -481,6 +483,7 @@ impl DocumentaryCollection {
     }
 
     /// Reconstitute from persistence (no validation).
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: DocumentaryCollectionId,
         collection_type: CollectionType,
@@ -637,6 +640,7 @@ impl TradeFinanceLimit {
     }
 
     /// Reconstitute from persistence (no validation).
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: TradeFinanceLimitId,
         customer_id: CustomerId,

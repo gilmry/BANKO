@@ -25,6 +25,7 @@ pub struct CountryCode {
 }
 
 impl CountryCode {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         code: CountryCodeVo,
         name_en: &str,
@@ -72,6 +73,7 @@ impl CountryCode {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: ReferenceDataId,
         code: CountryCodeVo,
@@ -162,6 +164,7 @@ pub struct CurrencyReference {
 }
 
 impl CurrencyReference {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         code: CurrencyCodeVo,
         name_en: &str,
@@ -181,7 +184,7 @@ impl CurrencyReference {
                 "French name cannot be empty".to_string(),
             ));
         }
-        if decimal_places < 0 || decimal_places > 8 {
+        if !(0..=8).contains(&decimal_places) {
             return Err(DomainError::ValidationError(
                 "Decimal places must be between 0 and 8".to_string(),
             ));
@@ -209,6 +212,7 @@ impl CurrencyReference {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: ReferenceDataId,
         code: CurrencyCodeVo,
@@ -308,6 +312,7 @@ impl BankCode {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: ReferenceDataId,
         bic: BicCodeVo,
@@ -415,6 +420,7 @@ impl BranchCode {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: ReferenceDataId,
         branch_code: String,
@@ -529,6 +535,7 @@ impl HolidayCalendar {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: ReferenceDataId,
         holiday_date: DateTime<Utc>,
@@ -608,6 +615,7 @@ pub struct SystemParameter {
 }
 
 impl SystemParameter {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         key: &str,
         value: &str,
@@ -683,6 +691,7 @@ impl SystemParameter {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: ReferenceDataId,
         key: String,
@@ -768,6 +777,7 @@ pub struct RegulatoryCode {
 }
 
 impl RegulatoryCode {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         code: &str,
         description_en: &str,
@@ -815,6 +825,7 @@ impl RegulatoryCode {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: ReferenceDataId,
         code: String,
@@ -895,6 +906,7 @@ pub struct FeeScheduleReference {
 }
 
 impl FeeScheduleReference {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         fee_type: FeeType,
         amount_cents: i64,
@@ -944,6 +956,7 @@ impl FeeScheduleReference {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: ReferenceDataId,
         fee_type: FeeType,

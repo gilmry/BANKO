@@ -1,3 +1,7 @@
+// Domain entities legitimately require many constructor parameters
+// to enforce invariants at creation time (DDD aggregate pattern).
+#![allow(clippy::too_many_arguments)]
+
 pub mod shared;
 pub mod events;
 pub mod invariants;

@@ -171,6 +171,7 @@ pub struct AuditTrailEntry {
 }
 
 impl AuditTrailEntry {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         user_id: Uuid,
         action: AuditAction,
@@ -207,6 +208,7 @@ impl AuditTrailEntry {
     }
 
     /// Reconstruct from persistence (no recomputation).
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         entry_id: AuditEntryId,
         timestamp: DateTime<Utc>,
@@ -551,6 +553,7 @@ impl CommitteeDecision {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: Uuid,
         committee_id: Uuid,
@@ -663,6 +666,7 @@ impl ControlCheck {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: Uuid,
         operation_type: String,
@@ -820,6 +824,7 @@ impl CommitteeMeeting {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: Uuid,
         committee_id: Uuid,
@@ -1001,6 +1006,7 @@ impl ControlCheckSignOff {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: Uuid,
         control_check_id: Uuid,

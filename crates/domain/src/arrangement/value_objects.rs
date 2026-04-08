@@ -69,6 +69,7 @@ impl ArrangementType {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s {
             "deposit" => Ok(Self::Deposit),
@@ -115,6 +116,7 @@ impl ArrangementStatus {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s {
             "proposed" => Ok(Self::Proposed),
@@ -154,6 +156,7 @@ impl RenewalType {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s {
             "none" => Ok(Self::None),
@@ -234,6 +237,7 @@ impl ArrangementEventType {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s {
             "created" => Ok(Self::Created),

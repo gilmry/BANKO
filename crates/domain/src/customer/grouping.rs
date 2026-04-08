@@ -133,6 +133,7 @@ impl CustomerGroup {
     }
 
     /// Reconstitute from persistence (no validation).
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         group_id: GroupId,
         group_name: String,

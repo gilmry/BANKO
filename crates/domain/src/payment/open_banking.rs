@@ -237,6 +237,7 @@ pub struct PaymentConsent {
 }
 
 impl PaymentConsent {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         customer_id: Uuid,
         from_account_id: Uuid,
@@ -374,6 +375,7 @@ impl InstantPayment {
     /// Target settlement: <10 seconds per TIPS standard (FR-114)
     pub const MAX_SETTLEMENT_SECONDS: i64 = 10;
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         customer_id: Uuid,
         from_account_id: Uuid,
@@ -600,6 +602,7 @@ pub struct ThirdPartyPis {
 }
 
 impl ThirdPartyPis {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         pis_provider_id: Uuid,
         pis_provider_name: String,

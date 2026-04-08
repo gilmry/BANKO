@@ -43,6 +43,7 @@ impl AttestationFormat {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "none" => Ok(AttestationFormat::None),
@@ -99,6 +100,7 @@ pub struct WebAuthnCredential {
 
 impl WebAuthnCredential {
     /// Register a new WebAuthn credential
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         user_id: UserId,
         credential_id: CredentialId,

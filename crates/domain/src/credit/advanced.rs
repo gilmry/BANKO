@@ -148,6 +148,7 @@ impl SubLimit {
     }
 
     /// Reconstitute from persistence.
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: SubLimitId,
         credit_line_id: RevolvingCreditLineId,
@@ -593,7 +594,7 @@ impl SyndicatedLoan {
         agent_bank_id: String,
         arrangement_fee_rate: f64,
     ) -> Result<Self, DomainError> {
-        if arrangement_fee_rate < 0.0 || arrangement_fee_rate > 0.1 {
+        if !(0.0..=0.1).contains(&arrangement_fee_rate) {
             return Err(DomainError::ValidationError(
                 "Arrangement fee rate must be 0-10%".to_string(),
             ));

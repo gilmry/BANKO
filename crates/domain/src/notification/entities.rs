@@ -88,6 +88,7 @@ impl Channel {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s {
             "Email" => Ok(Channel::Email),
@@ -135,6 +136,7 @@ impl NotificationStatus {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s {
             "Pending" => Ok(NotificationStatus::Pending),
@@ -180,6 +182,7 @@ impl NotificationType {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s {
             "Transactional" => Ok(NotificationType::Transactional),
@@ -226,6 +229,7 @@ pub struct Notification {
 
 impl Notification {
     /// Create a new Notification with validation
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         customer_id: Uuid,
         channel: Channel,
@@ -281,6 +285,7 @@ impl Notification {
     }
 
     /// Reconstruct from persistence
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: NotificationId,
         customer_id: Uuid,

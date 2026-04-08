@@ -24,6 +24,7 @@ pub struct ArrangementTerms {
 }
 
 impl ArrangementTerms {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         currency: &str,
         interest_rate: Option<f64>,
@@ -41,7 +42,7 @@ impl ArrangementTerms {
 
         // Validate interest rate bounds
         if let Some(rate) = interest_rate {
-            if rate < 0.0 || rate > 100.0 {
+            if !(0.0..=100.0).contains(&rate) {
                 return Err(DomainError::InvalidPercentage(format!(
                     "Interest rate must be between 0 and 100, got {}",
                     rate
@@ -162,6 +163,7 @@ impl Arrangement {
         Ok(arrangement)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: ArrangementId,
         customer_id: CustomerId,
@@ -470,7 +472,7 @@ impl ArrangementBundle {
 
         // Validate discount percentage
         if let Some(discount) = discount_pct {
-            if discount < 0.0 || discount > 100.0 {
+            if !(0.0..=100.0).contains(&discount) {
                 return Err(DomainError::InvalidPercentage(format!(
                     "Discount must be between 0 and 100, got {}",
                     discount
@@ -489,6 +491,7 @@ impl ArrangementBundle {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: ArrangementBundleId,
         name: String,

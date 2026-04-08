@@ -275,6 +275,7 @@ pub struct Transaction {
 }
 
 impl Transaction {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         account_id: Uuid,
         customer_id: Uuid,

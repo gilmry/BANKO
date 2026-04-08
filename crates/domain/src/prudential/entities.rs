@@ -296,6 +296,7 @@ pub struct RatioSnapshot {
 }
 
 impl RatioSnapshot {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         ratio_id: RatioId,
         institution_id: InstitutionId,
@@ -369,6 +370,7 @@ pub struct PrudentialRatio {
 }
 
 impl PrudentialRatio {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         institution_id: InstitutionId,
         capital_tier1: i64,
@@ -450,6 +452,7 @@ impl PrudentialRatio {
     }
 
     /// Reconstruct from persistence (bypasses validation)
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         ratio_id: RatioId,
         institution_id: InstitutionId,
