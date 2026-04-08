@@ -28,6 +28,7 @@
 <article
   class="group rounded-lg border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md"
   aria-label="Compte {typeLabels[account_type] ?? account_type} - {account_number}"
+  data-testid="account-card-{id}"
 >
   <div class="flex items-start justify-between">
     <div class="flex items-center gap-3">
@@ -37,15 +38,16 @@
         </svg>
       </div>
       <div>
-        <h3 class="text-sm font-medium text-gray-900">
+        <h3 class="text-sm font-medium text-gray-900" data-testid="account-card-type">
           {typeLabels[account_type] ?? account_type}
         </h3>
-        <p class="text-xs text-gray-500 font-mono">{account_number}</p>
+        <p class="text-xs text-gray-500 font-mono" data-testid="account-card-number">{account_number}</p>
       </div>
     </div>
     <span
       class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
         {status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}"
+      data-testid="account-card-status"
     >
       {status === 'active' ? 'Actif' : status}
     </span>
@@ -53,13 +55,14 @@
 
   <div class="mt-4">
     <p class="text-sm text-gray-500">Solde</p>
-    <p class="text-2xl font-bold text-gray-900">{formattedBalance}</p>
+    <p class="text-2xl font-bold text-gray-900" data-testid="account-card-balance">{formattedBalance}</p>
   </div>
 
   <div class="mt-4">
     <a
       href="/accounts/detail?id={id}"
       class="text-sm font-medium text-blue-600 hover:text-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+      data-testid="account-card-link"
     >
       Voir les details
     </a>

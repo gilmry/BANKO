@@ -16,6 +16,7 @@ export default defineConfig({
       },
     },
     server: {
+      allowedHosts: ["frontend", "traefik", "localhost"],
       watch: {
         usePolling: true,
         interval: 1000,
