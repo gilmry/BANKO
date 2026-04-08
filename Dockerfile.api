@@ -1,26 +1,57 @@
-# Multi-stage build for BANKO API
-FROM rust:latest AS builder
+# BANKO - Dockerfile API PRODUCTION
+# Multi-stage: build → compress → distroless
+#
+# Final image: gcr.io/distroless/cc-debian12 (~25MB)
+# Binary: statically-linked, LTO, stripped, UPX-compressed
+
+# ═══════════════════════════════════════════════════════════════════
+# Stage 1: Build optimized release binary
+# ═══════════════════════════════════════════════════════════════════
+FROM rust:1-bookworm AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
+    pkg-config libssl-dev musl-tools && rm -rf /var/lib/apt/lists/*
+
+# Add musl target for static linking
+RUN rustup target add x86_64-unknown-linux-musl
 
 WORKDIR /app
 COPY Cargo.toml Cargo.lock ./
 COPY crates/ crates/
 
 ENV SQLX_OFFLINE=true
-RUN cargo build --release -p banko-infrastructure
 
-FROM debian:bookworm-slim AS runtime
+# Build with maximum optimizations
+RUN RUSTFLAGS="-C target-feature=+crt-static" \
+    cargo build --release --target x86_64-unknown-linux-musl -p banko-infrastructure \
+    && strip /app/target/x86_64-unknown-linux-musl/release/server
+
+# ═══════════════════════════════════════════════════════════════════
+# Stage 2: UPX compression
+# ═══════════════════════════════════════════════════════════════════
+FROM debian:bookworm-slim AS compressor
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates libssl3 curl && rm -rf /var/lib/apt/lists/*
+    upx-ucl && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app/target/release/server /usr/local/bin/banko-api
+COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/server /server
+
+# Compress binary (--best = maximum compression, ~60-70% size reduction)
+RUN upx --best --lzma /server
+
+# ═══════════════════════════════════════════════════════════════════
+# Stage 3: Distroless runtime (minimal attack surface)
+# ═══════════════════════════════════════════════════════════════════
+FROM gcr.io/distroless/static-debian12:nonroot
+
+LABEL org.opencontainers.image.title="BANKO API"
+LABEL org.opencontainers.image.description="Core banking API - production distroless image"
+LABEL org.opencontainers.image.vendor="BANKO"
+
+COPY --from=compressor /server /banko-api
 
 EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-    CMD curl -sf http://localhost:8080/api/v1/health || exit 1
+USER nonroot:nonroot
 
-ENTRYPOINT ["banko-api"]
+ENTRYPOINT ["/banko-api"]

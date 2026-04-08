@@ -1,13 +1,19 @@
-# BANKO - Dockerfile pour le développement
+# BANKO - Dockerfile DEV (all-in-one development + CI tools)
 # Usage: docker compose -f docker-compose.dev.yml up --build
 #
-# Inclut: cargo-watch (hot reload Rust), clippy, rustfmt, sqlx-cli,
-#          cargo-tarpaulin (couverture), cargo-expand (debug macros)
+# Includes:
+#   - cargo-watch (hot reload Rust)
+#   - clippy + rustfmt (lint/format)
+#   - sqlx-cli (migrations)
+#   - cargo-tarpaulin (coverage)
+#   - cargo-expand (debug macros)
+#   - cargo-audit (security audit)
+#   - cargo-nextest (fast test runner)
 
 FROM rust:1-bookworm
 
-# ── Dépendances système ──────────────────────────────────────────────
-RUN apt-get update && apt-get install -y \
+# ── System dependencies ─────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
     libssl-dev \
     pkg-config \
@@ -17,23 +23,23 @@ RUN apt-get update && apt-get install -y \
     jq \
     && rm -rf /var/lib/apt/lists/*
 
-# ── Toolchain Rust dev ───────────────────────────────────────────────
+# ── Rust dev + CI toolchain ──────────────────────────────────────────
 RUN rustup component add clippy rustfmt \
     && cargo install cargo-watch \
     && cargo install sqlx-cli --no-default-features --features postgres \
     && cargo install cargo-tarpaulin \
-    && cargo install cargo-expand
+    && cargo install cargo-expand \
+    && cargo install cargo-audit \
+    && cargo install cargo-nextest
 
 WORKDIR /app
 
-# ── Pré-cache des dépendances Rust (layer caching) ──────────────────
-# On copie d'abord les Cargo.toml pour profiter du cache Docker
+# ── Dependency pre-cache layer ──────────────────────────────────────
 COPY Cargo.toml Cargo.lock ./
 COPY crates/domain/Cargo.toml crates/domain/Cargo.toml
 COPY crates/application/Cargo.toml crates/application/Cargo.toml
 COPY crates/infrastructure/Cargo.toml crates/infrastructure/Cargo.toml
 
-# Créer des stubs pour que cargo build cache les dépendances
 RUN mkdir -p crates/domain/src crates/application/src crates/infrastructure/src \
     && echo "// stub" > crates/domain/src/lib.rs \
     && echo "// stub" > crates/application/src/lib.rs \
@@ -43,15 +49,12 @@ RUN mkdir -p crates/domain/src crates/application/src crates/infrastructure/src 
     && cargo build 2>/dev/null || true \
     && rm -rf crates/*/src
 
-# ── Le code source sera monté en volume (pas copié) ─────────────────
-# En dev, on monte le code source en volume pour le hot reload
-# Le CMD sera overridé par docker-compose.dev.yml
-
+# ── Runtime env ─────────────────────────────────────────────────────
 ENV SQLX_OFFLINE=true
 ENV RUST_LOG=banko=debug,actix_web=info,sqlx=warn
 ENV RUST_BACKTRACE=1
 
 EXPOSE 8080
 
-# Commande par défaut : cargo watch rebuild + restart
+# Hot reload: cargo watch rebuild + restart
 CMD ["cargo", "watch", "-x", "run --bin server", "-w", "crates/", "-i", "*.swp", "-i", "*.swo"]

@@ -1,24 +1,42 @@
-# Multi-stage build for BANKO Frontend
-FROM node:20-alpine AS builder
+# BANKO - Dockerfile FRONTEND PRODUCTION
+# Multi-stage: build → distroless Node runtime
+#
+# Final image: gcr.io/distroless/nodejs22-debian12 (~40MB)
+
+# ═══════════════════════════════════════════════════════════════════
+# Stage 1: Build Astro SSR bundle
+# ═══════════════════════════════════════════════════════════════════
+FROM node:22-bookworm-slim AS builder
 
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 COPY frontend/ .
 RUN npm run build
 
-FROM node:20-alpine AS runtime
+# Prune dev dependencies for smaller runtime
+RUN npm prune --production
+
+# ═══════════════════════════════════════════════════════════════════
+# Stage 2: Distroless Node runtime (minimal attack surface)
+# ═══════════════════════════════════════════════════════════════════
+FROM gcr.io/distroless/nodejs22-debian12:nonroot
+
+LABEL org.opencontainers.image.title="BANKO Frontend"
+LABEL org.opencontainers.image.description="Core banking frontend - production distroless image"
+LABEL org.opencontainers.image.vendor="BANKO"
 
 WORKDIR /app
+
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-    CMD wget -q --spider http://127.0.0.1:3000/ || exit 1
-
 ENV HOST=0.0.0.0
 ENV PORT=3000
-CMD ["node", "dist/server/entry.mjs"]
+
+USER nonroot:nonroot
+
+CMD ["dist/server/entry.mjs"]
