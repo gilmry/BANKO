@@ -16,7 +16,7 @@ repository = "https://github.com/gilmry/BANKO"
 [workspace.dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-thiserror = "1.0"
+thiserror = "2.0"
 uuid = { version = "1.6", features = ["v4", "v5", "serde"] }
 rust_decimal = { version = "1.40", features = ["serde-with-str", "maths"] }
 chrono = { version = "0.4", features = ["serde"] }
