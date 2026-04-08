@@ -1,4 +1,4 @@
-import { test, expect } from '../../fixtures/banko.fixture';
+import { testHuman as test, expect } from '../../fixtures/banko.fixture';
 
 /**
  * PARCOURS 3: Gestion Clients (BC1 — Customer)
@@ -24,7 +24,7 @@ test.describe('Clients — Bounded Context Customer', () => {
 
     test('Contient le filtre KYC avec toutes les options', async ({ page }) => {
       await page.goto('/customers');
-      const kycFilter = page.getByRole('combobox').first();
+      const kycFilter = page.locator('[data-testid="customers-filter-kyc-status"]');
       await expect(kycFilter).toBeVisible();
       // Vérifie les options
       const options = kycFilter.locator('option');
@@ -33,7 +33,7 @@ test.describe('Clients — Bounded Context Customer', () => {
 
     test('Contient le tri avec options date et nom', async ({ page }) => {
       await page.goto('/customers');
-      const sortSelect = page.getByRole('combobox').nth(1);
+      const sortSelect = page.locator('[data-testid="customers-filter-sort"]');
       await expect(sortSelect).toBeVisible();
     });
 
@@ -78,11 +78,11 @@ test.describe('Clients — Bounded Context Customer', () => {
     test('Affiche l\'étape 1 avec tous les champs', async ({ kycWizard, page }) => {
       await kycWizard.goto();
       await kycWizard.expectStep(1);
-      await expect(page.getByLabel('Prenom', { exact: false })).toBeVisible();
-      await expect(page.getByLabel('Nom', { exact: false })).toBeVisible();
-      await expect(page.getByLabel('Date de naissance', { exact: false })).toBeVisible();
-      await expect(page.getByLabel('Numero CIN', { exact: false })).toBeVisible();
-      await expect(page.getByLabel('Nationalite', { exact: false })).toBeVisible();
+      await expect(page.locator('[data-testid="kyc-basic-firstname"]')).toBeVisible();
+      await expect(page.locator('[data-testid="kyc-basic-lastname"]')).toBeVisible();
+      await expect(page.locator('[data-testid="kyc-basic-dob"]')).toBeVisible();
+      await expect(page.locator('[data-testid="kyc-basic-cin"]')).toBeVisible();
+      await expect(page.locator('[data-testid="kyc-basic-nationality"]')).toBeVisible();
     });
 
     test('Remplissage complet étape 1 — Informations personnelles', async ({ kycWizard }) => {
