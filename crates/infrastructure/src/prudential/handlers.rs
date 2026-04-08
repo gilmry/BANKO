@@ -175,6 +175,48 @@ pub async fn get_alerts_handler(
     }
 }
 
+// --- Trend Handler (mock) ---
+
+/// GET /api/v1/prudential/ratios/{id}/trend
+pub async fn get_ratio_trend_handler(
+    path: web::Path<String>,
+) -> HttpResponse {
+    let _ratio_id = path.into_inner();
+
+    // Generate 30 days of realistic trend data
+    let mut data_points = Vec::with_capacity(30);
+    let base_value: f64 = 18.0;
+
+    for i in 0u32..30 {
+        // Simulate a gentle upward trend with small fluctuations
+        let variation = match i % 7 {
+            0 => 0.0,
+            1 => 0.3,
+            2 => -0.1,
+            3 => 0.2,
+            4 => 0.5,
+            5 => -0.2,
+            6 => 0.1,
+            _ => 0.0,
+        };
+        let trend_offset = f64::from(i) * 0.05;
+        let value = ((base_value + trend_offset + variation) * 10.0).round() / 10.0;
+
+        let date = if 10 + i > 31 {
+            format!("2026-04-{:02}", 10 + i - 31)
+        } else {
+            format!("2026-03-{:02}", 10 + i)
+        };
+
+        data_points.push(serde_json::json!({
+            "date": date,
+            "value": value
+        }));
+    }
+
+    HttpResponse::Ok().json(data_points)
+}
+
 // --- Query types ---
 
 #[derive(serde::Deserialize)]

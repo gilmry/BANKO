@@ -186,6 +186,7 @@ pub struct RegulatoryReport {
 }
 
 impl RegulatoryReport {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         report_type: ReportType,
         period_start: NaiveDate,
@@ -227,6 +228,7 @@ impl RegulatoryReport {
     }
 
     /// Reconstruct from persistence (no validation).
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         report_id: ReportId,
         report_type: ReportType,

@@ -40,7 +40,7 @@
   let valueArc = $derived(describeArc(-90, angle));
 </script>
 
-<div class="flex flex-col items-center" role="img" aria-label="{name}: {value.toFixed(2)}% (seuil: {threshold.toFixed(2)}%)">
+<div class="flex flex-col items-center" role="img" aria-label="{name}: {value.toFixed(2)}% (seuil: {threshold.toFixed(2)}%)" data-testid="ratio-gauge-{name.toLowerCase().replace(/\s+/g, '-')}">
   <svg viewBox="0 0 100 60" class="w-full max-w-[200px]" aria-hidden="true">
     <!-- Background arc -->
     <path d={bgArc} fill="none" stroke="#e5e7eb" stroke-width="8" stroke-linecap="round" />

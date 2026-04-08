@@ -86,6 +86,7 @@ pub struct GoAmlSubmission {
 }
 
 impl GoAmlSubmission {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         investigation_id: Uuid,
         suspicion_reason: String,

@@ -26,25 +26,25 @@
 
 <div class="space-y-6">
   <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-bold text-gray-900">Mes comptes</h1>
+    <h1 class="text-2xl font-bold text-gray-900" data-testid="accounts-heading">Mes comptes</h1>
   </div>
 
   {#if error}
-    <div role="alert" aria-live="polite" class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+    <div role="alert" aria-live="polite" class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" data-testid="accounts-error">
       {error}
     </div>
   {/if}
 
   {#if loading}
-    <div class="text-center text-sm text-gray-500" role="status">
+    <div class="text-center text-sm text-gray-500" role="status" data-testid="accounts-loading">
       Chargement des comptes...
     </div>
   {:else if accounts.length === 0}
-    <div class="rounded-md border border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-500">
+    <div class="rounded-md border border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-500" data-testid="accounts-empty">
       Aucun compte trouve
     </div>
   {:else}
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list" aria-label="Liste des comptes">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list" aria-label="Liste des comptes" data-testid="accounts-grid">
       {#each accounts as account}
         <div role="listitem">
           <AccountCard

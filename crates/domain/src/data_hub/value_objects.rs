@@ -75,6 +75,7 @@ impl DataEntityType {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s {
             "customer" => Ok(Self::Customer),
@@ -227,6 +228,7 @@ impl TransformationType {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s {
             "direct" => Ok(Self::Direct),
@@ -304,6 +306,7 @@ impl ReconciliationStatus {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s {
             "pending" => Ok(Self::Pending),
@@ -418,6 +421,7 @@ impl DataClassification {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s {
             "public" => Ok(Self::Public),
@@ -456,6 +460,7 @@ impl DataEntityStatus {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s {
             "active" => Ok(Self::Active),

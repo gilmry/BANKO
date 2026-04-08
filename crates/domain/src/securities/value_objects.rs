@@ -152,6 +152,7 @@ pub enum SecuritiesAccountType {
 }
 
 impl SecuritiesAccountType {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "individual" => Ok(SecuritiesAccountType::Individual),
@@ -190,6 +191,7 @@ pub enum SecuritiesAccountStatus {
 }
 
 impl SecuritiesAccountStatus {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "active" => Ok(SecuritiesAccountStatus::Active),
@@ -228,6 +230,7 @@ pub enum SecurityType {
 }
 
 impl SecurityType {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "equity" => Ok(SecurityType::Equity),
@@ -267,6 +270,7 @@ pub enum OrderType {
 }
 
 impl OrderType {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "buy" => Ok(OrderType::Buy),
@@ -301,6 +305,7 @@ pub enum PriceType {
 }
 
 impl PriceType {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "market" => Ok(PriceType::Market),
@@ -339,6 +344,7 @@ pub enum OrderStatus {
 }
 
 impl OrderStatus {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "pending" => Ok(OrderStatus::Pending),
@@ -377,6 +383,7 @@ pub enum SettlementType {
 }
 
 impl SettlementType {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "dvp" => Ok(SettlementType::DVP),
@@ -410,6 +417,7 @@ pub enum SettlementStatus {
 }
 
 impl SettlementStatus {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "pending" => Ok(SettlementStatus::Pending),
@@ -451,6 +459,7 @@ pub enum CorporateActionType {
 }
 
 impl CorporateActionType {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "dividend" => Ok(CorporateActionType::Dividend),
@@ -493,6 +502,7 @@ pub enum CorporateActionStatus {
 }
 
 impl CorporateActionStatus {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "announced" => Ok(CorporateActionStatus::Announced),

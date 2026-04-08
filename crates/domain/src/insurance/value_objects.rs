@@ -55,6 +55,7 @@ pub enum PolicyType {
 }
 
 impl PolicyType {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "life" => Ok(PolicyType::Life),
@@ -97,6 +98,7 @@ pub enum PremiumFrequency {
 }
 
 impl PremiumFrequency {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "monthly" => Ok(PremiumFrequency::Monthly),
@@ -136,6 +138,7 @@ pub enum PolicyStatus {
 }
 
 impl PolicyStatus {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "proposal" => Ok(PolicyStatus::Proposal),
@@ -217,6 +220,7 @@ pub enum ClaimStatus {
 }
 
 impl ClaimStatus {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "filed" => Ok(ClaimStatus::Filed),
@@ -296,6 +300,7 @@ pub enum LinkedProductType {
 }
 
 impl LinkedProductType {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "mortgage" => Ok(LinkedProductType::Mortgage),
@@ -372,6 +377,7 @@ pub enum CommissionStatus {
 }
 
 impl CommissionStatus {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "pending" => Ok(CommissionStatus::Pending),

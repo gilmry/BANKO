@@ -33,6 +33,7 @@
     onclick={toggleDropdown}
     aria-expanded={isOpen}
     aria-haspopup="true"
+    data-testid="language-switcher-btn"
   >
     <span>{locales[currentLang].name}</span>
     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -44,6 +45,7 @@
     <div
       class="absolute right-0 z-50 mt-1 w-40 origin-top-right rounded-md border border-gray-200 bg-white shadow-lg ring-1 ring-black/5 focus:outline-none"
       role="menu"
+      data-testid="language-switcher-menu"
     >
       <div class="py-1">
         {#each Object.entries(locales) as [code, meta]}
@@ -52,6 +54,7 @@
             class="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 {code === currentLang ? 'bg-blue-50 font-semibold text-blue-700' : 'text-gray-700'}"
             role="menuitem"
             onclick={() => selectLocale(code as Locale)}
+            data-testid="language-switcher-option-{code}"
           >
             <span>{meta.name}</span>
             {#if meta.dir === 'rtl'}

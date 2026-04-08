@@ -50,6 +50,7 @@ impl DataEntity {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: DataEntityId,
         entity_type: DataEntityType,
@@ -183,6 +184,7 @@ impl DataQualityRule {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: DataQualityRuleId,
         entity_type: DataEntityType,
@@ -278,6 +280,7 @@ impl DataLineage {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: DataLineageId,
         source_entity_id: DataEntityId,
@@ -369,6 +372,7 @@ impl DataReconciliation {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: DataReconciliationId,
         entity_type: DataEntityType,
@@ -500,6 +504,7 @@ impl MasterDataRecord {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: MasterDataRecordId,
         entity_type: DataEntityType,
@@ -637,6 +642,7 @@ impl DataGovernancePolicy {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: DataGovernancePolicyId,
         name: String,

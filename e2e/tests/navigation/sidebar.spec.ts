@@ -1,4 +1,4 @@
-import { test, expect } from '../../fixtures/banko.fixture';
+import { testHuman as test, expect } from '../../fixtures/banko.fixture';
 
 /**
  * PARCOURS 1: Navigation Sidebar
@@ -66,7 +66,8 @@ test.describe('Sidebar Navigation — Parcours complet', () => {
 
   test('Breadcrumb affiche le titre de la page courante', async ({ page }) => {
     await page.goto('/dashboard');
-    const breadcrumb = page.locator('header nav, header').getByText('Tableau de bord');
+    const breadcrumb = page.locator('[data-testid="header-breadcrumb-current"]');
     await expect(breadcrumb).toBeVisible();
+    await expect(breadcrumb).toHaveText('Tableau de bord');
   });
 });

@@ -4,5 +4,7 @@ import AccountListPage from "../../components/account/AccountListPage.svelte";
 ---
 
 <DashboardLayout title="Mes comptes">
-  <AccountListPage client:load />
+  <div data-testid="page-accounts">
+    <AccountListPage client:load />
+  </div>
 </DashboardLayout>

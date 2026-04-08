@@ -24,8 +24,8 @@ totp-lite = "2"
 base32 = "0.5"
 rand = "0.8"
 rust_decimal = "1"
-actix-web-prom = "0.8"
-prometheus = "0.13"
+actix-web-prom = "0.10"
+prometheus = "0.14"
 
 [dev-dependencies]
 cucumber = "0.21"

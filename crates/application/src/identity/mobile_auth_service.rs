@@ -20,7 +20,7 @@ impl MobilePlatform {
         }
     }
 
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn parse(s: &str) -> Option<Self> {
         match s {
             "Ios" => Some(MobilePlatform::Ios),
             "Android" => Some(MobilePlatform::Android),

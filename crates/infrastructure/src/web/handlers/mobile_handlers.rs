@@ -115,7 +115,7 @@ pub async fn register_device_handler(
         }),
     };
 
-    let platform = match MobilePlatform::from_str(&body.platform) {
+    let platform = match MobilePlatform::parse(&body.platform) {
         Some(p) => p,
         None => return HttpResponse::BadRequest().json(ErrorResponse {
             error: "Invalid platform. Must be 'Ios' or 'Android'".to_string(),

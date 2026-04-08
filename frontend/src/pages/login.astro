@@ -4,7 +4,7 @@ import LoginForm from "../components/auth/LoginForm.svelte";
 ---
 
 <Base title="Connexion">
-  <div class="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+  <div data-testid="page-login" class="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
     <LoginForm client:load />
   </div>
 </Base>

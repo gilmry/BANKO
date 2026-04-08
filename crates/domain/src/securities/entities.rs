@@ -64,6 +64,7 @@ impl SecurityHolding {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         account_id: SecuritiesAccountId,
         isin_code: IsinCode,
@@ -213,6 +214,7 @@ impl TradeOrder {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         order_id: TradeOrderId,
         account_id: SecuritiesAccountId,
@@ -412,6 +414,7 @@ impl Settlement {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         settlement_id: SettlementId,
         trade_order_id: TradeOrderId,
@@ -564,6 +567,7 @@ impl CorporateAction {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         action_id: CorporateActionId,
         security_isin: IsinCode,
@@ -798,6 +802,7 @@ impl SecuritiesAccount {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: SecuritiesAccountId,
         customer_id: CustomerId,

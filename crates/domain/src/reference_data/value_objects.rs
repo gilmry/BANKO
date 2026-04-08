@@ -180,6 +180,7 @@ pub enum FeeType {
 }
 
 impl FeeType {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "accountmaintenance" | "account_maintenance" => Ok(FeeType::AccountMaintenance),
@@ -232,6 +233,7 @@ pub enum RegulatoryClassification {
 }
 
 impl RegulatoryClassification {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "standardrisk" | "standard_risk" => Ok(RegulatoryClassification::StandardRisk),
@@ -279,6 +281,7 @@ pub enum HolidayType {
 }
 
 impl HolidayType {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "national" => Ok(HolidayType::National),
@@ -317,6 +320,7 @@ pub enum SystemParameterType {
 }
 
 impl SystemParameterType {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "integer" => Ok(SystemParameterType::Integer),

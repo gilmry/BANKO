@@ -69,7 +69,7 @@
   });
 </script>
 
-<section aria-labelledby="movements-heading" class="rounded-lg border border-gray-200 bg-white">
+<section aria-labelledby="movements-heading" class="rounded-lg border border-gray-200 bg-white" data-testid="movements-section">
   <h2 id="movements-heading" class="border-b border-gray-200 px-6 py-4 text-lg font-semibold text-gray-900">
     Mouvements
   </h2>
@@ -90,7 +90,7 @@
     </div>
   {:else}
     <div class="overflow-x-auto">
-      <table class="w-full text-sm">
+      <table class="w-full text-sm" data-testid="movements-table">
         <caption class="sr-only">Mouvements du compte - {total} entrees</caption>
         <thead class="bg-gray-50">
           <tr>
@@ -158,6 +158,7 @@
             disabled={page <= 1}
             class="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
             aria-label="Page precedente"
+            data-testid="movements-pagination-prev"
           >
             Precedent
           </button>
@@ -167,6 +168,7 @@
             disabled={page >= totalPages}
             class="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
             aria-label="Page suivante"
+            data-testid="movements-pagination-next"
           >
             Suivant
           </button>

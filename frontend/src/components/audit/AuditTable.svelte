@@ -26,18 +26,18 @@
   }
 </script>
 
-<div class="rounded-lg border border-gray-200 bg-white">
+<div class="rounded-lg border border-gray-200 bg-white" data-testid="audit-table-container">
   {#if loading}
-    <div class="p-6 text-center text-sm text-gray-500" role="status">
+    <div class="p-6 text-center text-sm text-gray-500" role="status" data-testid="audit-table-loading">
       Chargement...
     </div>
   {:else if entries.length === 0}
-    <div class="p-6 text-center text-sm text-gray-500">
+    <div class="p-6 text-center text-sm text-gray-500" data-testid="audit-table-empty">
       Aucune entree d'audit trouvee
     </div>
   {:else}
     <div class="overflow-x-auto">
-      <table class="w-full text-sm">
+      <table class="w-full text-sm" data-testid="audit-table">
         <caption class="sr-only">Journal d'audit - {total} entrees</caption>
         <thead class="bg-gray-50">
           <tr>
@@ -121,6 +121,7 @@
             disabled={page <= 1}
             class="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
             aria-label="Page precedente"
+            data-testid="audit-pagination-prev"
           >
             Precedent
           </button>
@@ -130,6 +131,7 @@
             disabled={page >= totalPages}
             class="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
             aria-label="Page suivante"
+            data-testid="audit-pagination-next"
           >
             Suivant
           </button>

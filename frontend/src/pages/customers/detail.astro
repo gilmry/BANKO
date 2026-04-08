@@ -10,5 +10,7 @@ import CustomerDetailPage from '../../components/customer/CustomerDetailPage.sve
     { label: 'Détail' },
   ]}
 >
-  <CustomerDetailPage client:load />
+  <div data-testid="page-customers-detail">
+    <CustomerDetailPage client:load />
+  </div>
 </DashboardLayout>

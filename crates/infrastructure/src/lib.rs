@@ -1,3 +1,6 @@
+// Infrastructure handlers may need many parameters for dependency injection.
+#![allow(clippy::too_many_arguments)]
+
 pub mod account;
 pub mod accounting;
 pub mod aml;

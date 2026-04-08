@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-
-  const API_BASE = '/api/v1/bct';
+  import { api } from '../lib/api/client';
 
   // --- State ---
   let stats: any = null;
@@ -19,29 +18,20 @@
   let filterDateTo = '';
   let currentPage = 1;
 
-  async function apiFetch(url: string) {
-    const token = localStorage.getItem('banko_token') || '';
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
-    return res.json();
-  }
-
   async function loadDashboard() {
     loading = true;
     error = '';
     try {
       const [statsData, trendData, suspiciousData] = await Promise.all([
-        apiFetch(`${API_BASE}/dashboard/stats`),
-        apiFetch(`${API_BASE}/dashboard/daily-trend?days=30`),
-        apiFetch(`${API_BASE}/dashboard/suspicious`),
+        api.get<any>('/bct/dashboard/stats'),
+        api.get<any>('/bct/dashboard/daily-trend', { days: 30 }),
+        api.get<any>('/bct/dashboard/suspicious'),
       ]);
       stats = statsData;
       dailyTrend = trendData;
       suspicious = suspiciousData;
     } catch (e: any) {
-      error = e.message || 'Failed to load dashboard';
+      error = e.message || 'Erreur de chargement du tableau de bord';
     }
     loading = false;
   }
@@ -50,15 +40,16 @@
     loading = true;
     error = '';
     try {
-      const params = new URLSearchParams();
-      params.set('page', String(currentPage));
-      params.set('limit', '20');
-      if (filterAction) params.set('action', filterAction);
-      if (filterResourceType) params.set('resource_type', filterResourceType);
-      if (filterDateFrom) params.set('date_from', filterDateFrom);
-      if (filterDateTo) params.set('date_to', filterDateTo);
+      const params: Record<string, unknown> = {
+        page: currentPage,
+        limit: 20,
+      };
+      if (filterAction) params.action = filterAction;
+      if (filterResourceType) params.resource_type = filterResourceType;
+      if (filterDateFrom) params.date_from = filterDateFrom;
+      if (filterDateTo) params.date_to = filterDateTo;
 
-      const data = await apiFetch(`${API_BASE}/audit/entries?${params}`);
+      const data = await api.get<any>('/bct/audit/entries', params);
       entries = data.data || [];
       pagination = {
         total: data.total,
@@ -67,21 +58,20 @@
         limit: data.limit,
       };
     } catch (e: any) {
-      error = e.message || 'Failed to load entries';
+      error = e.message || 'Erreur de chargement des entrees';
     }
     loading = false;
   }
 
   async function exportData(format: string) {
     try {
-      const params = new URLSearchParams();
-      params.set('format', format);
-      if (filterAction) params.set('action', filterAction);
-      if (filterResourceType) params.set('resource_type', filterResourceType);
-      if (filterDateFrom) params.set('date_from', filterDateFrom);
-      if (filterDateTo) params.set('date_to', filterDateTo);
+      const params: Record<string, unknown> = { format };
+      if (filterAction) params.action = filterAction;
+      if (filterResourceType) params.resource_type = filterResourceType;
+      if (filterDateFrom) params.date_from = filterDateFrom;
+      if (filterDateTo) params.date_to = filterDateTo;
 
-      const data = await apiFetch(`${API_BASE}/audit/entries/export?${params}`);
+      const data = await api.get<{ data: string }>('/bct/audit/entries/export', params);
 
       const blob = new Blob(
         [data.data],
@@ -94,7 +84,7 @@
       a.click();
       URL.revokeObjectURL(url);
     } catch (e: any) {
-      error = e.message || 'Export failed';
+      error = e.message || "Erreur lors de l'export";
     }
   }
 
@@ -115,15 +105,15 @@
 </script>
 
 <div class="space-y-8">
-  <h1 class="text-2xl font-bold text-gray-900">BCT Audit Dashboard</h1>
+  <h1 class="text-2xl font-bold text-gray-900" data-testid="bct-audit-heading">BCT Audit Dashboard</h1>
 
   {#if error}
-    <div class="rounded-md bg-red-50 p-4 text-red-700">{error}</div>
+    <div class="rounded-md bg-red-50 p-4 text-red-700" data-testid="bct-audit-error">{error}</div>
   {/if}
 
   <!-- Stats Cards -->
   {#if stats}
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3" data-testid="bct-audit-stats">
       <div class="rounded-lg bg-white p-6 shadow">
         <p class="text-sm text-gray-500">Total Entries</p>
         <p class="text-3xl font-bold text-gray-900">{stats.total_entries.toLocaleString()}</p>
@@ -170,7 +160,7 @@
 
   <!-- Daily Trend -->
   {#if dailyTrend.length > 0}
-    <div class="rounded-lg bg-white p-6 shadow">
+    <div class="rounded-lg bg-white p-6 shadow" data-testid="bct-audit-trend">
       <h2 class="mb-4 text-lg font-semibold">Daily Trend (30 days)</h2>
       <div class="flex items-end gap-1" style="height:120px;">
         {#each dailyTrend as day}
@@ -187,7 +177,7 @@
 
   <!-- Suspicious Activities -->
   {#if suspicious.length > 0}
-    <div class="rounded-lg border border-red-200 bg-red-50 p-6">
+    <div class="rounded-lg border border-red-200 bg-red-50 p-6" data-testid="bct-audit-suspicious">
       <h2 class="mb-4 text-lg font-semibold text-red-800">Suspicious Activities</h2>
       <div class="overflow-x-auto">
         <table class="w-full text-left text-sm">
@@ -215,12 +205,12 @@
   {/if}
 
   <!-- Audit Entries Table with Filters -->
-  <div class="rounded-lg bg-white p-6 shadow">
+  <div class="rounded-lg bg-white p-6 shadow" data-testid="bct-audit-entries">
     <h2 class="mb-4 text-lg font-semibold">Audit Entries</h2>
 
     <!-- Filters -->
     <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-5">
-      <select bind:value={filterAction} class="rounded border px-3 py-2 text-sm">
+      <select bind:value={filterAction} class="rounded border px-3 py-2 text-sm" data-testid="bct-audit-filter-action">
         <option value="">All Actions</option>
         <option value="Create">Create</option>
         <option value="Read">Read</option>
@@ -233,7 +223,7 @@
         <option value="Submit">Submit</option>
         <option value="Export">Export</option>
       </select>
-      <select bind:value={filterResourceType} class="rounded border px-3 py-2 text-sm">
+      <select bind:value={filterResourceType} class="rounded border px-3 py-2 text-sm" data-testid="bct-audit-filter-resource">
         <option value="">All Resources</option>
         <option value="Customer">Customer</option>
         <option value="Account">Account</option>
@@ -243,19 +233,19 @@
         <option value="User">User</option>
         <option value="System">System</option>
       </select>
-      <input type="date" bind:value={filterDateFrom} class="rounded border px-3 py-2 text-sm" placeholder="From" />
-      <input type="date" bind:value={filterDateTo} class="rounded border px-3 py-2 text-sm" placeholder="To" />
-      <button on:click={applyFilters} class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+      <input type="date" bind:value={filterDateFrom} class="rounded border px-3 py-2 text-sm" placeholder="From" data-testid="bct-audit-filter-date-from" />
+      <input type="date" bind:value={filterDateTo} class="rounded border px-3 py-2 text-sm" placeholder="To" data-testid="bct-audit-filter-date-to" />
+      <button onclick={applyFilters} class="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700" data-testid="bct-audit-filter-btn">
         Filter
       </button>
     </div>
 
     <!-- Export Buttons -->
     <div class="mb-4 flex gap-2">
-      <button on:click={() => exportData('csv')} class="rounded border px-3 py-1 text-sm hover:bg-gray-50">
+      <button onclick={() => exportData('csv')} class="rounded border px-3 py-1 text-sm hover:bg-gray-50" data-testid="bct-audit-export-csv">
         Export CSV
       </button>
-      <button on:click={() => exportData('json')} class="rounded border px-3 py-1 text-sm hover:bg-gray-50">
+      <button onclick={() => exportData('json')} class="rounded border px-3 py-1 text-sm hover:bg-gray-50" data-testid="bct-audit-export-json">
         Export JSON
       </button>
     </div>
@@ -265,7 +255,7 @@
       <p class="text-gray-500">Loading...</p>
     {:else}
       <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm">
+        <table class="w-full text-left text-sm" data-testid="bct-audit-table">
           <thead>
             <tr class="border-b text-gray-500">
               <th class="pb-2">Timestamp</th>
@@ -299,16 +289,18 @@
           </span>
           <div class="flex gap-2">
             <button
-              on:click={() => goToPage(pagination.page - 1)}
+              onclick={() => goToPage(pagination.page - 1)}
               disabled={pagination.page <= 1}
               class="rounded border px-3 py-1 text-sm disabled:opacity-50"
+              data-testid="bct-audit-pagination-prev"
             >
               Previous
             </button>
             <button
-              on:click={() => goToPage(pagination.page + 1)}
+              onclick={() => goToPage(pagination.page + 1)}
               disabled={pagination.page >= pagination.total_pages}
               class="rounded border px-3 py-1 text-sm disabled:opacity-50"
+              data-testid="bct-audit-pagination-next"
             >
               Next
             </button>

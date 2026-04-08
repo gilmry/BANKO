@@ -53,6 +53,7 @@ pub enum LCType {
 }
 
 impl LCType {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "import" => Ok(LCType::Import),
@@ -92,6 +93,7 @@ pub enum LCStatus {
 }
 
 impl LCStatus {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "draft" => Ok(LCStatus::Draft),
@@ -173,6 +175,7 @@ pub enum GuaranteeType {
 }
 
 impl GuaranteeType {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "performance" => Ok(GuaranteeType::Performance),
@@ -214,6 +217,7 @@ pub enum GuaranteeStatus {
 }
 
 impl GuaranteeStatus {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "active" => Ok(GuaranteeStatus::Active),
@@ -288,6 +292,7 @@ pub enum CollectionType {
 }
 
 impl CollectionType {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "documents_against_payment" => Ok(CollectionType::DocumentsAgainstPayment),
@@ -324,6 +329,7 @@ pub enum CollectionStatus {
 }
 
 impl CollectionStatus {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "received" => Ok(CollectionStatus::Received),
@@ -401,6 +407,7 @@ pub enum LimitType {
 }
 
 impl LimitType {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "lc" => Ok(LimitType::LC),

@@ -44,8 +44,9 @@ export default defineConfig({
 
   /* Global settings */
   use: {
-    /* Base URL — Traefik on port 80 */
+    /* Base URL — Traefik on port 80 (Docker: traefik:80 with Host header) */
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost',
+
 
     /* TRACE: on pour CHAQUE test (mode debug/trace complet) */
     trace: 'on',
@@ -53,8 +54,8 @@ export default defineConfig({
     /* Screenshot on failure */
     screenshot: 'only-on-failure',
 
-    /* Video on first retry */
-    video: 'on-first-retry',
+    /* Video: enregistrement systématique */
+    video: 'on',
 
     /* Locale français */
     locale: 'fr-FR',
@@ -78,8 +79,8 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        // Utilise Chrome système si disponible
-        channel: 'chrome',
+        // Utilise Chrome système si disponible (pas en CI/Docker)
+        ...(process.env.CI ? {} : { channel: 'chrome' }),
       },
     },
     {

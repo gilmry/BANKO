@@ -1,4 +1,4 @@
-import { test, expect } from '../../fixtures/banko.fixture';
+import { testHuman as test, expect } from '../../fixtures/banko.fixture';
 
 /**
  * PARCOURS 2: Authentification

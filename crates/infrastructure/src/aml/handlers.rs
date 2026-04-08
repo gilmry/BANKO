@@ -576,3 +576,38 @@ pub async fn list_freezes_handler(
         }),
     }
 }
+
+// --- Stats & List Handlers (mock) ---
+
+/// GET /api/v1/aml/alerts/stats
+pub async fn get_alert_stats_handler(_auth: AuthenticatedUser) -> HttpResponse {
+    HttpResponse::Ok().json(serde_json::json!({
+        "total_alerts": 156,
+        "open_alerts": 23,
+        "investigating_alerts": 12,
+        "resolved_alerts": 98,
+        "high_risk_count": 15,
+        "medium_risk_count": 45,
+        "low_risk_count": 96
+    }))
+}
+
+/// GET /api/v1/aml/investigations
+pub async fn list_investigations_handler(
+    _auth: AuthenticatedUser,
+    _query: web::Query<ListInvestigationsQuery>,
+) -> HttpResponse {
+    HttpResponse::Ok().json(serde_json::json!({
+        "data": [
+            {
+                "id": "inv-001",
+                "alert_id": "alt-001",
+                "status": "in_progress",
+                "started_at": "2026-03-15T10:00:00Z",
+                "completed_at": null,
+                "assigned_to": "agent-kyc-001"
+            }
+        ],
+        "total": 1
+    }))
+}

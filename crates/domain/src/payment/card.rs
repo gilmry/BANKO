@@ -574,6 +574,7 @@ impl CardTransaction {
     }
 
     /// Reconstruct from persistence
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: Uuid,
         card_id: Uuid,

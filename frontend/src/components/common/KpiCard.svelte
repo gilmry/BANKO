@@ -27,15 +27,15 @@
     : '';
 </script>
 
-<article class="rounded-lg border p-6 shadow-sm hover:shadow-md transition-shadow {variantConfig[variant]}">
+<article class="rounded-lg border p-6 shadow-sm hover:shadow-md transition-shadow {variantConfig[variant]}" data-testid="kpi-card-{title.toLowerCase().replace(/\s+/g, '-')}">
   <div class="flex items-start justify-between">
     <div class="flex-1">
-      <p class="text-sm font-medium text-gray-600">{title}</p>
-      <p class="mt-2 text-3xl font-bold text-gray-900">
+      <p class="text-sm font-medium text-gray-600" data-testid="kpi-card-title">{title}</p>
+      <p class="mt-2 text-3xl font-bold text-gray-900" data-testid="kpi-card-value">
         {value}
       </p>
       {#if trend}
-        <p class="mt-2 text-sm {trendColor}">
+        <p class="mt-2 text-sm {trendColor}" data-testid="kpi-card-trend">
           <span class="font-semibold">
             {trend.isPositive ? '+' : ''}{trend.value}%
           </span>

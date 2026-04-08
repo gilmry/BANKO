@@ -4,5 +4,7 @@ import AuditLogPage from "../../components/audit/AuditLogPage.svelte";
 ---
 
 <DashboardLayout title="Journal d'audit">
-  <AuditLogPage client:load />
+  <div data-testid="page-audit-log">
+    <AuditLogPage client:load />
+  </div>
 </DashboardLayout>

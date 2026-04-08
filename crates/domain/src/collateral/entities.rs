@@ -178,6 +178,7 @@ pub struct Collateral {
 
 impl Collateral {
     /// Create a new collateral aggregate. Validates all business rules.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         collateral_type: CollateralType,
         description: String,
@@ -208,7 +209,7 @@ impl Collateral {
         }
 
         // Validate haircut percentage
-        if haircut_pct < 0.0 || haircut_pct > 1.0 {
+        if !(0.0..=1.0).contains(&haircut_pct) {
             return Err(DomainError::ValidationError(
                 "Haircut percentage must be between 0 and 1".to_string(),
             ));
@@ -252,6 +253,7 @@ impl Collateral {
     }
 
     /// Reconstitute from persistence (no validation).
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: CollateralId,
         collateral_type: CollateralType,
@@ -391,7 +393,7 @@ impl Collateral {
             ));
         }
 
-        if haircut_pct < 0.0 || haircut_pct > 1.0 {
+        if !(0.0..=1.0).contains(&haircut_pct) {
             return Err(DomainError::ValidationError(
                 "Haircut percentage must be between 0 and 1".to_string(),
             ));

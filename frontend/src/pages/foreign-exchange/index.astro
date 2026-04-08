@@ -4,7 +4,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
 <DashboardLayout title="Devises & Change">
   <!-- KPI Cards -->
-  <section class="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+  <section data-testid="page-fx" class="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
     <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
       <p class="text-sm font-medium text-gray-500">USD/TND</p>
       <p class="mt-2 text-3xl font-bold text-gray-900">3.1245</p>
@@ -28,9 +28,9 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   </section>
 
   <!-- Exchange Rate Table -->
-  <section class="rounded-lg border border-gray-200 bg-white shadow-sm mb-8">
+  <section data-testid="fx-rates-section" class="rounded-lg border border-gray-200 bg-white shadow-sm mb-8">
     <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-      <h2 class="text-lg font-semibold text-gray-900">Taux de change BCT</h2>
+      <h2 data-testid="fx-rates-heading" class="text-lg font-semibold text-gray-900">Taux de change BCT</h2>
       <span class="text-sm text-gray-500">Dernière mise à jour: 07/04/2026 09:30</span>
     </div>
     <div class="overflow-x-auto">
@@ -93,10 +93,10 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   </section>
 
   <!-- Recent FX Operations -->
-  <section class="rounded-lg border border-gray-200 bg-white shadow-sm">
+  <section data-testid="fx-operations-section" class="rounded-lg border border-gray-200 bg-white shadow-sm">
     <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-      <h2 class="text-lg font-semibold text-gray-900">Opérations de change récentes</h2>
-      <button class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
+      <h2 data-testid="fx-operations-heading" class="text-lg font-semibold text-gray-900">Opérations de change récentes</h2>
+      <button data-testid="fx-new-operation-button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
         Nouvelle opération
       </button>
     </div>

@@ -15,7 +15,7 @@
   ];
 </script>
 
-<nav aria-label="Etapes de l'enregistrement KYC" class="mb-8">
+<nav aria-label="Etapes de l'enregistrement KYC" class="mb-8" data-testid="kyc-stepper">
   <ol class="flex items-center" role="list">
     {#each Array(totalSteps) as _, i}
       {@const stepNum = i + 1}
@@ -24,6 +24,7 @@
       <li
         class="flex items-center {i < totalSteps - 1 ? 'flex-1' : ''}"
         aria-current={isCurrent ? 'step' : undefined}
+        data-testid="kyc-step-{stepNum}"
       >
         <div class="flex flex-col items-center">
           <div

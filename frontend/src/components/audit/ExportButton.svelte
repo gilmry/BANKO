@@ -38,6 +38,7 @@
     disabled={exporting}
     class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
     aria-label="Exporter au format CSV"
+    data-testid="audit-export-csv"
   >
     Exporter CSV
   </button>
@@ -47,6 +48,7 @@
     disabled={exporting}
     class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
     aria-label="Exporter au format JSON"
+    data-testid="audit-export-json"
   >
     Exporter JSON
   </button>

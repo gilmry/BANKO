@@ -52,6 +52,7 @@ pub enum SweepType {
 }
 
 impl SweepType {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "zero_balance" => Ok(SweepType::ZeroBalance),
@@ -88,6 +89,7 @@ pub enum SweepFrequency {
 }
 
 impl SweepFrequency {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "daily" => Ok(SweepFrequency::Daily),
@@ -160,6 +162,7 @@ pub enum PoolType {
 }
 
 impl PoolType {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "notional" => Ok(PoolType::Notional),
@@ -231,6 +234,7 @@ pub enum ConfidenceLevel {
 }
 
 impl ConfidenceLevel {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "low" => Ok(ConfidenceLevel::Low),
@@ -305,6 +309,7 @@ pub enum InstrumentType {
 }
 
 impl InstrumentType {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "deposits" => Ok(InstrumentType::Deposits),

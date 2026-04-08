@@ -104,6 +104,7 @@ impl InternalAccount {
     }
 
     /// Reconstitute from persistence.
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: AccountId,
         internal_type: InternalAccountType,

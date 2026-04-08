@@ -61,19 +61,19 @@
 </script>
 
 <div class="space-y-8">
-  <h1 class="text-2xl font-bold text-gray-900">Tableau de bord Crédit</h1>
+  <h1 class="text-2xl font-bold text-gray-900" data-testid="credit-heading">Tableau de bord Crédit</h1>
 
   {#if error}
-    <div class="rounded-md bg-red-50 p-4 text-red-700">{error}</div>
+    <div class="rounded-md bg-red-50 p-4 text-red-700" data-testid="credit-error">{error}</div>
   {/if}
 
   {#if loading}
-    <div class="flex items-center justify-center py-12">
+    <div class="flex items-center justify-center py-12" data-testid="credit-loading">
       <p class="text-gray-500">Chargement des données...</p>
     </div>
   {:else if classification}
     <!-- Summary Cards -->
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3" data-testid="credit-stats-cards">
       <div class="rounded-lg bg-white p-6 shadow">
         <p class="text-sm text-gray-500">Total de prêts</p>
         <p class="text-3xl font-bold text-gray-900">{classification.total}</p>
@@ -97,7 +97,7 @@
 
     <!-- Status Breakdown -->
     {#if Object.keys(classification.by_status).length > 0}
-      <div class="rounded-lg bg-white p-6 shadow">
+      <div class="rounded-lg bg-white p-6 shadow" data-testid="credit-status-breakdown">
         <h2 class="mb-4 text-lg font-semibold">Répartition par statut</h2>
         <div class="space-y-3">
           {#each Object.entries(classification.by_status) as [status, count]}
@@ -118,7 +118,7 @@
 
     <!-- Asset Class Distribution (Colored Bars) -->
     {#if Object.keys(classification.by_asset_class).length > 0}
-      <div class="rounded-lg bg-white p-6 shadow">
+      <div class="rounded-lg bg-white p-6 shadow" data-testid="credit-asset-distribution">
         <h2 class="mb-4 text-lg font-semibold">Distribution par classe d'actif</h2>
         <div class="space-y-3">
           {#each Array.from({ length: 5 }, (_, i) => i) as classId}
@@ -141,7 +141,7 @@
 
     <!-- Recent Loans Table -->
     {#if recentLoans.length > 0}
-      <div class="rounded-lg bg-white p-6 shadow">
+      <div class="rounded-lg bg-white p-6 shadow" data-testid="credit-recent-table">
         <h2 class="mb-4 text-lg font-semibold">Prêts récents</h2>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-sm">

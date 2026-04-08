@@ -347,6 +347,7 @@ impl JournalEntry {
     }
 
     /// Reconstruct from persistence (bypasses validation)
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         entry_id: EntryId,
         journal_code: JournalCode,
@@ -595,6 +596,7 @@ impl ChartOfAccounts {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         account_code: AccountCode,
         label: String,
@@ -742,6 +744,7 @@ impl PeriodClosing {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         period_id: Uuid,
         period: String,

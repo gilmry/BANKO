@@ -18,7 +18,7 @@ export interface LoanClassification {
 }
 
 export const creditApi = {
-  listLoans: (params?: Record<string, any>) => api.get<{ data: Loan[]; total: number }>('/credit/loans', params),
-  getLoan: (id: string) => api.get<Loan>(`/credit/loans/${id}`),
-  getClassification: () => api.get<LoanClassification>('/credit/loans/classification/summary'),
+  listLoans: (params?: Record<string, any>) => api.get<{ data: Loan[]; total: number }>('/loans', params),
+  getLoan: (id: string) => api.get<Loan>(`/loans/${id}`),
+  getClassification: () => api.get<LoanClassification>('/loans/classification/summary'),
 };

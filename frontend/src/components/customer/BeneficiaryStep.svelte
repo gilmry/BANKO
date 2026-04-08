@@ -49,6 +49,7 @@
       onclick={() => (showModal = true)}
       class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
       aria-label="Ajouter un beneficiaire effectif"
+      data-testid="kyc-beneficiary-add-btn"
     >
       + Ajouter
     </button>
@@ -134,6 +135,7 @@
             required
             aria-required="true"
             bind:value={newName}
+            data-testid="kyc-beneficiary-name"
             class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
           />
         </div>
@@ -145,6 +147,7 @@
             id="ben-relationship"
             type="text"
             bind:value={newRelationship}
+            data-testid="kyc-beneficiary-relationship"
             class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
           />
         </div>
@@ -160,6 +163,7 @@
             required
             aria-required="true"
             bind:value={newOwnership}
+            data-testid="kyc-beneficiary-ownership"
             class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
           />
         </div>

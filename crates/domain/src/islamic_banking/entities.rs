@@ -47,7 +47,7 @@ impl MurabahaContract {
         }
 
         // Validate profit margin: 0-100%
-        if profit_margin < 0.0 || profit_margin > 1.0 {
+        if !(0.0..=1.0).contains(&profit_margin) {
             return Err(IslamicBankingError::InvalidMurabahaMargin(
                 format!("profit_margin must be 0-1.0, got {}", profit_margin),
             ));
@@ -85,6 +85,7 @@ impl MurabahaContract {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: IslamicContractId,
         customer_id: CustomerId,
@@ -217,6 +218,7 @@ pub struct IjaraContract {
 }
 
 impl IjaraContract {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         customer_id: CustomerId,
         asset_id: String,
@@ -263,6 +265,7 @@ impl IjaraContract {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: IslamicContractId,
         customer_id: CustomerId,
@@ -404,20 +407,20 @@ impl MusharakaContract {
         }
 
         // Validate each share is between 0 and 100
-        if bank_share_pct < 0.0 || bank_share_pct > 100.0 {
+        if !(0.0..=100.0).contains(&bank_share_pct) {
             return Err(IslamicBankingError::InvalidSharePercentage(
                 format!("bank_share_pct: {}", bank_share_pct),
             ));
         }
 
-        if client_share_pct < 0.0 || client_share_pct > 100.0 {
+        if !(0.0..=100.0).contains(&client_share_pct) {
             return Err(IslamicBankingError::InvalidSharePercentage(
                 format!("client_share_pct: {}", client_share_pct),
             ));
         }
 
         // Validate profit sharing ratio
-        if profit_sharing_ratio < 0.0 || profit_sharing_ratio > 1.0 {
+        if !(0.0..=1.0).contains(&profit_sharing_ratio) {
             return Err(IslamicBankingError::InvalidProfitRatio);
         }
 
@@ -447,6 +450,7 @@ impl MusharakaContract {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: IslamicContractId,
         customer_id: CustomerId,
@@ -579,7 +583,7 @@ impl MudarabaContract {
             ));
         }
 
-        if profit_sharing_ratio < 0.0 || profit_sharing_ratio > 1.0 {
+        if !(0.0..=1.0).contains(&profit_sharing_ratio) {
             return Err(IslamicBankingError::InvalidMudarabaRatio);
         }
 
@@ -604,6 +608,7 @@ impl MudarabaContract {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: IslamicContractId,
         customer_id: CustomerId,
@@ -745,7 +750,7 @@ impl SukukIssuance {
             ));
         }
 
-        if coupon_rate < 0.0 || coupon_rate > 1.0 {
+        if !(0.0..=1.0).contains(&coupon_rate) {
             return Err(IslamicBankingError::InvalidSukukCoupon(
                 format!("coupon_rate must be 0-1.0, got {}", coupon_rate),
             ));
@@ -773,6 +778,7 @@ impl SukukIssuance {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: IslamicContractId,
         denomination: Money,
@@ -927,6 +933,7 @@ impl ZakatCalculation {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: IslamicContractId,
         customer_id: CustomerId,
@@ -1061,6 +1068,7 @@ impl ShariaBoardDecision {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: IslamicContractId,
         product_type: ProductType,

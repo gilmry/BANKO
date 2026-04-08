@@ -40,7 +40,7 @@
   }
 </script>
 
-<section class="mx-auto w-full max-w-md" aria-labelledby="2fa-heading">
+<section class="mx-auto w-full max-w-md" aria-labelledby="2fa-heading" data-testid="2fa-setup">
   <h2 id="2fa-heading" class="mb-6 text-2xl font-bold text-gray-900">
     <!-- TODO: use t('auth.twoFactor.title') -->
     Authentification a deux facteurs
@@ -65,6 +65,7 @@
       onclick={enableTwoFactor}
       disabled={loading}
       class="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
+      data-testid="2fa-enable-btn"
     >
       {loading ? 'Chargement...' : 'Activer la 2FA'}
     </button>
@@ -107,12 +108,14 @@
             bind:value={code}
             class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-center text-lg tracking-widest shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="000000"
+            data-testid="2fa-code-input"
           />
         </div>
         <button
           type="submit"
           disabled={code.length !== 6 || loading}
           class="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
+          data-testid="2fa-verify-btn"
         >
           <!-- TODO: use t('auth.twoFactor.verify') -->
           {loading ? 'Verification...' : 'Verifier'}

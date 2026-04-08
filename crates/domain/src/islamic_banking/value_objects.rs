@@ -57,6 +57,7 @@ impl fmt::Display for MurabahaStatus {
 }
 
 impl MurabahaStatus {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "proposed" => Ok(MurabahaStatus::Proposed),
@@ -105,6 +106,7 @@ impl fmt::Display for IjaraStatus {
 }
 
 impl IjaraStatus {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "proposed" => Ok(IjaraStatus::Proposed),
@@ -147,6 +149,7 @@ impl fmt::Display for MaintenanceResponsibility {
 }
 
 impl MaintenanceResponsibility {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "lessor" => Ok(MaintenanceResponsibility::Lessor),
@@ -189,6 +192,7 @@ impl fmt::Display for MusharakaStatus {
 }
 
 impl MusharakaStatus {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "proposed" => Ok(MusharakaStatus::Proposed),
@@ -237,6 +241,7 @@ impl fmt::Display for MudarabaStatus {
 }
 
 impl MudarabaStatus {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "proposed" => Ok(MudarabaStatus::Proposed),
@@ -285,6 +290,7 @@ impl fmt::Display for SukukStatus {
 }
 
 impl SukukStatus {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "proposed" => Ok(SukukStatus::Proposed),
@@ -331,6 +337,7 @@ impl fmt::Display for ZakatPaymentStatus {
 }
 
 impl ZakatPaymentStatus {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "pending" => Ok(ZakatPaymentStatus::Pending),
@@ -375,6 +382,7 @@ impl fmt::Display for ShariaRuling {
 }
 
 impl ShariaRuling {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "halal" => Ok(ShariaRuling::Halal),
@@ -425,6 +433,7 @@ impl fmt::Display for ProductType {
 }
 
 impl ProductType {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s.to_lowercase().as_str() {
             "murabaha" => Ok(ProductType::Murabaha),

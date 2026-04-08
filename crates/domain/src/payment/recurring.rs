@@ -31,6 +31,7 @@ impl Frequency {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s {
             "Daily" => Ok(Frequency::Daily),
@@ -79,6 +80,7 @@ impl StandingOrderStatus {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s {
             "Active" => Ok(StandingOrderStatus::Active),
@@ -114,6 +116,7 @@ impl MandateStatus {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s {
             "PendingSignature" => Ok(MandateStatus::PendingSignature),
@@ -147,6 +150,7 @@ impl DebitExecutionStatus {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Result<Self, DomainError> {
         match s {
             "Pending" => Ok(DebitExecutionStatus::Pending),
@@ -187,6 +191,7 @@ pub struct StandingOrder {
 
 impl StandingOrder {
     /// Create a new standing order with validation
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         account_id: Uuid,
         beneficiary_account: String,
@@ -257,6 +262,7 @@ impl StandingOrder {
     }
 
     /// Reconstruct from persistence (no validation)
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: Uuid,
         account_id: Uuid,
@@ -444,6 +450,7 @@ pub struct DirectDebitMandate {
 
 impl DirectDebitMandate {
     /// Create a new direct debit mandate with validation
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         debtor_account_id: Uuid,
         debtor_name: String,
@@ -501,6 +508,7 @@ impl DirectDebitMandate {
     }
 
     /// Reconstruct from persistence
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         id: Uuid,
         debtor_account_id: Uuid,

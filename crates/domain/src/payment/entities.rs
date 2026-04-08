@@ -251,6 +251,7 @@ pub struct PaymentOrder {
 }
 
 impl PaymentOrder {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         sender_account_id: Uuid,
         beneficiary_name: String,
@@ -529,6 +530,7 @@ impl Transfer {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         transfer_id: TransferId,
         order_id: OrderId,
@@ -630,6 +632,7 @@ impl SwiftMessage {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         message_id: Uuid,
         order_id: OrderId,

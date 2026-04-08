@@ -1,5 +1,6 @@
 <script lang="ts">
   import StatusBadge from '../common/StatusBadge.svelte';
+  import { api } from '../../lib/api/client';
 
   interface Account {
     id: string;
@@ -29,15 +30,11 @@
   let error = $state('');
   let customerId = $state('');
 
-  const API_URL = import.meta.env.PUBLIC_API_URL || '/api/v1';
-
   async function loadCustomer() {
     loading = true;
     error = '';
     try {
-      const res = await fetch(`${API_URL}/customers/${customerId}`);
-      if (!res.ok) throw new Error(`Erreur ${res.status}`);
-      customer = await res.json();
+      customer = await api.get<Customer>(`/customers/${customerId}`);
     } catch (err: unknown) {
       error = err instanceof Error ? err.message : 'Erreur de chargement';
     } finally {
@@ -74,28 +71,28 @@
 
 <div class="space-y-6">
   {#if error}
-    <div role="alert" class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+    <div role="alert" data-testid="customer-detail-error" class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
       {error}
     </div>
   {/if}
 
   {#if loading}
-    <div class="text-center text-sm text-gray-500 py-12" role="status">
+    <div class="text-center text-sm text-gray-500 py-12" role="status" data-testid="customer-detail-loading">
       Chargement du client...
     </div>
   {:else if customer}
     <!-- Header -->
     <div class="flex items-center justify-between">
-      <a href="/customers" class="text-sm text-blue-600 hover:text-blue-500">
+      <a href="/customers" data-testid="customer-detail-back" class="text-sm text-blue-600 hover:text-blue-500">
         ← Retour aux clients
       </a>
     </div>
 
     <!-- Customer Info Card -->
-    <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+    <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm" data-testid="customer-detail-info">
       <div class="flex items-start justify-between mb-6">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">{customer.full_name}</h1>
+          <h1 class="text-2xl font-bold text-gray-900" data-testid="customer-detail-name">{customer.full_name}</h1>
           <p class="mt-1 text-gray-600">{customer.email}</p>
         </div>
         <StatusBadge status={customer.kyc_status} />
@@ -165,23 +162,23 @@
     </div>
 
     <!-- Actions -->
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <a href="/accounts/list?customer_id={customerId}" class="rounded-lg border border-blue-200 bg-blue-50 p-4 hover:bg-blue-100 transition-colors text-left">
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-testid="customer-detail-actions">
+      <a href="/accounts/list?customer_id={customerId}" data-testid="customer-action-accounts" class="rounded-lg border border-blue-200 bg-blue-50 p-4 hover:bg-blue-100 transition-colors text-left">
         <div class="text-2xl mb-2">💳</div>
         <h3 class="font-semibold text-gray-900">Comptes</h3>
         <p class="text-sm text-gray-600">Voir les comptes</p>
       </a>
-      <button class="rounded-lg border border-green-200 bg-green-50 p-4 hover:bg-green-100 transition-colors text-left">
+      <button data-testid="customer-action-edit" class="rounded-lg border border-green-200 bg-green-50 p-4 hover:bg-green-100 transition-colors text-left">
         <div class="text-2xl mb-2">✏️</div>
         <h3 class="font-semibold text-gray-900">Modifier</h3>
         <p class="text-sm text-gray-600">Éditer le profil</p>
       </button>
-      <button class="rounded-lg border border-purple-200 bg-purple-50 p-4 hover:bg-purple-100 transition-colors text-left">
+      <button data-testid="customer-action-documents" class="rounded-lg border border-purple-200 bg-purple-50 p-4 hover:bg-purple-100 transition-colors text-left">
         <div class="text-2xl mb-2">📄</div>
         <h3 class="font-semibold text-gray-900">Documents</h3>
         <p class="text-sm text-gray-600">KYC et fichiers</p>
       </button>
-      <button class="rounded-lg border border-red-200 bg-red-50 p-4 hover:bg-red-100 transition-colors text-left">
+      <button data-testid="customer-action-suspend" class="rounded-lg border border-red-200 bg-red-50 p-4 hover:bg-red-100 transition-colors text-left">
         <div class="text-2xl mb-2">🚫</div>
         <h3 class="font-semibold text-gray-900">Suspendre</h3>
         <p class="text-sm text-gray-600">Désactiver le client</p>

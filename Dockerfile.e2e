@@ -1,0 +1,21 @@
+# BANKO - E2E Tests (Playwright + all testing tools)
+# Usage: docker compose -f docker-compose.dev.yml --profile e2e run --rm e2e npx playwright test
+#
+# Includes:
+#   - Playwright v1.59.1 with Chromium, Firefox, WebKit pre-installed
+#   - All npm test dependencies (TypeScript, etc.)
+#   - HTML reporter, JSON reporter, trace viewer
+
+FROM mcr.microsoft.com/playwright:v1.59.1-noble
+
+WORKDIR /app
+
+# Install dependencies first (cache layer)
+COPY e2e/package.json e2e/package-lock.json ./
+RUN npm ci
+
+# Copy test files
+COPY e2e/ .
+
+# Default command: run all tests
+CMD ["npx", "playwright", "test"]

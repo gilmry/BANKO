@@ -1,3 +1,6 @@
+// Application services aggregate multiple repository ports (DDD pattern).
+#![allow(clippy::too_many_arguments)]
+
 pub mod account;
 pub mod accounting;
 pub mod aml;

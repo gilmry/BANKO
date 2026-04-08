@@ -48,7 +48,7 @@
   aria-modal="true"
   aria-labelledby="transfer-modal-title"
 >
-  <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+  <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl" data-testid="transfer-modal">
     <div class="mb-4 flex items-center justify-between">
       <h2 id="transfer-modal-title" class="text-lg font-semibold text-gray-900">
         Effectuer un virement
@@ -58,6 +58,7 @@
         onclick={onclose}
         class="modal-close rounded-md p-1 text-gray-400 hover:text-gray-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
         aria-label="Fermer"
+        data-testid="transfer-modal-close"
       >
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -96,6 +97,7 @@
             bind:value={toIban}
             placeholder="MA00 0000 0000 0000 0000 0000 000"
             class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            data-testid="transfer-input-iban"
           />
         </div>
 
@@ -112,6 +114,7 @@
             aria-required="true"
             bind:value={amount}
             class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
+            data-testid="transfer-input-amount"
           />
         </div>
 
@@ -124,6 +127,7 @@
             type="text"
             bind:value={reference}
             class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
+            data-testid="transfer-input-reference"
           />
         </div>
 
@@ -139,6 +143,7 @@
             type="submit"
             disabled={!formValid || submitting}
             class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50"
+            data-testid="transfer-submit-btn"
           >
             {submitting ? 'Envoi...' : 'Envoyer le virement'}
           </button>

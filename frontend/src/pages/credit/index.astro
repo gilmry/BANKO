@@ -4,5 +4,7 @@ import CreditDashboard from "../../components/credit/CreditDashboard.svelte";
 ---
 
 <DashboardLayout title="Tableau de bord Crédit">
-  <CreditDashboard client:load />
+  <div data-testid="page-credit">
+    <CreditDashboard client:load />
+  </div>
 </DashboardLayout>

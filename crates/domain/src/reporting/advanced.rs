@@ -357,6 +357,7 @@ pub struct ScheduledReport {
 }
 
 impl ScheduledReport {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         name: String,
         description: Option<String>,
@@ -389,6 +390,7 @@ impl ScheduledReport {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         scheduled_report_id: ScheduledReportId,
         name: String,
@@ -512,6 +514,7 @@ impl ReportDistribution {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         distribution_id: ReportDistributionId,
         report_id: String,
@@ -647,6 +650,7 @@ impl ReportArchive {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         archive_id: ReportArchiveId,
         report_id: String,
@@ -753,6 +757,7 @@ impl AdHocReport {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         adhoc_report_id: AdHocReportId,
         name: String,
@@ -830,6 +835,7 @@ pub struct TaxReport {
 }
 
 impl TaxReport {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         tax_type: TaxReportType,
         period_start: NaiveDate,
@@ -868,6 +874,7 @@ impl TaxReport {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         tax_report_id: TaxReportId,
         tax_type: TaxReportType,
@@ -985,6 +992,7 @@ impl Ifrs9Report {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_raw(
         ifrs9_report_id: Ifrs9ReportId,
         as_of: NaiveDate,
