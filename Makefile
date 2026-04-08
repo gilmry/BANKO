@@ -265,7 +265,7 @@ ci: ## ✅ Vérifications CI locales (tout dans Docker)
 	@echo "$(GREEN)🔍 Formatting backend...$(NC)"
 	docker compose -f docker-compose.dev.yml exec -T backend sh -c "cargo fmt --check"
 	@echo "$(GREEN)🔒 Security audit backend...$(NC)"
-	docker compose -f docker-compose.dev.yml exec -T backend sh -c "cargo audit || true"
+	docker compose -f docker-compose.dev.yml exec -T backend sh -c "cargo audit --ignore RUSTSEC-2023-0071"
 	@echo "$(GREEN)🔍 Formatting frontend...$(NC)"
 	docker compose -f docker-compose.dev.yml exec -T frontend sh -c "npx prettier --check . 2>/dev/null || true"
 	@echo "$(GREEN)🔒 Security audit frontend...$(NC)"
@@ -284,7 +284,7 @@ dev-ci: ## ✅ CI rapide dans le container dev (sans E2E)
 	@echo "$(GREEN)🔍 Format check...$(NC)"
 	docker compose -f docker-compose.dev.yml exec -T backend cargo fmt --check
 	@echo "$(GREEN)🔒 Audit...$(NC)"
-	docker compose -f docker-compose.dev.yml exec -T backend cargo audit || true
+	docker compose -f docker-compose.dev.yml exec -T backend cargo audit --ignore RUSTSEC-2023-0071
 	@echo "$(GREEN)🧪 Tests...$(NC)"
 	docker compose -f docker-compose.dev.yml exec -T backend sh -c "SQLX_OFFLINE=true cargo test --lib"
 	@echo "$(GREEN)✅ CI OK$(NC)"
