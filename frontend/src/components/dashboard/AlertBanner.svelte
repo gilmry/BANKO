@@ -23,6 +23,7 @@
   role="alert"
   aria-live="assertive"
   class="flex items-center gap-3 rounded-lg border px-4 py-3 {styles}"
+  data-testid="alert-banner-{type}"
 >
   <svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={icon}></path>

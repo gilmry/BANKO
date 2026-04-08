@@ -62,9 +62,9 @@
   }
 </script>
 
-<div class="space-y-6">
+<div class="space-y-6" data-testid="kyc-wizard">
   {#if success}
-    <div class="rounded-md border border-green-200 bg-green-50 p-6 text-center" role="status">
+    <div class="rounded-md border border-green-200 bg-green-50 p-6 text-center" role="status" data-testid="kyc-success">
       <svg class="mx-auto mb-3 h-12 w-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
       </svg>
@@ -77,7 +77,7 @@
     <KycStepper {currentStep} totalSteps={TOTAL_STEPS} />
 
     {#if error}
-      <div role="alert" aria-live="polite" class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+      <div role="alert" aria-live="polite" data-testid="kyc-error" class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
         {error}
       </div>
     {/if}

@@ -4,5 +4,7 @@ import AmlDashboard from "../../components/aml/AmlDashboard.svelte";
 ---
 
 <DashboardLayout title="Tableau de bord AML">
-  <AmlDashboard client:load />
+  <div data-testid="page-aml">
+    <AmlDashboard client:load />
+  </div>
 </DashboardLayout>

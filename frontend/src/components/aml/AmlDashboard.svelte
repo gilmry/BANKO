@@ -58,39 +58,39 @@
 </script>
 
 <div class="space-y-8">
-  <h1 class="text-2xl font-bold text-gray-900">Tableau de bord AML</h1>
+  <h1 class="text-2xl font-bold text-gray-900" data-testid="aml-heading">Tableau de bord AML</h1>
 
   {#if error}
-    <div class="rounded-md bg-red-50 p-4 text-red-700">{error}</div>
+    <div class="rounded-md bg-red-50 p-4 text-red-700" data-testid="aml-error">{error}</div>
   {/if}
 
   {#if loading}
-    <div class="flex items-center justify-center py-12">
+    <div class="flex items-center justify-center py-12" data-testid="aml-loading">
       <p class="text-gray-500">Chargement des données...</p>
     </div>
   {:else if stats}
     <!-- Alert Summary Cards -->
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-4">
-      <div class="rounded-lg bg-white p-6 shadow">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-4" data-testid="aml-stats-cards">
+      <div class="rounded-lg bg-white p-6 shadow" data-testid="aml-stat-total">
         <p class="text-sm text-gray-500">Alertes totales</p>
         <p class="text-3xl font-bold text-gray-900">{stats.total_alerts}</p>
       </div>
-      <div class="rounded-lg bg-white p-6 shadow">
+      <div class="rounded-lg bg-white p-6 shadow" data-testid="aml-stat-open">
         <p class="text-sm text-gray-500">Alertes ouvertes</p>
         <p class="text-3xl font-bold text-blue-600">{stats.open_alerts}</p>
       </div>
-      <div class="rounded-lg bg-white p-6 shadow">
+      <div class="rounded-lg bg-white p-6 shadow" data-testid="aml-stat-investigating">
         <p class="text-sm text-gray-500">En investigation</p>
         <p class="text-3xl font-bold text-yellow-600">{stats.investigating_alerts}</p>
       </div>
-      <div class="rounded-lg bg-white p-6 shadow">
+      <div class="rounded-lg bg-white p-6 shadow" data-testid="aml-stat-resolved">
         <p class="text-sm text-gray-500">Résolues</p>
         <p class="text-3xl font-bold text-green-600">{stats.resolved_alerts}</p>
       </div>
     </div>
 
     <!-- Risk Level Summary -->
-    <div class="rounded-lg bg-white p-6 shadow">
+    <div class="rounded-lg bg-white p-6 shadow" data-testid="aml-risk-distribution">
       <h2 class="mb-4 text-lg font-semibold">Distribution par niveau de risque</h2>
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div class="rounded-lg border-l-4 border-red-400 bg-red-50 p-4">
@@ -113,7 +113,7 @@
 
     <!-- Recent Alerts Table -->
     {#if recentAlerts.length > 0}
-      <div class="rounded-lg bg-white p-6 shadow">
+      <div class="rounded-lg bg-white p-6 shadow" data-testid="aml-alerts-table">
         <h2 class="mb-4 text-lg font-semibold">Alertes récentes</h2>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-sm">
@@ -153,7 +153,7 @@
 
     <!-- Investigation Pipeline -->
     {#if investigations.length > 0}
-      <div class="rounded-lg bg-white p-6 shadow">
+      <div class="rounded-lg bg-white p-6 shadow" data-testid="aml-investigations">
         <h2 class="mb-4 text-lg font-semibold">Pipeline d'investigations</h2>
         <div class="space-y-3">
           {#each investigations as inv}

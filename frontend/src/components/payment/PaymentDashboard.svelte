@@ -75,19 +75,19 @@
 </script>
 
 <div class="space-y-8">
-  <h1 class="text-2xl font-bold text-gray-900">Tableau de bord Paiements</h1>
+  <h1 class="text-2xl font-bold text-gray-900" data-testid="payment-heading">Tableau de bord Paiements</h1>
 
   {#if error}
-    <div class="rounded-md bg-red-50 p-4 text-red-700">{error}</div>
+    <div class="rounded-md bg-red-50 p-4 text-red-700" data-testid="payment-error">{error}</div>
   {/if}
 
   {#if loading}
-    <div class="flex items-center justify-center py-12">
+    <div class="flex items-center justify-center py-12" data-testid="payment-loading">
       <p class="text-gray-500">Chargement des données...</p>
     </div>
   {:else if paymentStatus && clearingStatus}
     <!-- Clearing System Status Alert -->
-    <div class="rounded-lg border border-gray-200 p-4 {clearingStatusColors[clearingStatus.status]}">
+    <div class="rounded-lg border border-gray-200 p-4 {clearingStatusColors[clearingStatus.status]}" data-testid="payment-clearing-status">
       <div class="flex items-center justify-between">
         <div>
           <p class="font-semibold">État du système de compensation</p>
@@ -116,7 +116,7 @@
     </div>
 
     <!-- Payment Summary Cards -->
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-4" data-testid="payment-stats-cards">
       <div class="rounded-lg bg-white p-6 shadow">
         <p class="text-sm text-gray-500">Total des paiements</p>
         <p class="text-3xl font-bold text-gray-900">{paymentStatus.total_payments}</p>
@@ -136,7 +136,7 @@
     </div>
 
     <!-- Status Breakdown -->
-    <div class="rounded-lg bg-white p-6 shadow">
+    <div class="rounded-lg bg-white p-6 shadow" data-testid="payment-status-breakdown">
       <h2 class="mb-4 text-lg font-semibold">Répartition par statut</h2>
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div class="rounded-lg border border-gray-200 p-4">
@@ -178,7 +178,7 @@
 
     <!-- Recent Payments Table -->
     {#if recentPayments.length > 0}
-      <div class="rounded-lg bg-white p-6 shadow">
+      <div class="rounded-lg bg-white p-6 shadow" data-testid="payment-recent-table">
         <h2 class="mb-4 text-lg font-semibold">Paiements récents</h2>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-sm">

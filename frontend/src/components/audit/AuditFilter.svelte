@@ -34,7 +34,7 @@
   }
 </script>
 
-<form onsubmit={handleSubmit} class="rounded-lg border border-gray-200 bg-white p-4" aria-label="Filtres d'audit">
+<form onsubmit={handleSubmit} class="rounded-lg border border-gray-200 bg-white p-4" aria-label="Filtres d'audit" data-testid="audit-filter-form">
   <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
     <div>
       <label for="audit-action" class="block text-xs font-medium text-gray-500">Action</label>
@@ -42,6 +42,7 @@
         id="audit-action"
         bind:value={action}
         class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        data-testid="audit-filter-action"
       >
         <option value="">Toutes les actions</option>
         <option value="Create">Create</option>
@@ -63,6 +64,7 @@
         id="audit-resource"
         bind:value={resourceType}
         class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        data-testid="audit-filter-resource"
       >
         <option value="">Toutes les ressources</option>
         <option value="Customer">Customer</option>
@@ -83,6 +85,7 @@
         bind:value={actorId}
         placeholder="UUID..."
         class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        data-testid="audit-filter-actor"
       />
     </div>
 
@@ -93,6 +96,7 @@
         type="date"
         bind:value={dateFrom}
         class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        data-testid="audit-filter-date-from"
       />
     </div>
 
@@ -103,6 +107,7 @@
         type="date"
         bind:value={dateTo}
         class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        data-testid="audit-filter-date-to"
       />
     </div>
   </div>
@@ -111,6 +116,7 @@
     <button
       type="submit"
       class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+      data-testid="audit-filter-submit"
     >
       Filtrer
     </button>
@@ -118,6 +124,7 @@
       type="button"
       onclick={handleClear}
       class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+      data-testid="audit-filter-clear"
     >
       Effacer
     </button>

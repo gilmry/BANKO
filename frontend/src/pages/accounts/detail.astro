@@ -10,5 +10,7 @@ import AccountDetailPage from '../../components/account/AccountDetailPage.svelte
     { label: 'Détail' },
   ]}
 >
-  <AccountDetailPage client:load />
+  <div data-testid="page-accounts-detail">
+    <AccountDetailPage client:load />
+  </div>
 </DashboardLayout>

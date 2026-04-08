@@ -36,6 +36,7 @@
 <span
   class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium {config.bg} border {config.text}"
   aria-label={displayLabel}
+  data-testid="status-badge-{status}"
 >
   <span class="h-2 w-2 rounded-full {config.dot}" aria-hidden="true"></span>
   {displayLabel}

@@ -84,6 +84,7 @@
         class="sr-only"
         onchange={handleFileChange}
         aria-label="Telecharger un document"
+        data-testid="kyc-document-input"
       />
     </label>
     <p class="mt-2 text-xs text-gray-500">PDF, JPG, PNG (max 10 Mo)</p>

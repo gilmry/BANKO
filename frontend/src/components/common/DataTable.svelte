@@ -34,13 +34,14 @@
   }
 </script>
 
-<div class="overflow-x-auto rounded-lg border border-gray-200">
-  <table class="w-full divide-y divide-gray-200 text-sm">
-    <thead class="bg-gray-50">
+<div class="overflow-x-auto rounded-lg border border-gray-200" data-testid="datatable">
+  <table class="w-full divide-y divide-gray-200 text-sm" data-testid="datatable-table">
+    <thead class="bg-gray-50" data-testid="datatable-thead">
       <tr>
         {#each columns as column (column.key)}
           <th
             scope="col"
+            data-testid="datatable-header-{String(column.key)}"
             class="px-6 py-3 text-left font-medium text-gray-900 {column.sortable
               ? 'cursor-pointer hover:bg-gray-100 select-none'
               : ''}"
@@ -59,16 +60,16 @@
       </tr>
     </thead>
 
-    <tbody class="divide-y divide-gray-200 bg-white">
+    <tbody class="divide-y divide-gray-200 bg-white" data-testid="datatable-tbody">
       {#if loading}
         <tr>
-          <td colspan={columns.length} class="px-6 py-4 text-center text-gray-500">
+          <td colspan={columns.length} class="px-6 py-4 text-center text-gray-500" data-testid="datatable-loading">
             Chargement...
           </td>
         </tr>
       {:else if rows.length === 0}
         <tr>
-          <td colspan={columns.length} class="px-6 py-4 text-center text-gray-500">
+          <td colspan={columns.length} class="px-6 py-4 text-center text-gray-500" data-testid="datatable-empty">
             Aucun résultat trouvé
           </td>
         </tr>

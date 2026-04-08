@@ -92,6 +92,7 @@ const columns: Column<Customer>[] = [
     <a
       href="/customer/onboarding"
       class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+      data-testid="customers-new-btn"
     >
       <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -113,6 +114,7 @@ const columns: Column<Customer>[] = [
 
     <select
       class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+      data-testid="customers-filter-kyc-status"
     >
       <option value="">Tous les statuts KYC</option>
       <option value="pending">En attente</option>
@@ -123,6 +125,7 @@ const columns: Column<Customer>[] = [
 
     <select
       class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+      data-testid="customers-filter-sort"
     >
       <option value="">Trier par</option>
       <option value="created_at">Date création (récent)</option>
@@ -133,7 +136,7 @@ const columns: Column<Customer>[] = [
   </div>
 
   <!-- Customers Table -->
-  <div class="rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm">
+  <div class="rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm" data-testid="customers-table-container">
     <DataTable client:load columns={columns} rows={customers} rowLink={(row) => `/customers/detail?id=${row.id}`} />
   </div>
 
@@ -147,10 +150,11 @@ const columns: Column<Customer>[] = [
       <button
         disabled
         class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 disabled:bg-gray-50 disabled:text-gray-400"
+        data-testid="customers-pagination-prev"
       >
         Précédent
       </button>
-      <button class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+      <button class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50" data-testid="customers-pagination-next">
         Suivant
       </button>
     </div>

@@ -83,12 +83,12 @@
 
 <div class="space-y-6">
   <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-bold text-gray-900">Journal d'audit</h1>
+    <h1 class="text-2xl font-bold text-gray-900" data-testid="audit-heading">Journal d'audit</h1>
     <ExportButton filters={currentFilters} />
   </div>
 
   {#if error}
-    <div role="alert" aria-live="polite" class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+    <div role="alert" aria-live="polite" class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" data-testid="audit-error">
       {error}
     </div>
   {/if}

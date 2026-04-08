@@ -95,12 +95,13 @@ const columns: Column<Account>[] = [
 
 <DashboardLayout title="Comptes" breadcrumb={[{ label: 'Comptes' }]}>
   <!-- Header with button -->
-  <div class="mb-6 flex items-center justify-between">
+  <div data-testid="page-accounts-list" class="mb-6 flex items-center justify-between">
     <div class="flex-1">
-      <p class="text-gray-600">Gestion des comptes clients</p>
+      <p data-testid="accounts-list-description" class="text-gray-600">Gestion des comptes clients</p>
     </div>
     <a
       href="/accounts"
+      data-testid="accounts-list-new-account-link"
       class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
     >
       <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -111,7 +112,7 @@ const columns: Column<Account>[] = [
   </div>
 
   <!-- Filters and Search -->
-  <div class="mb-6 grid gap-4 lg:grid-cols-4">
+  <div data-testid="accounts-list-filters" class="mb-6 grid gap-4 lg:grid-cols-4">
     <SearchBar
       client:load
       placeholder="Rechercher par IBAN ou titulaire..."
@@ -121,7 +122,7 @@ const columns: Column<Account>[] = [
       }}
     />
 
-    <select class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm">
+    <select data-testid="accounts-list-type-filter" class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm">
       <option value="">Tous les types</option>
       <option value="checking">Compte Courant</option>
       <option value="savings">Compte Épargne</option>
@@ -129,14 +130,14 @@ const columns: Column<Account>[] = [
       <option value="credit">Crédit</option>
     </select>
 
-    <select class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm">
+    <select data-testid="accounts-list-status-filter" class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm">
       <option value="">Tous les statuts</option>
       <option value="active">Actif</option>
       <option value="suspended">Suspendu</option>
       <option value="closed">Fermé</option>
     </select>
 
-    <select class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm">
+    <select data-testid="accounts-list-sort" class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm">
       <option value="">Trier par</option>
       <option value="created_at">Date création</option>
       <option value="balance">Solde</option>
@@ -144,12 +145,12 @@ const columns: Column<Account>[] = [
   </div>
 
   <!-- Accounts Table -->
-  <div class="rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm mb-6">
+  <div data-testid="accounts-list-table" class="rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm mb-6">
     <DataTable client:load columns={columns} rows={accounts} rowLink={(row) => `/accounts/detail?id=${row.id}`} />
   </div>
 
   <!-- Summary Stats -->
-  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <div data-testid="accounts-list-stats" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
     <div class="rounded-lg border border-gray-200 bg-white p-4">
       <p class="text-sm text-gray-600">Comptes Actifs</p>
       <p class="mt-2 text-2xl font-bold text-gray-900">3</p>

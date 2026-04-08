@@ -4,7 +4,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
 <DashboardLayout title="Sanctions">
   <!-- KPI Cards -->
-  <section class="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+  <section data-testid="page-sanctions" class="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
     <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
       <p class="text-sm font-medium text-gray-500">Alertes actives</p>
       <p class="mt-2 text-3xl font-bold text-red-600">8</p>
@@ -28,18 +28,18 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   </section>
 
   <!-- Active Alerts -->
-  <section class="rounded-lg border border-gray-200 bg-white shadow-sm mb-8">
+  <section data-testid="sanctions-alerts-section" class="rounded-lg border border-gray-200 bg-white shadow-sm mb-8">
     <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-      <h2 class="text-lg font-semibold text-gray-900">Alertes sanctions en cours</h2>
+      <h2 data-testid="sanctions-alerts-heading" class="text-lg font-semibold text-gray-900">Alertes sanctions en cours</h2>
       <div class="flex gap-2">
-        <select class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm">
+        <select data-testid="sanctions-list-filter" class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm">
           <option value="">Toutes les listes</option>
           <option value="ofac">OFAC SDN</option>
           <option value="eu">EU Sanctions</option>
           <option value="un">UN Consolidated</option>
           <option value="ctaf">CTAF Tunisie</option>
         </select>
-        <select class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm">
+        <select data-testid="sanctions-status-filter" class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm">
           <option value="">Tous les statuts</option>
           <option value="new">Nouveau</option>
           <option value="investigating">En investigation</option>
@@ -100,9 +100,9 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   </section>
 
   <!-- Screening Lists Status -->
-  <section class="rounded-lg border border-gray-200 bg-white shadow-sm">
+  <section data-testid="sanctions-lists-section" class="rounded-lg border border-gray-200 bg-white shadow-sm">
     <div class="border-b border-gray-200 px-6 py-4">
-      <h2 class="text-lg font-semibold text-gray-900">Listes de sanctions actives</h2>
+      <h2 data-testid="sanctions-lists-heading" class="text-lg font-semibold text-gray-900">Listes de sanctions actives</h2>
     </div>
     <div class="grid gap-4 p-6 md:grid-cols-2 lg:grid-cols-3">
       <div class="rounded-lg border border-gray-200 p-4">

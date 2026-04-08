@@ -49,7 +49,7 @@
   <h3 class="text-lg font-medium text-gray-900">Recapitulatif</h3>
 
   <!-- Personal info -->
-  <section aria-labelledby="summary-personal" class="rounded-lg border border-gray-200 bg-white p-4">
+  <section aria-labelledby="summary-personal" class="rounded-lg border border-gray-200 bg-white p-4" data-testid="kyc-summary-personal">
     <h4 id="summary-personal" class="mb-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">
       Informations personnelles
     </h4>
@@ -82,7 +82,7 @@
   </section>
 
   <!-- Professional info -->
-  <section aria-labelledby="summary-professional" class="rounded-lg border border-gray-200 bg-white p-4">
+  <section aria-labelledby="summary-professional" class="rounded-lg border border-gray-200 bg-white p-4" data-testid="kyc-summary-professional">
     <h4 id="summary-professional" class="mb-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">
       Informations professionnelles
     </h4>
@@ -151,6 +151,7 @@
       onclick={onsubmit}
       disabled={submitting}
       class="rounded-md bg-green-600 px-6 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 disabled:opacity-50"
+      data-testid="kyc-summary-submit-btn"
     >
       {submitting ? 'Envoi en cours...' : 'Confirmer et soumettre'}
     </button>

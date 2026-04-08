@@ -31,7 +31,7 @@
 </script>
 
 <section class="mx-auto w-full max-w-md" aria-labelledby="login-heading">
-  <h1 id="login-heading" class="mb-8 text-center text-3xl font-bold text-gray-900">
+  <h1 id="login-heading" data-testid="login-heading" class="mb-8 text-center text-3xl font-bold text-gray-900">
     <!-- TODO: use t('auth.login.title') -->
     Connexion
   </h1>
@@ -40,13 +40,14 @@
     <div
       role="alert"
       aria-live="polite"
+      data-testid="login-error"
       class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
     >
       {error}
     </div>
   {/if}
 
-  <form onsubmit={handleSubmit} class="space-y-6" novalidate>
+  <form onsubmit={handleSubmit} class="space-y-6" novalidate data-testid="login-form">
     <div>
       <label for="login-email" class="block text-sm font-medium text-gray-700">
         <!-- TODO: use t('auth.login.email') -->
@@ -54,6 +55,7 @@
       </label>
       <input
         id="login-email"
+        data-testid="login-email-input"
         type="email"
         autocomplete="email"
         required
@@ -78,6 +80,7 @@
       </label>
       <input
         id="login-password"
+        data-testid="login-password-input"
         type="password"
         autocomplete="current-password"
         required
@@ -90,6 +93,7 @@
     <button
       type="submit"
       disabled={!formValid || submitting}
+      data-testid="login-submit-btn"
       class="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
     >
       {#if submitting}
@@ -107,6 +111,7 @@
     Pas encore de compte ?
     <a
       href="/register"
+      data-testid="login-register-link"
       class="font-medium text-blue-600 hover:text-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
     >
       <!-- TODO: use t('auth.login.register') -->

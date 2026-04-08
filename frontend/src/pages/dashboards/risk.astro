@@ -4,5 +4,7 @@ import RiskDashboard from "../../components/dashboard/RiskDashboard.svelte";
 ---
 
 <DashboardLayout title="Tableau de bord prudentiel">
-  <RiskDashboard client:load />
+  <div data-testid="page-dashboards-risk">
+    <RiskDashboard client:load />
+  </div>
 </DashboardLayout>

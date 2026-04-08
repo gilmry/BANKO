@@ -43,18 +43,18 @@
 </script>
 
 <div class="space-y-6">
-  <h1 class="text-2xl font-bold text-gray-900">
+  <h1 class="text-2xl font-bold text-gray-900" data-testid="risk-heading">
     Tableau de bord prudentiel
   </h1>
 
   {#if error}
-    <div role="alert" aria-live="polite" class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+    <div role="alert" aria-live="polite" class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" data-testid="risk-error">
       {error}
     </div>
   {/if}
 
   {#if loading}
-    <div class="text-center text-sm text-gray-500" role="status">
+    <div class="text-center text-sm text-gray-500" role="status" data-testid="risk-loading">
       Chargement des ratios prudentiels...
     </div>
   {:else}
@@ -75,7 +75,7 @@
     {/each}
 
     <!-- Metric cards -->
-    <section aria-label="Ratios prudentiels">
+    <section aria-label="Ratios prudentiels" data-testid="risk-ratios-section">
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {#each ratios as r}
           <MetricCard
@@ -90,7 +90,7 @@
 
     <!-- Gauges -->
     {#if ratios.length > 0}
-      <section aria-label="Jauges des ratios">
+      <section aria-label="Jauges des ratios" data-testid="risk-gauges-section">
         <h2 class="mb-4 text-lg font-semibold text-gray-900">Vue d'ensemble</h2>
         <div class="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
           {#each ratios as r}
@@ -106,7 +106,7 @@
 
     <!-- Trend charts -->
     {#if Object.keys(trendData).length > 0}
-      <section aria-label="Tendances">
+      <section aria-label="Tendances" data-testid="risk-trends-section">
         <h2 class="mb-4 text-lg font-semibold text-gray-900">Tendance sur 30 jours</h2>
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {#each ratios as r}

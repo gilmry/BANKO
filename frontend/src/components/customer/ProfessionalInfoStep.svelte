@@ -22,7 +22,7 @@
   }
 </script>
 
-<form onsubmit={handleNext} class="space-y-4" novalidate>
+<form onsubmit={handleNext} class="space-y-4" novalidate data-testid="kyc-professional-form">
   <div>
     <label for="kyc-profession" class="block text-sm font-medium text-gray-700">
       Profession <span class="text-red-500" aria-hidden="true">*</span>
@@ -33,6 +33,7 @@
       required
       aria-required="true"
       bind:value={data.profession}
+      data-testid="kyc-professional-profession"
       class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
     />
   </div>
@@ -45,6 +46,7 @@
       id="kyc-employer"
       type="text"
       bind:value={data.employer}
+      data-testid="kyc-professional-employer"
       class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
     />
   </div>
@@ -60,6 +62,7 @@
       required
       aria-required="true"
       bind:value={data.monthly_income}
+      data-testid="kyc-professional-income"
       class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
     />
   </div>
@@ -71,6 +74,7 @@
     <select
       id="kyc-funds"
       bind:value={data.source_of_funds}
+      data-testid="kyc-professional-funds"
       class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
     >
       <option value="">-- Choisir --</option>

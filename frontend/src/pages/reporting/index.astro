@@ -4,7 +4,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
 <DashboardLayout title="Rapports">
   <!-- Report Categories -->
-  <section class="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
+  <section data-testid="page-reporting" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
     <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200 hover:shadow-md transition-shadow">
       <div class="flex items-center gap-3 mb-4">
         <div class="rounded-lg bg-blue-100 p-2.5">
@@ -109,10 +109,10 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   </section>
 
   <!-- Recent Reports -->
-  <section class="rounded-lg border border-gray-200 bg-white shadow-sm">
+  <section data-testid="reporting-recent-section" class="rounded-lg border border-gray-200 bg-white shadow-sm">
     <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-      <h2 class="text-lg font-semibold text-gray-900">Rapports récents</h2>
-      <button class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
+      <h2 data-testid="reporting-recent-heading" class="text-lg font-semibold text-gray-900">Rapports récents</h2>
+      <button data-testid="reporting-generate-button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
         Générer un rapport
       </button>
     </div>

@@ -17,12 +17,12 @@
   };
 </script>
 
-<section aria-labelledby="account-details-heading" class="rounded-lg border border-gray-200 bg-white p-6">
+<section aria-labelledby="account-details-heading" class="rounded-lg border border-gray-200 bg-white p-6" data-testid="account-details">
   <h2 id="account-details-heading" class="mb-4 text-xl font-bold text-gray-900">
     Details du compte
   </h2>
 
-  <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+  <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2" data-testid="account-details-grid">
     <div>
       <dt class="text-sm text-gray-500">Type de compte</dt>
       <dd class="text-sm font-medium text-gray-900">{typeLabels[account.account_type] ?? account.account_type}</dd>

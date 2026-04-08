@@ -4,5 +4,7 @@ import PaymentDashboard from "../../components/payment/PaymentDashboard.svelte";
 ---
 
 <DashboardLayout title="Tableau de bord Paiements">
-  <PaymentDashboard client:load />
+  <div data-testid="page-payments">
+    <PaymentDashboard client:load />
+  </div>
 </DashboardLayout>

@@ -28,7 +28,7 @@
   }
 </script>
 
-<form onsubmit={handleNext} class="space-y-4" novalidate>
+<form onsubmit={handleNext} class="space-y-4" novalidate data-testid="kyc-basic-form">
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
     <div>
       <label for="kyc-firstname" class="block text-sm font-medium text-gray-700">
@@ -37,6 +37,7 @@
       </label>
       <input
         id="kyc-firstname"
+        data-testid="kyc-basic-firstname"
         type="text"
         required
         aria-required="true"
@@ -50,6 +51,7 @@
       </label>
       <input
         id="kyc-lastname"
+        data-testid="kyc-basic-lastname"
         type="text"
         required
         aria-required="true"
@@ -65,6 +67,7 @@
     </label>
     <input
       id="kyc-dob"
+      data-testid="kyc-basic-dob"
       type="date"
       required
       aria-required="true"
@@ -79,6 +82,7 @@
     </label>
     <select
       id="kyc-gender"
+      data-testid="kyc-basic-gender"
       required
       aria-required="true"
       bind:value={data.gender}
@@ -96,6 +100,7 @@
     </label>
     <input
       id="kyc-cin"
+      data-testid="kyc-basic-cin"
       type="text"
       required
       aria-required="true"
@@ -110,6 +115,7 @@
     </label>
     <input
       id="kyc-nationality"
+      data-testid="kyc-basic-nationality"
       type="text"
       required
       aria-required="true"
@@ -122,6 +128,7 @@
     <button
       type="submit"
       disabled={!formValid}
+      data-testid="kyc-basic-next-btn"
       class="rounded-md bg-blue-600 px-6 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
     >
       Suivant

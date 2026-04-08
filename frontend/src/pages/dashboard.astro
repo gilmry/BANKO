@@ -53,7 +53,7 @@ const columns: Column<RecentTransaction>[] = [
 
 <DashboardLayout title="Tableau de bord">
   <!-- KPI Cards -->
-  <section class="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+  <section class="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8" data-testid="dashboard-kpi-section">
     <KpiCard
       client:load
       title="Total Clients"
@@ -89,8 +89,8 @@ const columns: Column<RecentTransaction>[] = [
   </section>
 
   <!-- Key Metrics -->
-  <section class="grid gap-6 lg:grid-cols-3 mb-8">
-    <div class="lg:col-span-2 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+  <section class="grid gap-6 lg:grid-cols-3 mb-8" data-testid="dashboard-metrics-section">
+    <div class="lg:col-span-2 rounded-lg border border-gray-200 bg-white p-6 shadow-sm" data-testid="dashboard-deposits-card">
       <h2 class="text-lg font-semibold text-gray-900 mb-6">Solde des Dépôts</h2>
       <div class="space-y-4">
         <div class="flex justify-between items-center pb-4 border-b border-gray-200">
@@ -108,7 +108,7 @@ const columns: Column<RecentTransaction>[] = [
       </div>
     </div>
 
-    <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+    <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm" data-testid="dashboard-risk-card">
       <h2 class="text-lg font-semibold text-gray-900 mb-6">Indicateurs de Risque</h2>
       <div class="space-y-4">
         <div>
@@ -143,10 +143,10 @@ const columns: Column<RecentTransaction>[] = [
   </section>
 
   <!-- Recent Transactions -->
-  <section class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+  <section class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm" data-testid="dashboard-transactions-section">
     <div class="mb-6 flex items-center justify-between">
       <h2 class="text-lg font-semibold text-gray-900">Transactions Récentes</h2>
-      <a href="/accounts" class="text-sm font-medium text-blue-600 hover:text-blue-800">Voir tout →</a>
+      <a href="/accounts" class="text-sm font-medium text-blue-600 hover:text-blue-800" data-testid="dashboard-transactions-viewall">Voir tout →</a>
     </div>
     <DataTable
       client:load
@@ -157,10 +157,11 @@ const columns: Column<RecentTransaction>[] = [
   </section>
 
   <!-- Quick Actions -->
-  <section class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <section class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-testid="dashboard-quickactions-section">
     <a
       href="/customer/onboarding"
       class="rounded-lg border border-blue-200 bg-blue-50 p-4 hover:bg-blue-100 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+      data-testid="dashboard-action-new-customer"
     >
       <div class="text-2xl mb-2">👤</div>
       <h3 class="font-semibold text-gray-900">Nouveau Client</h3>
@@ -170,6 +171,7 @@ const columns: Column<RecentTransaction>[] = [
     <a
       href="/accounts"
       class="rounded-lg border border-green-200 bg-green-50 p-4 hover:bg-green-100 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+      data-testid="dashboard-action-new-account"
     >
       <div class="text-2xl mb-2">💳</div>
       <h3 class="font-semibold text-gray-900">Nouveau Compte</h3>
@@ -179,6 +181,7 @@ const columns: Column<RecentTransaction>[] = [
     <a
       href="/payments"
       class="rounded-lg border border-purple-200 bg-purple-50 p-4 hover:bg-purple-100 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+      data-testid="dashboard-action-payment"
     >
       <div class="text-2xl mb-2">💰</div>
       <h3 class="font-semibold text-gray-900">Paiement</h3>
@@ -188,6 +191,7 @@ const columns: Column<RecentTransaction>[] = [
     <a
       href="/credit"
       class="rounded-lg border border-orange-200 bg-orange-50 p-4 hover:bg-orange-100 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+      data-testid="dashboard-action-credit"
     >
       <div class="text-2xl mb-2">📈</div>
       <h3 class="font-semibold text-gray-900">Crédit</h3>

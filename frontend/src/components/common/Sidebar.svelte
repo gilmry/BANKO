@@ -54,6 +54,7 @@
 </script>
 
 <aside
+  data-testid="sidebar"
   class={`fixed left-0 top-0 z-20 h-full w-64 border-e border-gray-200 bg-white shadow-lg transition-transform lg:sticky lg:shadow-none ${
     isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
   }`}
@@ -62,7 +63,7 @@
 >
   <!-- Logo -->
   <div class="flex h-16 items-center border-b border-gray-200 px-6">
-    <a href="/" class="text-xl font-bold text-gray-900" aria-label="BANKO - Accueil">
+    <a href="/" class="text-xl font-bold text-gray-900" aria-label="BANKO - Accueil" data-testid="sidebar-logo">
       BANKO
     </a>
   </div>
@@ -71,13 +72,14 @@
   <nav class="space-y-8 overflow-y-auto px-3 py-6 h-[calc(100vh-64px)]">
     {#each navigationItems as section}
       <div>
-        <p class="px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
+        <p class="px-3 text-xs font-semibold uppercase tracking-wider text-gray-400" data-testid="sidebar-section-{section.section.toLowerCase().replace(/\s+/g, '-')}">
           {section.section}
         </p>
         <div class="mt-3 space-y-1">
           {#each section.items as item}
             <a
               href={item.href}
+              data-testid="sidebar-link-{item.href.replace(/^\//, '').replace(/\//g, '-') || 'home'}"
               class={`nav-item flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${
                 isActive(item.href)
                   ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'

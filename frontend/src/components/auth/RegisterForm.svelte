@@ -69,7 +69,7 @@
 </script>
 
 <section class="mx-auto w-full max-w-md" aria-labelledby="register-heading">
-  <h1 id="register-heading" class="mb-8 text-center text-3xl font-bold text-gray-900">
+  <h1 id="register-heading" data-testid="register-heading" class="mb-8 text-center text-3xl font-bold text-gray-900">
     <!-- TODO: use t('auth.register.title') -->
     Creer un compte
   </h1>
@@ -78,19 +78,21 @@
     <div
       role="alert"
       aria-live="polite"
+      data-testid="register-error"
       class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
     >
       {error}
     </div>
   {/if}
 
-  <form onsubmit={handleSubmit} class="space-y-6" novalidate>
+  <form onsubmit={handleSubmit} class="space-y-6" novalidate data-testid="register-form">
     <div>
       <label for="register-email" class="block text-sm font-medium text-gray-700">
         Adresse e-mail
       </label>
       <input
         id="register-email"
+        data-testid="register-email-input"
         type="email"
         autocomplete="email"
         required
@@ -108,6 +110,7 @@
       </label>
       <input
         id="register-password"
+        data-testid="register-password-input"
         type="password"
         autocomplete="new-password"
         required
@@ -116,7 +119,7 @@
         class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
       />
       {#if password.length > 0}
-        <div class="mt-2" aria-label="Force du mot de passe: {strengthLabel}">
+        <div class="mt-2" aria-label="Force du mot de passe: {strengthLabel}" data-testid="register-password-strength">
           <div class="flex items-center gap-2">
             <div class="h-2 flex-1 rounded-full bg-gray-200">
               <div
@@ -136,6 +139,7 @@
       </label>
       <input
         id="register-confirm-password"
+        data-testid="register-confirm-input"
         type="password"
         autocomplete="new-password"
         required
@@ -155,6 +159,7 @@
     <div class="flex items-start">
       <input
         id="register-terms"
+        data-testid="register-terms-checkbox"
         type="checkbox"
         bind:checked={acceptTerms}
         aria-required="true"
@@ -168,6 +173,7 @@
     <button
       type="submit"
       disabled={!formValid || submitting}
+      data-testid="register-submit-btn"
       class="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
     >
       {#if submitting}
@@ -182,6 +188,7 @@
     Deja un compte ?
     <a
       href="/login"
+      data-testid="register-login-link"
       class="font-medium text-blue-600 hover:text-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
     >
       Se connecter

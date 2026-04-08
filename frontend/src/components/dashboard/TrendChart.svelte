@@ -29,7 +29,7 @@
   );
 </script>
 
-<div class="rounded-lg border border-gray-200 bg-white p-4">
+<div class="rounded-lg border border-gray-200 bg-white p-4" data-testid="trend-chart-{label.toLowerCase().replace(/\s+/g, '-')}">
   <div class="mb-3 flex items-center justify-between">
     <h3 class="text-sm font-medium text-gray-700">{label}</h3>
     <button
@@ -38,6 +38,7 @@
       class="text-xs text-blue-600 hover:text-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
       aria-expanded={showTable}
       aria-controls="trend-table"
+      data-testid="trend-chart-toggle"
     >
       {showTable ? 'Voir le graphique' : 'Voir les donnees'}
     </button>
